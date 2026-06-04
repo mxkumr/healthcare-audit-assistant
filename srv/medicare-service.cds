@@ -1,4 +1,4 @@
-using medicare from '../db/schema';
+using medicare from '../db/medicare-schema';
 
 service MedicareService @(path:'/medicare') {
   entity ProviderSummary as projection on medicare.ProviderSummary;
