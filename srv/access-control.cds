@@ -1,3 +1,2 @@
-using {AdminService} from './admin-service';
-
-annotate AdminService with @requires: 'admin';
+// Custom Enterprise Access Control
+// (Placeholder for Medicare Service security annotations)
