@@ -1,6 +1,7 @@
 namespace medicare;
 
 entity ProviderSummary {
+  key Year                              : String;
   key Rndrng_NPI                        : String;
   Rndrng_Prvdr_Last_Org_Name            : String;
   Rndrng_Prvdr_First_Name               : String;
@@ -86,6 +87,7 @@ entity ProviderSummary {
 
 entity ServiceDetails {
   key ID                                : UUID;
+  Year                                  : String;
   Rndrng_NPI                            : String;
   Rndrng_Prvdr_Last_Org_Name            : String;
   Rndrng_Prvdr_First_Name               : String;
