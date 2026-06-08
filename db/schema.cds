@@ -83,6 +83,14 @@ entity ProviderSummary {
   Bene_CC_PH_Arthritis_V2_Pct          : Decimal;
   Bene_CC_PH_Stroke_TIA_V2_Pct         : Decimal;
   Bene_Avg_Risk_Scre                    : Decimal;
+
+  // Associations
+  services : Association to many ServiceDetails
+               on services.Rndrng_NPI = Rndrng_NPI
+              and services.Year       = Year;
+  geo      : Association to GeoReference
+               on  geo.ZipCode = Rndrng_Prvdr_Zip5
+              and  geo.Year    = Year;
 }
 
 entity ServiceDetails {
@@ -116,11 +124,18 @@ entity ServiceDetails {
   Avg_Mdcr_Alowd_Amt                    : Decimal;
   Avg_Mdcr_Pymt_Amt                     : Decimal;
   Avg_Mdcr_Stdzd_Amt                    : Decimal;
+
+  // Association back to the rendering provider (composite key: Year + NPI)
+  provider : Association to ProviderSummary
+               on  provider.Rndrng_NPI = Rndrng_NPI
+              and  provider.Year       = Year;
 }
 
 entity GeoReference {
+  key Year                              : String;
   key ZipCode                           : String;
   State                                 : String;
-  RuralInd                              : String;
+  Carrier                               : String;
   Locality                              : String;
+  RuralInd                              : String;
 }
