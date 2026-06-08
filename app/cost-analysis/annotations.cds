@@ -57,6 +57,12 @@ annotate service.RuralUrbanDistribution with @(
     Measures: [
       { $Type: 'UI.ChartMeasureAttributeType', Measure: TotalPaid }
     ]
+  },
+
+  UI.PresentationVariant: {
+    GroupBy       : [State, RuralInd, Locality],
+    Total         : [TotalPaid, ProviderCount],
+    Visualizations: ['@UI.LineItem', '@UI.Chart']
   }
 );
 

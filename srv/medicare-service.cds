@@ -19,7 +19,11 @@ service MedicareService @(path:'/medicare') {
   entity RiskScoreDistribution    as projection on medicare.RiskScoreDistribution;
 }
 
-// ── Aggregation annotations for Analytical List Page ──────────────────────────
+// ── Analytical (aggregation) capabilities ─────────────────────────────────────
+// Service layer declares ONLY the analytical capabilities (Aggregation /
+// Analytics) of the views. All UI presentation annotations (SelectionFields,
+// LineItem, Chart, PresentationVariant) live in the app layer at
+// app/cost-analysis/annotations.cds so each annotation is defined exactly once.
 
 annotate MedicareService.CostByStateProviderType with @(
   Aggregation.ApplySupported: {
@@ -45,26 +49,33 @@ annotate MedicareService.CostByStateProviderType with @(
     { Name: 'TotalBeneficiariesSum', AggregationMethod: 'sum', AggregatableProperty: TotalBeneficiaries },
     { Name: 'ProviderCountSum',      AggregationMethod: 'sum', AggregatableProperty: ProviderCount },
     { Name: 'AvgRiskScoreAvg',       AggregationMethod: 'avg', AggregatableProperty: AvgRiskScore }
-  ],
-  UI.LineItem: [
-    {Value: Year},
-    {Value: State},
-    {Value: ProviderType},
-    {Value: ProviderCount},
-    {Value: TotalSubmitted},
-    {Value: TotalAllowed},
-    {Value: TotalPaid},
-    {Value: TotalBeneficiaries},
-    {Value: AvgRiskScore}
-  ],
-  UI.Chart: {
-    ChartType : #Bar,
-    Dimensions: [{Dimension: State}],
-    Measures  : [{Measure: TotalPaid}]
+  ]
+);
+
+annotate MedicareService.RuralUrbanDistribution with @(
+  Aggregation.ApplySupported: {
+    Transformations        : ['aggregate', 'groupby', 'filter'],
+    GroupableProperties    : [
+      {Property: Year},
+      {Property: State},
+      {Property: RuralInd},
+      {Property: Locality}
+    ],
+    AggregatableProperties : [
+      {Property: ProviderCount},
+      {Property: TotalSubmitted},
+      {Property: TotalAllowed},
+      {Property: TotalPaid},
+      {Property: TotalBeneficiaries},
+      {Property: AvgRiskScore}
+    ]
   },
-  UI.PresentationVariant: {
-    GroupBy       : [State, ProviderType],
-    Total         : [TotalPaid, TotalSubmitted, ProviderCount],
-    Visualizations: ['@UI.LineItem', '@UI.Chart']
-  }
+  Analytics.AggregatedProperties: [
+    { Name: 'TotalPaidSum',          AggregationMethod: 'sum', AggregatableProperty: TotalPaid },
+    { Name: 'TotalSubmittedSum',     AggregationMethod: 'sum', AggregatableProperty: TotalSubmitted },
+    { Name: 'TotalAllowedSum',       AggregationMethod: 'sum', AggregatableProperty: TotalAllowed },
+    { Name: 'TotalBeneficiariesSum', AggregationMethod: 'sum', AggregatableProperty: TotalBeneficiaries },
+    { Name: 'ProviderCountSum',      AggregationMethod: 'sum', AggregatableProperty: ProviderCount },
+    { Name: 'AvgRiskScoreAvg',       AggregationMethod: 'avg', AggregatableProperty: AvgRiskScore }
+  ]
 );
