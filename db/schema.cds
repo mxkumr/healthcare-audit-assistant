@@ -198,9 +198,11 @@ view RuralUrbanDistribution as
     and g.Year    = p.Year {
 
     key p.Year,
-    key p.Rndrng_Prvdr_State_Abrvtn as State     : String,
-    key g.RuralInd                               : String,
-    key g.Locality                               : String,
+    key p.Rndrng_Prvdr_State_Abrvtn        as State     : String,
+    // Coalesce null geo values: OData V4 forbids null key fields, so providers
+    // without a GeoReference match are bucketed as Unknown ('U' / '00').
+    key coalesce(g.RuralInd, 'U')          as RuralInd  : String,
+    key coalesce(g.Locality, '00')         as Locality  : String,
 
     count(p.Rndrng_NPI)          as ProviderCount      : Integer,
     sum(p.Tot_Sbmtd_Chrg)        as TotalSubmitted     : Decimal,
@@ -212,8 +214,8 @@ view RuralUrbanDistribution as
   group by
     p.Year,
     p.Rndrng_Prvdr_State_Abrvtn,
-    g.RuralInd,
-    g.Locality;
+    coalesce(g.RuralInd, 'U'),
+    coalesce(g.Locality, '00');
 
 //view RiskScoreDistribution as
   //select
