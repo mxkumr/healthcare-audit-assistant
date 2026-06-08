@@ -139,3 +139,125 @@ entity GeoReference {
   Locality                              : String;
   RuralInd                              : String;
 }
+// ─── Task 1 Views ────────────────────────────────────────────────────────────
+
+//view CostByStateProviderType as
+  //select
+    //p.Year,
+    //p.Rndrng_Prvdr_State_Abrvtn  as State             : String,
+    //p.Rndrng_Prvdr_Type          as ProviderType       : String,
+    //count(p.Rndrng_NPI)          as ProviderCount      : Integer,
+    //sum(p.Tot_Sbmtd_Chrg)        as TotalSubmitted     : Decimal,
+    //sum(p.Tot_Mdcr_Alowd_Amt)    as TotalAllowed       : Decimal,
+    //sum(p.Tot_Mdcr_Pymt_Amt)     as TotalPaid          : Decimal,
+    //sum(p.Tot_Benes)             as TotalBeneficiaries : Integer,
+    //avg(p.Bene_Avg_Risk_Scre)    as AvgRiskScore       : Decimal
+  //from ProviderSummary as p
+  //group by p.Year, p.Rndrng_Prvdr_State_Abrvtn, p.Rndrng_Prvdr_Type;
+
+view CostByStateProviderType as
+  select from ProviderSummary as p {
+    key p.Year,
+    key p.Rndrng_Prvdr_State_Abrvtn as State        : String,
+    key p.Rndrng_Prvdr_Type         as ProviderType  : String,
+
+    count(p.Rndrng_NPI)          as ProviderCount      : Integer,
+    sum(p.Tot_Sbmtd_Chrg)        as TotalSubmitted     : Decimal,
+    sum(p.Tot_Mdcr_Alowd_Amt)    as TotalAllowed       : Decimal,
+    sum(p.Tot_Mdcr_Pymt_Amt)     as TotalPaid          : Decimal,
+    sum(p.Tot_Benes)             as TotalBeneficiaries : Integer,
+    avg(p.Bene_Avg_Risk_Scre)    as AvgRiskScore       : Decimal
+  }
+  group by
+    p.Year,
+    p.Rndrng_Prvdr_State_Abrvtn,
+    p.Rndrng_Prvdr_Type;
+
+//view RuralUrbanDistribution as
+  //select
+    //p.Year,
+    //p.Rndrng_Prvdr_State_Abrvtn  as State             : String,
+    //g.RuralInd,
+    //g.Locality,
+    //count(p.Rndrng_NPI)          as ProviderCount      : Integer,
+    //sum(p.Tot_Sbmtd_Chrg)        as TotalSubmitted     : Decimal,
+    //sum(p.Tot_Mdcr_Alowd_Amt)    as TotalAllowed       : Decimal,
+    //sum(p.Tot_Mdcr_Pymt_Amt)     as TotalPaid          : Decimal,
+    //sum(p.Tot_Benes)             as TotalBeneficiaries : Integer,
+    //avg(p.Bene_Avg_Risk_Scre)    as AvgRiskScore       : Decimal
+  //from ProviderSummary as p
+  //left join GeoReference as g
+    //on  g.ZipCode = p.Rndrng_Prvdr_Zip5
+    //and g.Year    = p.Year
+  //group by p.Year, p.Rndrng_Prvdr_State_Abrvtn, g.RuralInd, g.Locality;
+
+view RuralUrbanDistribution as
+  select from ProviderSummary as p
+  left join GeoReference as g
+    on  g.ZipCode = p.Rndrng_Prvdr_Zip5
+    and g.Year    = p.Year {
+
+    key p.Year,
+    key p.Rndrng_Prvdr_State_Abrvtn as State     : String,
+    key g.RuralInd                               : String,
+    key g.Locality                               : String,
+
+    count(p.Rndrng_NPI)          as ProviderCount      : Integer,
+    sum(p.Tot_Sbmtd_Chrg)        as TotalSubmitted     : Decimal,
+    sum(p.Tot_Mdcr_Alowd_Amt)    as TotalAllowed       : Decimal,
+    sum(p.Tot_Mdcr_Pymt_Amt)     as TotalPaid          : Decimal,
+    sum(p.Tot_Benes)             as TotalBeneficiaries : Integer,
+    avg(p.Bene_Avg_Risk_Scre)    as AvgRiskScore       : Decimal
+  }
+  group by
+    p.Year,
+    p.Rndrng_Prvdr_State_Abrvtn,
+    g.RuralInd,
+    g.Locality;
+
+//view RiskScoreDistribution as
+  //select
+    //p.Year,
+    //p.Rndrng_NPI                      as NPI                : String,
+    //p.Rndrng_Prvdr_Last_Org_Name      as ProviderName       : String,
+    //p.Rndrng_Prvdr_Type               as ProviderType       : String,
+    //p.Rndrng_Prvdr_State_Abrvtn       as State              : String,
+    //p.Rndrng_Prvdr_City               as City               : String,
+    //p.Bene_Avg_Risk_Scre              as AvgRiskScore        : Decimal,
+    //p.Tot_Benes                       as TotalBeneficiaries  : Integer,
+    //p.Bene_CC_PH_Hypertension_V2_Pct  as HypertensionPct     : Decimal,
+    //p.Bene_CC_PH_Diabetes_V2_Pct      as DiabetesPct         : Decimal,
+    //p.Bene_CC_PH_CKD_V2_Pct          as CKDPct              : Decimal,
+    //p.Bene_CC_PH_HF_NonIHD_V2_Pct    as HeartFailurePct     : Decimal,
+    //p.Tot_Mdcr_Pymt_Amt               as TotalPaid           : Decimal,
+    //g.RuralInd
+  //from ProviderSummary as p
+  //left join GeoReference as g
+    //on  g.ZipCode = p.Rndrng_Prvdr_Zip5
+    //and g.Year    = p.Year;
+
+view RiskScoreDistribution as
+  select from ProviderSummary as p
+  left join GeoReference as g
+    on  g.ZipCode = p.Rndrng_Prvdr_Zip5
+    and g.Year    = p.Year {
+
+    key p.Year,
+    key p.Rndrng_NPI as NPI,
+
+    p.Rndrng_Prvdr_Last_Org_Name as ProviderName,
+    p.Rndrng_Prvdr_Type as ProviderType,
+    p.Rndrng_Prvdr_State_Abrvtn as State,
+    p.Rndrng_Prvdr_City as City,
+
+    p.Bene_Avg_Risk_Scre as AvgRiskScore,
+    p.Tot_Benes as TotalBeneficiaries,
+
+    p.Bene_CC_PH_Hypertension_V2_Pct as HypertensionPct,
+    p.Bene_CC_PH_Diabetes_V2_Pct as DiabetesPct,
+    p.Bene_CC_PH_CKD_V2_Pct as CKDPct,
+    p.Bene_CC_PH_HF_NonIHD_V2_Pct as HeartFailurePct,
+
+    p.Tot_Mdcr_Pymt_Amt as TotalPaid,
+    g.RuralInd
+  };
