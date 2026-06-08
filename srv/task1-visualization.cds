@@ -4,26 +4,35 @@ using { MedicareService } from './medicare-service';
 /**
  * Task 1 - Data Visualization (Aggregation)
  *
- * Aggregated, exploratory analytical views over the Medicare data so that
- * auditors can compare cost measures across states and provider types,
- * inspect rural-vs-urban disparities (via GeoReference) and study the
- * distribution of beneficiary risk scores (patient complexity).
+ * Two flavours are provided:
  *
- * All measures are pre-aggregated here so the Fiori Elements dashboard and
- * the AI agent can consume ready-to-chart numbers without re-computing.
+ *  A) ProviderAnalytics - a FLAT (row-level) analytical entity annotated for
+ *     OData aggregation (@Aggregation.ApplySupported). This is the entity to
+ *     pick in the Fiori "Analytical List Page" wizard: Fiori itself performs
+ *     the grouping/aggregation via $apply, so users can freely slice cost
+ *     measures by State, Provider Type, rural/urban Area and risk band.
+ *
+ *  B) Pre-aggregated convenience views (CostByState, CostByProviderType,
+ *     CostByArea, RiskDistribution) - ready-made GROUP BY results that are
+ *     handy for simple List-Report charts and for the Task 4 AI agent tools.
  */
 
-// ---------------------------------------------------------------------------
-// Helper (enriched, row-level) views - not exposed directly
-// ---------------------------------------------------------------------------
+// ===========================================================================
+//  Helper (enriched, row-level) views
+// ===========================================================================
 
-// Each provider tagged with its geographic area type (rural / urban) by
-// joining the provider ZIP + Year to the GeoReference locality table.
-define view T1ProviderGeo as
+// One row per provider/year, enriched with area type (rural/urban) and a
+// beneficiary risk-score band. Used by both the analytical entity and the
+// pre-aggregated convenience views below.
+define view T1ProviderEnriched as
   select from medicare.ProviderSummary {
     Year,
     Rndrng_NPI                              as NPI,
+    Rndrng_Prvdr_Last_Org_Name              as ProviderName,
+    Rndrng_Prvdr_Type                       as ProviderType,
+    Rndrng_Prvdr_Crdntls                    as Credentials,
     Rndrng_Prvdr_State_Abrvtn               as State,
+    Rndrng_Prvdr_City                       as City,
     Rndrng_Prvdr_Zip5                       as ZipCode,
     geo.RuralInd                            as RuralInd,
     case
@@ -31,6 +40,13 @@ define view T1ProviderGeo as
       when geo.RuralInd = 'B' then 'Super Rural'
       else 'Urban'
     end                                     as AreaType : String,
+    case
+      when Bene_Avg_Risk_Scre is null     then '5. Unknown'
+      when Bene_Avg_Risk_Scre <  1.0      then '1. Low (<1.0)'
+      when Bene_Avg_Risk_Scre <  1.5      then '2. Moderate (1.0-1.5)'
+      when Bene_Avg_Risk_Scre <  2.0      then '3. High (1.5-2.0)'
+      else                                     '4. Very High (2.0+)'
+    end                                     as RiskBand : String,
     Tot_Sbmtd_Chrg                          as SubmittedCharges,
     Tot_Mdcr_Alowd_Amt                      as AllowedAmount,
     Tot_Mdcr_Pymt_Amt                       as PaidAmount,
@@ -39,72 +55,57 @@ define view T1ProviderGeo as
     Bene_Avg_Risk_Scre                      as RiskScore
   };
 
-// Each provider tagged with a beneficiary risk-score band (patient complexity).
-define view T1ProviderRisk as
-  select from medicare.ProviderSummary {
-    Year,
-    Rndrng_NPI                              as NPI,
-    Rndrng_Prvdr_State_Abrvtn               as State,
-    Bene_Avg_Risk_Scre                      as RiskScore,
-    case
-      when Bene_Avg_Risk_Scre is null     then '5. Unknown'
-      when Bene_Avg_Risk_Scre <  1.0      then '1. Low (<1.0)'
-      when Bene_Avg_Risk_Scre <  1.5      then '2. Moderate (1.0-1.5)'
-      when Bene_Avg_Risk_Scre <  2.0      then '3. High (1.5-2.0)'
-      else                                     '4. Very High (2.0+)'
-    end                                     as RiskBand : String,
-    Tot_Mdcr_Pymt_Amt                       as PaidAmount
-  };
-
-// ---------------------------------------------------------------------------
-// Public analytical entities, exposed on the OData service
-// ---------------------------------------------------------------------------
+// ===========================================================================
+//  Public entities exposed on the OData service
+// ===========================================================================
 extend service MedicareService with {
 
-  // 1) Cost & utilization measures aggregated by State + Year.
-  //    Drives state comparison charts and the geographic (choropleth) map.
+  // (A) FLAT analytical entity -> select THIS one in the ALP wizard.
+  @readonly
+  entity ProviderAnalytics as projection on T1ProviderEnriched;
+
+  // (B) Pre-aggregated convenience views ------------------------------------
+
   @readonly
   entity CostByState as
-    select from medicare.ProviderSummary {
+    select from T1ProviderEnriched {
       key Year,
-      key Rndrng_Prvdr_State_Abrvtn         as State,
+      key State,
       count(*)                              as ProviderCount       : Integer,
-      sum(Tot_Sbmtd_Chrg)                   as SubmittedCharges    : Decimal,
-      sum(Tot_Mdcr_Alowd_Amt)               as AllowedAmount       : Decimal,
-      sum(Tot_Mdcr_Pymt_Amt)                as PaidAmount          : Decimal,
-      sum(Tot_Benes)                        as Beneficiaries       : Integer,
-      sum(Tot_Srvcs)                        as Services            : Decimal,
-      avg(Bene_Avg_Risk_Scre)               as AvgRiskScore        : Decimal,
-      case when sum(Tot_Sbmtd_Chrg) > 0
-           then sum(Tot_Mdcr_Pymt_Amt) / sum(Tot_Sbmtd_Chrg)
+      sum(SubmittedCharges)                 as SubmittedCharges    : Decimal,
+      sum(AllowedAmount)                    as AllowedAmount       : Decimal,
+      sum(PaidAmount)                       as PaidAmount          : Decimal,
+      sum(Beneficiaries)                    as Beneficiaries       : Integer,
+      sum(Services)                         as Services            : Decimal,
+      avg(RiskScore)                        as AvgRiskScore        : Decimal,
+      case when sum(SubmittedCharges) > 0
+           then sum(PaidAmount) / sum(SubmittedCharges)
            else 0 end                       as PaymentToChargeRatio : Decimal
     }
-    where Rndrng_Prvdr_State_Abrvtn is not null
-    group by Year, Rndrng_Prvdr_State_Abrvtn;
+    where State is not null
+    group by Year, State;
 
-  // 2) Cost & utilization measures aggregated by Provider Type + Year.
   @readonly
   entity CostByProviderType as
-    select from medicare.ProviderSummary {
+    select from T1ProviderEnriched {
       key Year,
-      key Rndrng_Prvdr_Type                 as ProviderType        : String,
+      key ProviderType,
       count(*)                              as ProviderCount       : Integer,
-      sum(Tot_Sbmtd_Chrg)                   as SubmittedCharges    : Decimal,
-      sum(Tot_Mdcr_Alowd_Amt)               as AllowedAmount       : Decimal,
-      sum(Tot_Mdcr_Pymt_Amt)                as PaidAmount          : Decimal,
-      sum(Tot_Benes)                        as Beneficiaries       : Integer,
-      avg(Bene_Avg_Risk_Scre)               as AvgRiskScore        : Decimal,
-      case when sum(Tot_Sbmtd_Chrg) > 0
-           then sum(Tot_Mdcr_Pymt_Amt) / sum(Tot_Sbmtd_Chrg)
+      sum(SubmittedCharges)                 as SubmittedCharges    : Decimal,
+      sum(AllowedAmount)                    as AllowedAmount       : Decimal,
+      sum(PaidAmount)                       as PaidAmount          : Decimal,
+      sum(Beneficiaries)                    as Beneficiaries       : Integer,
+      avg(RiskScore)                        as AvgRiskScore        : Decimal,
+      case when sum(SubmittedCharges) > 0
+           then sum(PaidAmount) / sum(SubmittedCharges)
            else 0 end                       as PaymentToChargeRatio : Decimal
     }
-    where Rndrng_Prvdr_Type is not null
-    group by Year, Rndrng_Prvdr_Type;
+    where ProviderType is not null
+    group by Year, ProviderType;
 
-  // 3) Rural vs. urban distribution of cost & complexity (regional disparity).
   @readonly
   entity CostByArea as
-    select from T1ProviderGeo {
+    select from T1ProviderEnriched {
       key Year,
       key AreaType,
       count(*)                              as ProviderCount       : Integer,
@@ -116,10 +117,9 @@ extend service MedicareService with {
     }
     group by Year, AreaType;
 
-  // 4) Distribution of providers across beneficiary risk-score bands.
   @readonly
   entity RiskDistribution as
-    select from T1ProviderRisk {
+    select from T1ProviderEnriched {
       key Year,
       key RiskBand,
       count(*)                              as ProviderCount       : Integer,
@@ -127,8 +127,131 @@ extend service MedicareService with {
       sum(PaidAmount)                       as PaidAmount          : Decimal
     }
     group by Year, RiskBand;
-
-  // 5) Row-level geo detail (provider + area type) for ZIP/point map drill-down.
-  @readonly
-  entity ProviderGeoDetail as projection on T1ProviderGeo;
 }
+
+// ===========================================================================
+//  Analytical annotations for ProviderAnalytics (enable Fiori ALP)
+// ===========================================================================
+annotate MedicareService.ProviderAnalytics with @(
+  Aggregation.ApplySupported : {
+    Transformations        : [
+      'aggregate', 'topcount', 'bottomcount', 'identity',
+      'concat', 'groupby', 'filter', 'search'
+    ],
+    Rollup                 : #None,
+    PropertyRestrictions   : true,
+    GroupableProperties    : [
+      Year, State, ProviderType, Credentials, AreaType, RiskBand, City, ZipCode, NPI, ProviderName
+    ],
+    AggregatableProperties : [
+      { Property: SubmittedCharges },
+      { Property: AllowedAmount },
+      { Property: PaidAmount },
+      { Property: Beneficiaries },
+      { Property: Services },
+      { Property: RiskScore }
+    ]
+  },
+  Analytics.AggregatedProperty #totalSubmitted : {
+    Name                 : 'totalSubmitted',
+    AggregationMethod    : 'sum',
+    AggregatableProperty : SubmittedCharges,
+    ![@Common.Label]     : 'Total Submitted Charges'
+  },
+  Analytics.AggregatedProperty #totalAllowed : {
+    Name                 : 'totalAllowed',
+    AggregationMethod    : 'sum',
+    AggregatableProperty : AllowedAmount,
+    ![@Common.Label]     : 'Total Allowed Amount'
+  },
+  Analytics.AggregatedProperty #totalPaid : {
+    Name                 : 'totalPaid',
+    AggregationMethod    : 'sum',
+    AggregatableProperty : PaidAmount,
+    ![@Common.Label]     : 'Total Paid Amount'
+  },
+  Analytics.AggregatedProperty #totalBenes : {
+    Name                 : 'totalBenes',
+    AggregationMethod    : 'sum',
+    AggregatableProperty : Beneficiaries,
+    ![@Common.Label]     : 'Total Beneficiaries'
+  },
+  Analytics.AggregatedProperty #avgRisk : {
+    Name                 : 'avgRisk',
+    AggregationMethod    : 'average',
+    AggregatableProperty : RiskScore,
+    ![@Common.Label]     : 'Average Risk Score'
+  }
+);
+
+annotate MedicareService.ProviderAnalytics with {
+  SubmittedCharges @Analytics.Measure @Aggregation.default : #SUM;
+  AllowedAmount    @Analytics.Measure @Aggregation.default : #SUM;
+  PaidAmount       @Analytics.Measure @Aggregation.default : #SUM;
+  Beneficiaries    @Analytics.Measure @Aggregation.default : #SUM;
+  Services         @Analytics.Measure @Aggregation.default : #SUM;
+  RiskScore        @Analytics.Measure @Aggregation.default : #AVG;
+  Year             @Analytics.Dimension;
+  State            @Analytics.Dimension;
+  ProviderType     @Analytics.Dimension;
+  Credentials      @Analytics.Dimension;
+  AreaType         @Analytics.Dimension;
+  RiskBand         @Analytics.Dimension;
+};
+
+// ---------------------------------------------------------------------------
+//  Default UI (chart + table + filters) so the generated ALP is not empty
+// ---------------------------------------------------------------------------
+annotate MedicareService.ProviderAnalytics with @(
+  UI.SelectionFields : [ Year, State, ProviderType, AreaType, RiskBand ],
+  UI.Chart           : {
+    $Type           : 'UI.ChartDefinitionType',
+    Title           : 'Medicare Cost Analysis',
+    ChartType       : #Column,
+    Dimensions      : [ State ],
+    DynamicMeasures : [ '@Analytics.AggregatedProperty#totalPaid' ],
+    MeasureAttributes : [{
+      $Type          : 'UI.ChartMeasureAttributeType',
+      DynamicMeasure : '@Analytics.AggregatedProperty#totalPaid',
+      Role           : #Axis1
+    }],
+    DimensionAttributes : [{
+      $Type     : 'UI.ChartDimensionAttributeType',
+      Dimension : State,
+      Role      : #Category
+    }]
+  },
+  UI.PresentationVariant : {
+    Visualizations : [ '@UI.Chart', '@UI.LineItem' ],
+    SortOrder      : [{ Property: PaidAmount, Descending: true }]
+  },
+  UI.LineItem : [
+    { Value: Year },
+    { Value: State },
+    { Value: ProviderType },
+    { Value: AreaType },
+    { Value: RiskBand },
+    { Value: PaidAmount },
+    { Value: SubmittedCharges },
+    { Value: AllowedAmount },
+    { Value: Beneficiaries }
+  ]
+);
+
+annotate MedicareService.ProviderAnalytics with {
+  Year             @title: 'Year';
+  State            @title: 'State';
+  ProviderType     @title: 'Provider Type';
+  Credentials      @title: 'Credentials';
+  AreaType         @title: 'Area (Rural/Urban)';
+  RiskBand         @title: 'Risk Band';
+  City             @title: 'City';
+  ZipCode          @title: 'ZIP Code';
+  ProviderName     @title: 'Provider Name';
+  SubmittedCharges @title: 'Submitted Charges';
+  AllowedAmount    @title: 'Allowed Amount';
+  PaidAmount       @title: 'Paid Amount';
+  Beneficiaries    @title: 'Beneficiaries';
+  Services         @title: 'Services';
+  RiskScore        @title: 'Avg Risk Score';
+};
