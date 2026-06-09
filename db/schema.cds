@@ -196,6 +196,10 @@ view RuralUrbanDistribution as
     sum(p.Tot_Mdcr_Alowd_Amt)    as TotalAllowed       : Decimal,
     sum(p.Tot_Mdcr_Pymt_Amt)     as TotalPaid          : Decimal,
     sum(p.Tot_Benes)             as TotalBeneficiaries : Integer,
+    // Normalized cost measure: ratio of the sums (NOT an average of ratios),
+    // so it stays correct at this view grain (Year + State + Rural/Urban).
+    cast(sum(p.Tot_Mdcr_Pymt_Amt) as Decimal) / nullif(sum(p.Tot_Benes), 0)
+                                 as PaidPerBene        : Decimal,
     avg(p.Bene_Avg_Risk_Scre)    as AvgRiskScore       : Decimal
   }
   group by

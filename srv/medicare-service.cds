@@ -76,6 +76,7 @@ annotate MedicareService.RuralUrbanDistribution with @(
       {Property: TotalAllowed},
       {Property: TotalPaid},
       {Property: TotalBeneficiaries},
+      {Property: PaidPerBene},
       {Property: AvgRiskScore}
     ]
   }
@@ -87,6 +88,7 @@ annotate MedicareService.RuralUrbanDistribution with @(
   Aggregation.CustomAggregate #TotalAllowed       : 'Edm.Decimal',
   Aggregation.CustomAggregate #TotalPaid          : 'Edm.Decimal',
   Aggregation.CustomAggregate #TotalBeneficiaries : 'Edm.Int32',
+  Aggregation.CustomAggregate #PaidPerBene        : 'Edm.Decimal',
   Aggregation.CustomAggregate #AvgRiskScore       : 'Edm.Decimal'
 ) {
   Year               @Analytics.Dimension: true;
@@ -97,6 +99,9 @@ annotate MedicareService.RuralUrbanDistribution with @(
   TotalAllowed       @Analytics.Measure: true  @Aggregation.default: #SUM;
   TotalPaid          @Analytics.Measure: true  @Aggregation.default: #SUM;
   TotalBeneficiaries @Analytics.Measure: true  @Aggregation.default: #SUM;
+  // AVG rollup is an approximation across states; exact figure is shown at row
+  // grain. For an exact per-bucket value, see RuralUrbanSummary (ratio of sums).
+  PaidPerBene        @Analytics.Measure: true  @Aggregation.default: #AVG;
   AvgRiskScore       @Analytics.Measure: true  @Aggregation.default: #AVG;
 };
 
