@@ -81,3 +81,43 @@ annotate service.RiskScoreDistribution with @(
     { Value: RuralInd,           Label: 'Rural/Urban' }
   ]
 );
+annotate service.ProviderCostEfficiency with @(
+
+  UI.SelectionFields: [Year, State, ProviderType, RiskCategory, EfficiencyCategory],
+
+  UI.LineItem: [
+    { Value: Year,                 Label: 'Year' },
+    { Value: ProviderName,         Label: 'Provider Name' },
+    { Value: ProviderType,         Label: 'Specialty' },
+    { Value: State,                Label: 'State' },
+    { Value: City,                 Label: 'City' },
+    { Value: TotalBeneficiaries,   Label: 'Beneficiaries' },
+    { Value: CostPerBeneficiary,   Label: 'Cost Per Beneficiary ($)' },
+    { Value: TotalPaid,            Label: 'Total Paid ($)' },
+    { Value: EfficiencyCategory,   Label: 'Efficiency' },
+    { Value: RiskCategory,         Label: 'Risk Profile' },
+    { Value: UtilizationCategory,  Label: 'Utilization' },
+    { Value: AvgRiskScore,         Label: 'Avg Risk Score' },
+    { Value: DiabetesPct,          Label: 'Diabetes %' },
+    { Value: HypertensionPct,      Label: 'Hypertension %' }
+  ],
+
+  UI.Chart: {
+    Title    : 'Cost Efficiency by Provider Type',
+    ChartType: #Bar,
+    Dimensions: [
+      { $Type: 'UI.ChartDimensionAttributeType', Dimension: EfficiencyCategory }
+    ],
+    Measures: [
+      { $Type: 'UI.ChartMeasureAttributeType', Measure: CostPerBeneficiary }
+    ]
+  },
+
+  UI.PresentationVariant: {
+    SortOrder: [{
+      Property: CostPerBeneficiary,
+      Descending: true
+    }],
+    Visualizations: ['@UI.LineItem', '@UI.Chart']
+  }
+);

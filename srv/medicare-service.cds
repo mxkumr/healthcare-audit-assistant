@@ -17,6 +17,10 @@ service MedicareService @(path:'/medicare') {
   @readonly
   @cds.redirection.target: false
   entity RiskScoreDistribution    as projection on medicare.RiskScoreDistribution;
+
+  @readonly
+  @cds.redirection.target: false
+  entity ProviderCostEfficiency as projection on medicare.ProviderCostEfficiency;
 }
 
 // ── Aggregation annotations for Analytical List Page ──────────────────────────
