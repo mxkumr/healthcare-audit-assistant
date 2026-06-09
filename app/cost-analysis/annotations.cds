@@ -221,49 +221,75 @@ annotate service.CostByStateProviderType with {
 }
 annotate service.RuralUrbanDistribution with @(
 
-  UI.SelectionFields: [Year, State, RuralInd],
+  UI.SelectionFields: [Year, State, RuralUrban],
 
   UI.LineItem: [
     { Value: Year,               Label: 'Year' },
     { Value: State,              Label: 'State' },
-    { Value: RuralInd,           Label: 'Rural/Urban' },
-    { Value: Locality,           Label: 'Locality' },
+    { Value: RuralUrban,         Label: 'Rural/Urban' },
     { Value: ProviderCount,      Label: 'Provider Count' },
+    { Value: TotalSubmitted,     Label: 'Total Submitted ($)' },
+    { Value: TotalAllowed,       Label: 'Total Allowed ($)' },
     { Value: TotalPaid,          Label: 'Total Paid ($)' },
     { Value: TotalBeneficiaries, Label: 'Total Beneficiaries' },
     { Value: AvgRiskScore,       Label: 'Avg Risk Score' }
   ],
 
   UI.Chart: {
-    Title    : 'Total Paid by Rural/Urban',
-    ChartType: #Bar,
-    Dimensions: [
-      { $Type: 'UI.ChartDimensionAttributeType', Dimension: RuralInd }
+    $Type     : 'UI.ChartDefinitionType',
+    Title     : 'Total Paid by Rural/Urban',
+    ChartType : #Bar,
+    Dimensions: [RuralUrban],
+    DimensionAttributes: [
+      { $Type: 'UI.ChartDimensionAttributeType', Dimension: RuralUrban, Role: #Category }
     ],
-    Measures: [
-      { $Type: 'UI.ChartMeasureAttributeType', Measure: TotalPaid }
+    Measures  : [TotalPaid],
+    MeasureAttributes: [
+      { $Type: 'UI.ChartMeasureAttributeType', Measure: TotalPaid, Role: #Axis1 }
     ]
+  },
+
+  UI.PresentationVariant: {
+    GroupBy       : [State, RuralUrban],
+    Total         : [TotalPaid, TotalBeneficiaries, ProviderCount],
+    Visualizations: ['@UI.LineItem', '@UI.Chart']
   }
 );
 
 annotate service.RiskScoreDistribution with @(
 
-  UI.SelectionFields: [Year, State, ProviderType],
+  UI.SelectionFields: [Year, State, ProviderType, RiskBand],
 
   UI.LineItem: [
     { Value: Year,               Label: 'Year' },
-    { Value: NPI,                Label: 'NPI' },
-    { Value: ProviderName,       Label: 'Provider Name' },
-    { Value: ProviderType,       Label: 'Provider Type' },
     { Value: State,              Label: 'State' },
-    { Value: City,               Label: 'City' },
-    { Value: AvgRiskScore,       Label: 'Avg Risk Score' },
+    { Value: ProviderType,       Label: 'Provider Type' },
+    { Value: RiskBand,           Label: 'Risk Band' },
+    { Value: ProviderCount,      Label: 'Provider Count' },
     { Value: TotalBeneficiaries, Label: 'Total Beneficiaries' },
-    { Value: HypertensionPct,    Label: 'Hypertension %' },
-    { Value: DiabetesPct,        Label: 'Diabetes %' },
-    { Value: CKDPct,             Label: 'CKD %' },
-    { Value: HeartFailurePct,    Label: 'Heart Failure %' },
-    { Value: TotalPaid,          Label: 'Total Paid ($)' },
-    { Value: RuralInd,           Label: 'Rural/Urban' }
-  ]
+    { Value: AvgRiskScore,       Label: 'Avg Risk Score' },
+    { Value: AvgHypertensionPct, Label: 'Avg Hypertension %' },
+    { Value: AvgDiabetesPct,     Label: 'Avg Diabetes %' },
+    { Value: TotalPaid,          Label: 'Total Paid ($)' }
+  ],
+
+  UI.Chart: {
+    $Type     : 'UI.ChartDefinitionType',
+    Title     : 'Provider Distribution by Risk Band',
+    ChartType : #Column,
+    Dimensions: [RiskBand],
+    DimensionAttributes: [
+      { $Type: 'UI.ChartDimensionAttributeType', Dimension: RiskBand, Role: #Category }
+    ],
+    Measures  : [ProviderCount],
+    MeasureAttributes: [
+      { $Type: 'UI.ChartMeasureAttributeType', Measure: ProviderCount, Role: #Axis1 }
+    ]
+  },
+
+  UI.PresentationVariant: {
+    GroupBy       : [RiskBand, State],
+    Total         : [ProviderCount, TotalBeneficiaries, TotalPaid],
+    Visualizations: ['@UI.LineItem', '@UI.Chart']
+  }
 );
