@@ -110,11 +110,35 @@
                   }
                 }
               },
+              "keyPerformanceIndicators": {
+                "TotalPaidKPI": {
+                  "entitySet": "CostByStateProviderType",
+                  "qualifier": "TotalPaidKPI"
+                },
+                "TotalBeneficiariesKPI": {
+                  "entitySet": "CostByStateProviderType",
+                  "qualifier": "TotalBeneficiariesKPI"
+                }
+              },
               "controlConfiguration": {
                 "@com.sap.vocabularies.UI.v1.LineItem": {
                   "tableSettings": {
                     "type": "AnalyticalTable",
                     "selectionMode": "None"
+                  }
+                },
+                "@com.sap.vocabularies.UI.v1.SelectionFields": {
+                  "filterFields": {
+                    "State": {
+                      "visualFilter": {
+                        "valueList": "@com.sap.vocabularies.Common.v1.ValueList#VFState"
+                      }
+                    },
+                    "ProviderType": {
+                      "visualFilter": {
+                        "valueList": "@com.sap.vocabularies.Common.v1.ValueList#VFProviderType"
+                      }
+                    }
                   }
                 }
               },
