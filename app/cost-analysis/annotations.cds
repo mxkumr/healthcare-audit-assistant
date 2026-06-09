@@ -232,13 +232,15 @@ annotate service.RuralUrbanDistribution with @(
     { Value: TotalAllowed,       Label: 'Total Allowed ($)' },
     { Value: TotalPaid,          Label: 'Total Paid ($)' },
     { Value: TotalBeneficiaries, Label: 'Total Beneficiaries' },
+    { Value: PaidPerBene,        Label: 'Paid / Beneficiary ($)' },
     { Value: AvgRiskScore,       Label: 'Avg Risk Score' }
   ],
 
+  // Share/proportion story -> Donut on TotalPaid (summable -> correct on rollup).
   UI.Chart: {
     $Type     : 'UI.ChartDefinitionType',
-    Title     : 'Total Paid by Rural/Urban',
-    ChartType : #Bar,
+    Title     : 'Share of Total Paid by Rural/Urban',
+    ChartType : #Donut,
     Dimensions: [RuralUrban],
     DimensionAttributes: [
       { $Type: 'UI.ChartDimensionAttributeType', Dimension: RuralUrban, Role: #Category }
