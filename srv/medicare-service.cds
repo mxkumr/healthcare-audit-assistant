@@ -52,12 +52,17 @@ annotate MedicareService.CostByStateProviderType with @(
   Aggregation.CustomAggregate #TotalBeneficiaries : 'Edm.Int32',
   Aggregation.CustomAggregate #AvgRiskScore       : 'Edm.Decimal'
 ) {
-  ProviderCount      @Aggregation.default: #SUM;
-  TotalSubmitted     @Aggregation.default: #SUM;
-  TotalAllowed       @Aggregation.default: #SUM;
-  TotalPaid          @Aggregation.default: #SUM;
-  TotalBeneficiaries @Aggregation.default: #SUM;
-  AvgRiskScore       @Aggregation.default: #AVG;
+  // @Analytics.Dimension / .Measure are required by the OVP V4 chart data
+  // handler (sap.ovp.cards.v4.charts) to identify dimensions vs measures.
+  Year               @Analytics.Dimension: true;
+  State              @Analytics.Dimension: true;
+  ProviderType       @Analytics.Dimension: true;
+  ProviderCount      @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalSubmitted     @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalAllowed       @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalPaid          @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalBeneficiaries @Analytics.Measure: true  @Aggregation.default: #SUM;
+  AvgRiskScore       @Analytics.Measure: true  @Aggregation.default: #AVG;
 };
 
 // ── RuralUrbanDistribution (geographic disparities) ───────────────────────────
@@ -84,12 +89,15 @@ annotate MedicareService.RuralUrbanDistribution with @(
   Aggregation.CustomAggregate #TotalBeneficiaries : 'Edm.Int32',
   Aggregation.CustomAggregate #AvgRiskScore       : 'Edm.Decimal'
 ) {
-  ProviderCount      @Aggregation.default: #SUM;
-  TotalSubmitted     @Aggregation.default: #SUM;
-  TotalAllowed       @Aggregation.default: #SUM;
-  TotalPaid          @Aggregation.default: #SUM;
-  TotalBeneficiaries @Aggregation.default: #SUM;
-  AvgRiskScore       @Aggregation.default: #AVG;
+  Year               @Analytics.Dimension: true;
+  State              @Analytics.Dimension: true;
+  RuralUrban         @Analytics.Dimension: true;
+  ProviderCount      @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalSubmitted     @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalAllowed       @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalPaid          @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalBeneficiaries @Analytics.Measure: true  @Aggregation.default: #SUM;
+  AvgRiskScore       @Analytics.Measure: true  @Aggregation.default: #AVG;
 };
 
 // ── RiskScoreDistribution (patient complexity bands) ──────────────────────────
@@ -116,10 +124,14 @@ annotate MedicareService.RiskScoreDistribution with @(
   Aggregation.CustomAggregate #AvgHypertensionPct : 'Edm.Decimal',
   Aggregation.CustomAggregate #AvgDiabetesPct     : 'Edm.Decimal'
 ) {
-  ProviderCount      @Aggregation.default: #SUM;
-  TotalBeneficiaries @Aggregation.default: #SUM;
-  TotalPaid          @Aggregation.default: #SUM;
-  AvgRiskScore       @Aggregation.default: #AVG;
-  AvgHypertensionPct @Aggregation.default: #AVG;
-  AvgDiabetesPct     @Aggregation.default: #AVG;
+  Year               @Analytics.Dimension: true;
+  State              @Analytics.Dimension: true;
+  ProviderType       @Analytics.Dimension: true;
+  RiskBand           @Analytics.Dimension: true;
+  ProviderCount      @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalBeneficiaries @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalPaid          @Analytics.Measure: true  @Aggregation.default: #SUM;
+  AvgRiskScore       @Analytics.Measure: true  @Aggregation.default: #AVG;
+  AvgHypertensionPct @Analytics.Measure: true  @Aggregation.default: #AVG;
+  AvgDiabetesPct     @Analytics.Measure: true  @Aggregation.default: #AVG;
 };
