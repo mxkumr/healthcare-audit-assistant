@@ -261,3 +261,52 @@ view RiskScoreDistribution as
     p.Tot_Mdcr_Pymt_Amt as TotalPaid,
     g.RuralInd
   };
+// ─── Task 2 Views ────────────────────────────────────────────────────────────
+
+view ProviderCostEfficiency as
+  select from ProviderSummary as p {
+    key p.Year,
+    key p.Rndrng_NPI                          as NPI                : String,
+    p.Rndrng_Prvdr_Last_Org_Name              as ProviderName       : String,
+    p.Rndrng_Prvdr_First_Name                 as FirstName          : String,
+    p.Rndrng_Prvdr_Type                       as ProviderType       : String,
+    p.Rndrng_Prvdr_State_Abrvtn               as State              : String,
+    p.Rndrng_Prvdr_City                       as City               : String,
+    p.Tot_Benes                               as TotalBeneficiaries : Integer,
+    p.Tot_Mdcr_Pymt_Amt                       as TotalPaid          : Decimal,
+    p.Tot_Sbmtd_Chrg                          as TotalSubmitted     : Decimal,
+    p.Tot_Mdcr_Alowd_Amt                      as TotalAllowed       : Decimal,
+    p.Bene_Avg_Risk_Scre                      as AvgRiskScore       : Decimal,
+
+    // Cost per beneficiary
+    (p.Tot_Mdcr_Pymt_Amt / p.Tot_Benes)      as CostPerBeneficiary : Decimal,
+
+    // Risk classification based on Bene_Avg_Risk_Scre
+    case
+      when p.Bene_Avg_Risk_Scre < 1.0 then 'Low Risk'
+      when p.Bene_Avg_Risk_Scre < 1.5 then 'Moderate Risk'
+      when p.Bene_Avg_Risk_Scre < 2.0 then 'High Risk'
+      else 'Very High Risk'
+    end                                       as RiskCategory       : String,
+
+    // Efficiency classification based on cost per beneficiary
+    case
+      when (p.Tot_Mdcr_Pymt_Amt / p.Tot_Benes) < 500  then 'Highly Efficient'
+      when (p.Tot_Mdcr_Pymt_Amt / p.Tot_Benes) < 1000 then 'Efficient'
+      when (p.Tot_Mdcr_Pymt_Amt / p.Tot_Benes) < 2000 then 'Average'
+      when (p.Tot_Mdcr_Pymt_Amt / p.Tot_Benes) < 5000 then 'Inefficient'
+      else 'Outlier'
+    end                                       as EfficiencyCategory : String,
+
+    // Utilization behavior
+    case
+      when p.Tot_Srvcs / p.Tot_Benes < 5  then 'Low Utilization'
+      when p.Tot_Srvcs / p.Tot_Benes < 15 then 'Moderate Utilization'
+      else 'High Utilization'
+    end                                       as UtilizationCategory : String,
+
+    p.Bene_CC_PH_Diabetes_V2_Pct             as DiabetesPct        : Decimal,
+    p.Bene_CC_PH_Hypertension_V2_Pct         as HypertensionPct    : Decimal,
+    p.Bene_CC_PH_CKD_V2_Pct                  as CKDPct             : Decimal,
+    p.Bene_CC_PH_HF_NonIHD_V2_Pct            as HeartFailurePct    : Decimal
+  };
