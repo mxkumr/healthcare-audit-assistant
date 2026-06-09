@@ -59,3 +59,67 @@ annotate MedicareService.CostByStateProviderType with @(
   TotalBeneficiaries @Aggregation.default: #SUM;
   AvgRiskScore       @Aggregation.default: #AVG;
 };
+
+// ── RuralUrbanDistribution (geographic disparities) ───────────────────────────
+annotate MedicareService.RuralUrbanDistribution with @(
+  Aggregation.ApplySupported: {
+    Transformations        : ['aggregate', 'groupby', 'filter'],
+    GroupableProperties    : [Year, State, RuralUrban],
+    AggregatableProperties : [
+      {Property: ProviderCount},
+      {Property: TotalSubmitted},
+      {Property: TotalAllowed},
+      {Property: TotalPaid},
+      {Property: TotalBeneficiaries},
+      {Property: AvgRiskScore}
+    ]
+  }
+);
+
+annotate MedicareService.RuralUrbanDistribution with @(
+  Aggregation.CustomAggregate #ProviderCount      : 'Edm.Int32',
+  Aggregation.CustomAggregate #TotalSubmitted     : 'Edm.Decimal',
+  Aggregation.CustomAggregate #TotalAllowed       : 'Edm.Decimal',
+  Aggregation.CustomAggregate #TotalPaid          : 'Edm.Decimal',
+  Aggregation.CustomAggregate #TotalBeneficiaries : 'Edm.Int32',
+  Aggregation.CustomAggregate #AvgRiskScore       : 'Edm.Decimal'
+) {
+  ProviderCount      @Aggregation.default: #SUM;
+  TotalSubmitted     @Aggregation.default: #SUM;
+  TotalAllowed       @Aggregation.default: #SUM;
+  TotalPaid          @Aggregation.default: #SUM;
+  TotalBeneficiaries @Aggregation.default: #SUM;
+  AvgRiskScore       @Aggregation.default: #AVG;
+};
+
+// ── RiskScoreDistribution (patient complexity bands) ──────────────────────────
+annotate MedicareService.RiskScoreDistribution with @(
+  Aggregation.ApplySupported: {
+    Transformations        : ['aggregate', 'groupby', 'filter'],
+    GroupableProperties    : [Year, State, ProviderType, RiskBand],
+    AggregatableProperties : [
+      {Property: ProviderCount},
+      {Property: TotalBeneficiaries},
+      {Property: TotalPaid},
+      {Property: AvgRiskScore},
+      {Property: AvgHypertensionPct},
+      {Property: AvgDiabetesPct}
+    ]
+  }
+);
+
+annotate MedicareService.RiskScoreDistribution with @(
+  Aggregation.CustomAggregate #ProviderCount      : 'Edm.Int32',
+  Aggregation.CustomAggregate #TotalBeneficiaries : 'Edm.Int32',
+  Aggregation.CustomAggregate #TotalPaid          : 'Edm.Decimal',
+  Aggregation.CustomAggregate #AvgRiskScore       : 'Edm.Decimal',
+  Aggregation.CustomAggregate #AvgHypertensionPct : 'Edm.Decimal',
+  Aggregation.CustomAggregate #AvgDiabetesPct     : 'Edm.Decimal'
+) {
+  ProviderCount      @Aggregation.default: #SUM;
+  TotalBeneficiaries @Aggregation.default: #SUM;
+  TotalPaid          @Aggregation.default: #SUM;
+  AvgRiskScore       @Aggregation.default: #AVG;
+  AvgHypertensionPct @Aggregation.default: #AVG;
+  AvgDiabetesPct     @Aggregation.default: #AVG;
+};
