@@ -96,41 +96,41 @@
     "enableLiveFilter": true,
     "considerAnalyticalParameters": false,
     "cards": {
-      "cards": {
-        "card00_cost": {
-          "model": "mainModel",
-          "template": "sap.ovp.cards.charts.analytical",
-          "settings": {
-            "title": "Cost by State",
-            "subTitle": "Total Paid ($) per State",
-            "entitySet": "CostByStateProviderType",
-            "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart",
-            "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant"
-          }
-        },
-        "card01_rural": {
-          "model": "mainModel",
-          "template": "sap.ovp.cards.charts.analytical",
-          "settings": {
-            "title": "Rural vs Urban",
-            "subTitle": "Total Paid ($) by locality type",
-            "entitySet": "RuralUrbanDistribution",
-            "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart",
-            "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant"
-          }
-        },
-        "card02_risk": {
-          "model": "mainModel",
-          "template": "sap.ovp.cards.charts.analytical",
-          "settings": {
-            "title": "Risk Score Distribution",
-            "subTitle": "Provider count by risk band",
-            "entitySet": "RiskScoreDistribution",
-            "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart",
-            "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant"
-          }
-        },
-        "settings": {}
+      "card00_cost": {
+        "model": "mainModel",
+        "template": "sap.ovp.cards.v4.charts.analytical",
+        "settings": {
+          "title": "Cost by State",
+          "subTitle": "Total Paid ($) per State",
+          "entitySet": "CostByStateProviderType",
+          "addODataSelect": true,
+          "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart",
+          "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant"
+        }
+      },
+      "card01_rural": {
+        "model": "mainModel",
+        "template": "sap.ovp.cards.v4.charts.analytical",
+        "settings": {
+          "title": "Rural vs Urban",
+          "subTitle": "Total Paid ($) by locality type",
+          "entitySet": "RuralUrbanDistribution",
+          "addODataSelect": true,
+          "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart",
+          "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant"
+        }
+      },
+      "card02_risk": {
+        "model": "mainModel",
+        "template": "sap.ovp.cards.v4.charts.analytical",
+        "settings": {
+          "title": "Risk Score Distribution",
+          "subTitle": "Provider count by risk band",
+          "entitySet": "RiskScoreDistribution",
+          "addODataSelect": true,
+          "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart",
+          "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant"
+        }
       }
     },
     "globalFilterControlType": "MacroFilterBar"
