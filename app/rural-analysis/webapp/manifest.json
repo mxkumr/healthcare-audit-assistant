@@ -1,7 +1,7 @@
 {
   "_version": "1.85.0",
   "sap.app": {
-    "id": "com.medicare.costanalysis",
+    "id": "com.medicare.ruralanalysis",
     "type": "application",
     "i18n": "i18n/i18n.properties",
     "applicationVersion": {
@@ -13,7 +13,7 @@
     "sourceTemplate": {
       "id": "@sap/generator-fiori:alp",
       "version": "1.25.0",
-      "toolsId": "6ed8e069-6c10-42f6-80a5-7c2307529236"
+      "toolsId": "f2fa0d3f-fdf3-4c08-abad-afd74dc13d93"
     },
     "dataSources": {
       "mainService": {
@@ -60,7 +60,7 @@
       "i18n": {
         "type": "sap.ui.model.resource.ResourceModel",
         "settings": {
-          "bundleName": "com.medicare.costanalysis.i18n.i18n"
+          "bundleName": "com.medicare.ruralanalysis.i18n.i18n"
         }
       },
       "": {
@@ -85,39 +85,29 @@
       "routes": [
         {
           "pattern": ":?query:",
-          "name": "CostByStateProviderTypeList",
-          "target": "CostByStateProviderTypeList"
+          "name": "RuralUrbanDistributionList",
+          "target": "RuralUrbanDistributionList"
         },
         {
-          "pattern": "CostByStateProviderType({key}):?query:",
-          "name": "CostByStateProviderTypeObjectPage",
-          "target": "CostByStateProviderTypeObjectPage"
+          "pattern": "RuralUrbanDistribution({key}):?query:",
+          "name": "RuralUrbanDistributionObjectPage",
+          "target": "RuralUrbanDistributionObjectPage"
         }
       ],
       "targets": {
-        "CostByStateProviderTypeList": {
+        "RuralUrbanDistributionList": {
           "type": "Component",
-          "id": "CostByStateProviderTypeList",
+          "id": "RuralUrbanDistributionList",
           "name": "sap.fe.templates.ListReport",
           "options": {
             "settings": {
-              "contextPath": "/CostByStateProviderType",
+              "contextPath": "/RuralUrbanDistribution",
               "variantManagement": "Page",
               "navigation": {
-                "CostByStateProviderType": {
+                "RuralUrbanDistribution": {
                   "detail": {
-                    "route": "CostByStateProviderTypeObjectPage"
+                    "route": "RuralUrbanDistributionObjectPage"
                   }
-                }
-              },
-              "keyPerformanceIndicators": {
-                "TotalPaidKPI": {
-                  "entitySet": "CostByStateProviderType",
-                  "qualifier": "TotalPaidKPI"
-                },
-                "TotalBeneficiariesKPI": {
-                  "entitySet": "CostByStateProviderType",
-                  "qualifier": "TotalBeneficiariesKPI"
                 }
               },
               "controlConfiguration": {
@@ -125,20 +115,6 @@
                   "tableSettings": {
                     "type": "AnalyticalTable",
                     "selectionMode": "None"
-                  }
-                },
-                "@com.sap.vocabularies.UI.v1.SelectionFields": {
-                  "filterFields": {
-                    "State": {
-                      "visualFilter": {
-                        "valueList": "@com.sap.vocabularies.Common.v1.ValueList#VFState"
-                      }
-                    },
-                    "ProviderType": {
-                      "visualFilter": {
-                        "valueList": "@com.sap.vocabularies.Common.v1.ValueList#VFProviderType"
-                      }
-                    }
                   }
                 }
               },
@@ -162,14 +138,14 @@
             }
           }
         },
-        "CostByStateProviderTypeObjectPage": {
+        "RuralUrbanDistributionObjectPage": {
           "type": "Component",
-          "id": "CostByStateProviderTypeObjectPage",
+          "id": "RuralUrbanDistributionObjectPage",
           "name": "sap.fe.templates.ObjectPage",
           "options": {
             "settings": {
               "editableHeaderContent": false,
-              "contextPath": "/CostByStateProviderType"
+              "contextPath": "/RuralUrbanDistribution"
             }
           }
         }
