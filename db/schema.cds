@@ -305,3 +305,46 @@ view ProviderCostEfficiency as
     p.Bene_CC_PH_CKD_V2_Pct                  as CKDPct             : Decimal,
     p.Bene_CC_PH_HF_NonIHD_V2_Pct            as HeartFailurePct    : Decimal
   };
+
+// Specialty-level classification (Task 2): collapses ~50k individual providers
+// into one row per Year + ProviderType, profiling each SPECIALTY by patient
+// complexity (avg risk score), comorbidity burden and normalized cost. The
+// derived ComplexityTier answers "is Internal Medicine a high-complexity
+// specialty?" rather than judging a single provider.
+//
+// ComplexityTier thresholds reuse the same risk-score cut points as the
+// provider-level RiskCategory (1.0 / 1.5 / 2.0) so the specialty tier and the
+// provider tier are directly comparable across the Task 2 dashboards.
+//
+// AvgCostPerBene is a ratio of sums (total paid / total beneficiaries) so it
+// stays exact at the specialty grain instead of averaging per-provider ratios.
+view SpecialtyRiskProfile as
+  select from ProviderSummary as p {
+    key p.Year,
+    key p.Rndrng_Prvdr_Type                  as ProviderType        : String,
+
+    count(p.Rndrng_NPI)                      as ProviderCount       : Integer,
+    sum(p.Tot_Benes)                         as TotalBeneficiaries  : Integer,
+    sum(p.Tot_Mdcr_Pymt_Amt)                 as TotalPaid           : Decimal,
+
+    avg(p.Bene_Avg_Risk_Scre)                as AvgRiskScore        : Decimal,
+    cast(sum(p.Tot_Mdcr_Pymt_Amt) as Decimal) / nullif(sum(p.Tot_Benes), 0)
+                                             as AvgCostPerBene      : Decimal,
+
+    avg(p.Bene_CC_PH_Hypertension_V2_Pct)    as AvgHypertensionPct  : Decimal,
+    avg(p.Bene_CC_PH_Diabetes_V2_Pct)        as AvgDiabetesPct      : Decimal,
+    avg(p.Bene_CC_PH_CKD_V2_Pct)             as AvgCKDPct           : Decimal,
+    avg(p.Bene_CC_PH_HF_NonIHD_V2_Pct)       as AvgHeartFailurePct  : Decimal,
+
+    // Specialty patient-complexity tier, derived from the specialty's mean risk
+    // score (aligned with provider-level RiskCategory thresholds).
+    case
+      when avg(p.Bene_Avg_Risk_Scre) < 1.0 then 'Low Complexity'
+      when avg(p.Bene_Avg_Risk_Scre) < 1.5 then 'Moderate Complexity'
+      when avg(p.Bene_Avg_Risk_Scre) < 2.0 then 'High Complexity'
+      else                                      'Very High Complexity'
+    end                                      as ComplexityTier      : String
+  }
+  group by
+    p.Year,
+    p.Rndrng_Prvdr_Type;
