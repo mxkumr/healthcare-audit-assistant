@@ -339,3 +339,79 @@ annotate service.ProviderCostEfficiency with @(
     Visualizations: ['@UI.LineItem', '@UI.Chart']
   }
 );
+
+// ── Task 2: SpecialtyRiskProfile (specialty-level classification) ──────────────
+annotate service.SpecialtyRiskProfile with @(
+
+  UI.SelectionFields: [Year, ProviderType, ComplexityTier],
+
+  UI.HeaderInfo: {
+    $Type         : 'UI.HeaderInfoType',
+    TypeName      : 'Specialty Profile',
+    TypeNamePlural: 'Specialty Profiles',
+    Title         : { $Type: 'UI.DataField', Value: ProviderType },
+    Description   : { $Type: 'UI.DataField', Value: ComplexityTier }
+  },
+
+  UI.LineItem: [
+    { Value: Year,               Label: 'Year' },
+    { Value: ProviderType,       Label: 'Specialty' },
+    { Value: ComplexityTier,     Label: 'Complexity Tier' },
+    { Value: ProviderCount,      Label: 'Providers' },
+    { Value: TotalBeneficiaries, Label: 'Total Beneficiaries' },
+    { Value: AvgRiskScore,       Label: 'Avg Risk Score' },
+    { Value: AvgCostPerBene,     Label: 'Avg Cost / Beneficiary ($)' },
+    { Value: AvgHypertensionPct, Label: 'Avg Hypertension %' },
+    { Value: AvgDiabetesPct,     Label: 'Avg Diabetes %' },
+    { Value: AvgCKDPct,          Label: 'Avg CKD %' },
+    { Value: AvgHeartFailurePct, Label: 'Avg Heart Failure %' },
+    { Value: TotalPaid,          Label: 'Total Paid ($)' }
+  ],
+
+  UI.FieldGroup #SpecialtyDetails: {
+    $Type: 'UI.FieldGroupType',
+    Data : [
+      { $Type: 'UI.DataField', Value: Year,               Label: 'Year' },
+      { $Type: 'UI.DataField', Value: ProviderType,       Label: 'Specialty' },
+      { $Type: 'UI.DataField', Value: ComplexityTier,     Label: 'Complexity Tier' },
+      { $Type: 'UI.DataField', Value: ProviderCount,      Label: 'Providers' },
+      { $Type: 'UI.DataField', Value: TotalBeneficiaries, Label: 'Total Beneficiaries' },
+      { $Type: 'UI.DataField', Value: AvgRiskScore,       Label: 'Avg Risk Score' },
+      { $Type: 'UI.DataField', Value: AvgCostPerBene,     Label: 'Avg Cost / Beneficiary ($)' },
+      { $Type: 'UI.DataField', Value: AvgHypertensionPct, Label: 'Avg Hypertension %' },
+      { $Type: 'UI.DataField', Value: AvgDiabetesPct,     Label: 'Avg Diabetes %' },
+      { $Type: 'UI.DataField', Value: AvgCKDPct,          Label: 'Avg CKD %' },
+      { $Type: 'UI.DataField', Value: AvgHeartFailurePct, Label: 'Avg Heart Failure %' },
+      { $Type: 'UI.DataField', Value: TotalPaid,          Label: 'Total Paid ($)' }
+    ]
+  },
+
+  UI.Facets: [
+    {
+      $Type : 'UI.ReferenceFacet',
+      ID    : 'SpecialtyDetailsFacet',
+      Label : 'Specialty Details',
+      Target: '@UI.FieldGroup#SpecialtyDetails'
+    }
+  ],
+
+  // Patient complexity comparison across specialties.
+  UI.Chart: {
+    $Type     : 'UI.ChartDefinitionType',
+    Title     : 'Average Risk Score by Specialty',
+    ChartType : #Bar,
+    Dimensions: [ProviderType],
+    DimensionAttributes: [
+      { $Type: 'UI.ChartDimensionAttributeType', Dimension: ProviderType, Role: #Category }
+    ],
+    Measures  : [AvgRiskScore],
+    MeasureAttributes: [
+      { $Type: 'UI.ChartMeasureAttributeType', Measure: AvgRiskScore, Role: #Axis1 }
+    ]
+  },
+
+  UI.PresentationVariant: {
+    SortOrder     : [{ Property: AvgRiskScore, Descending: true }],
+    Visualizations: ['@UI.LineItem', '@UI.Chart']
+  }
+);

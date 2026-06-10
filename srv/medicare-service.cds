@@ -21,6 +21,10 @@ service MedicareService @(path:'/medicare') {
   @readonly
   @cds.redirection.target: false
   entity ProviderCostEfficiency as projection on medicare.ProviderCostEfficiency;
+
+  @readonly
+  @cds.redirection.target: false
+  entity SpecialtyRiskProfile as projection on medicare.SpecialtyRiskProfile;
 }
 
 // ── Aggregation (data-shaping) annotations for the analytical query ────────────
@@ -191,4 +195,53 @@ annotate MedicareService.ProviderCostEfficiency with @(
   // per-provider value is visible in the (non-aggregated) table rows.
   CostPerBeneficiary  @Analytics.Measure: true  @Aggregation.default: #AVG;
   AvgRiskScore        @Analytics.Measure: true  @Aggregation.default: #AVG;
+};
+
+// ── Task 2: SpecialtyRiskProfile (specialty-level classification) ──────────────
+// The view is already aggregated to one row per Year + ProviderType; the
+// aggregation metadata lets the ALP chart roll specialties up by their derived
+// ComplexityTier (e.g. "how many specialties are High Complexity?").
+annotate MedicareService.SpecialtyRiskProfile with @(
+  Aggregation.ApplySupported: {
+    Transformations        : ['aggregate', 'groupby', 'filter'],
+    GroupableProperties    : [Year, ProviderType, ComplexityTier],
+    AggregatableProperties : [
+      {Property: ProviderCount},
+      {Property: TotalBeneficiaries},
+      {Property: TotalPaid},
+      {Property: AvgRiskScore},
+      {Property: AvgCostPerBene},
+      {Property: AvgHypertensionPct},
+      {Property: AvgDiabetesPct},
+      {Property: AvgCKDPct},
+      {Property: AvgHeartFailurePct}
+    ]
+  }
+);
+
+annotate MedicareService.SpecialtyRiskProfile with @(
+  Aggregation.CustomAggregate #ProviderCount      : 'Edm.Int32',
+  Aggregation.CustomAggregate #TotalBeneficiaries : 'Edm.Int32',
+  Aggregation.CustomAggregate #TotalPaid          : 'Edm.Decimal',
+  Aggregation.CustomAggregate #AvgRiskScore       : 'Edm.Decimal',
+  Aggregation.CustomAggregate #AvgCostPerBene     : 'Edm.Decimal',
+  Aggregation.CustomAggregate #AvgHypertensionPct : 'Edm.Decimal',
+  Aggregation.CustomAggregate #AvgDiabetesPct     : 'Edm.Decimal',
+  Aggregation.CustomAggregate #AvgCKDPct          : 'Edm.Decimal',
+  Aggregation.CustomAggregate #AvgHeartFailurePct : 'Edm.Decimal'
+) {
+  Year               @Analytics.Dimension: true;
+  ProviderType       @Analytics.Dimension: true;
+  ComplexityTier     @Analytics.Dimension: true;
+  ProviderCount      @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalBeneficiaries @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalPaid          @Analytics.Measure: true  @Aggregation.default: #SUM;
+  // The Avg* measures are specialty-level means; SUM rollups across specialties
+  // are not meaningful, so AVG is the safe default for the chart aggregation.
+  AvgRiskScore       @Analytics.Measure: true  @Aggregation.default: #AVG;
+  AvgCostPerBene     @Analytics.Measure: true  @Aggregation.default: #AVG;
+  AvgHypertensionPct @Analytics.Measure: true  @Aggregation.default: #AVG;
+  AvgDiabetesPct     @Analytics.Measure: true  @Aggregation.default: #AVG;
+  AvgCKDPct          @Analytics.Measure: true  @Aggregation.default: #AVG;
+  AvgHeartFailurePct @Analytics.Measure: true  @Aggregation.default: #AVG;
 };
