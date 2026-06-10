@@ -24,7 +24,8 @@
     "watch-organization-classification": "cds watch --open com.medicare.organizationclassification/index.html?sap-ui-xx-viewCache=false --livereload false",
     "watch-task1-overview": "cds watch --open com.medicare.task1overview/index.html?sap-ui-xx-viewCache=false --livereload false",
     "watch-rural-analysis": "cds watch --open com.medicare.ruralanalysis/index.html?sap-ui-xx-viewCache=false --livereload false",
-    "watch-risk-analysis": "cds watch --open com.medicare.riskanalysis/index.html?sap-ui-xx-viewCache=false --livereload false"
+    "watch-risk-analysis": "cds watch --open com.medicare.riskanalysis/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-task2-overview": "cds watch --open com.medicare.task2overview/index.html?sap-ui-xx-viewCache=false --livereload false"
   },
   "private": true,
   "cds": {
@@ -44,6 +45,7 @@
     "app/organization-classification",
     "app/task1-overview",
     "app/rural-analysis",
-    "app/risk-analysis"
+    "app/risk-analysis",
+    "app/task2-overview"
   ]
 }
