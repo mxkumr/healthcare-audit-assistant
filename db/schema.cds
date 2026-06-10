@@ -173,24 +173,10 @@ view CostByStateProviderType as
     p.Rndrng_Prvdr_State_Abrvtn,
     p.Rndrng_Prvdr_Type;
 
-//view RuralUrbanDistribution as
-  //select
-    //p.Year,
-    //p.Rndrng_Prvdr_State_Abrvtn  as State             : String,
-    //g.RuralInd,
-    //g.Locality,
-    //count(p.Rndrng_NPI)          as ProviderCount      : Integer,
-    //sum(p.Tot_Sbmtd_Chrg)        as TotalSubmitted     : Decimal,
-    //sum(p.Tot_Mdcr_Alowd_Amt)    as TotalAllowed       : Decimal,
-    //sum(p.Tot_Mdcr_Pymt_Amt)     as TotalPaid          : Decimal,
-    //sum(p.Tot_Benes)             as TotalBeneficiaries : Integer,
-    //avg(p.Bene_Avg_Risk_Scre)    as AvgRiskScore       : Decimal
-  //from ProviderSummary as p
-  //left join GeoReference as g
-    //on  g.ZipCode = p.Rndrng_Prvdr_Zip5
-    //and g.Year    = p.Year
-  //group by p.Year, p.Rndrng_Prvdr_State_Abrvtn, g.RuralInd, g.Locality;
-
+// Simplified: dropped the fine-grained Locality dimension and collapsed the raw
+// RuralInd code (R / B / null) into a single readable Rural/Urban/Unknown bucket
+// so the rural-vs-urban story is clear and the ~50% unmatched joins are visible
+// as "Unknown" instead of skewing the chart.
 view RuralUrbanDistribution as
   select from ProviderSummary as p
   left join GeoReference as g
@@ -198,69 +184,70 @@ view RuralUrbanDistribution as
     and g.Year    = p.Year {
 
     key p.Year,
-    key p.Rndrng_Prvdr_State_Abrvtn as State     : String,
-    key g.RuralInd                               : String,
-    key g.Locality                               : String,
+    key p.Rndrng_Prvdr_State_Abrvtn as State : String,
+    key case
+          when g.RuralInd is null then 'Unknown'
+          when g.RuralInd  = 'R'  then 'Rural'
+          else                         'Urban'
+        end                         as RuralUrban : String,
 
     count(p.Rndrng_NPI)          as ProviderCount      : Integer,
     sum(p.Tot_Sbmtd_Chrg)        as TotalSubmitted     : Decimal,
     sum(p.Tot_Mdcr_Alowd_Amt)    as TotalAllowed       : Decimal,
     sum(p.Tot_Mdcr_Pymt_Amt)     as TotalPaid          : Decimal,
     sum(p.Tot_Benes)             as TotalBeneficiaries : Integer,
+    // Normalized cost measure: ratio of the sums (NOT an average of ratios),
+    // so it stays correct at this view grain (Year + State + Rural/Urban).
+    cast(sum(p.Tot_Mdcr_Pymt_Amt) as Decimal) / nullif(sum(p.Tot_Benes), 0)
+                                 as PaidPerBene        : Decimal,
     avg(p.Bene_Avg_Risk_Scre)    as AvgRiskScore       : Decimal
   }
   group by
     p.Year,
     p.Rndrng_Prvdr_State_Abrvtn,
-    g.RuralInd,
-    g.Locality;
+    case
+      when g.RuralInd is null then 'Unknown'
+      when g.RuralInd  = 'R'  then 'Rural'
+      else                         'Urban'
+    end;
 
-//view RiskScoreDistribution as
-  //select
-    //p.Year,
-    //p.Rndrng_NPI                      as NPI                : String,
-    //p.Rndrng_Prvdr_Last_Org_Name      as ProviderName       : String,
-    //p.Rndrng_Prvdr_Type               as ProviderType       : String,
-    //p.Rndrng_Prvdr_State_Abrvtn       as State              : String,
-    //p.Rndrng_Prvdr_City               as City               : String,
-    //p.Bene_Avg_Risk_Scre              as AvgRiskScore        : Decimal,
-    //p.Tot_Benes                       as TotalBeneficiaries  : Integer,
-    //p.Bene_CC_PH_Hypertension_V2_Pct  as HypertensionPct     : Decimal,
-    //p.Bene_CC_PH_Diabetes_V2_Pct      as DiabetesPct         : Decimal,
-    //p.Bene_CC_PH_CKD_V2_Pct          as CKDPct              : Decimal,
-    //p.Bene_CC_PH_HF_NonIHD_V2_Pct    as HeartFailurePct     : Decimal,
-    //p.Tot_Mdcr_Pymt_Amt               as TotalPaid           : Decimal,
-    //g.RuralInd
-  //from ProviderSummary as p
-  //left join GeoReference as g
-    //on  g.ZipCode = p.Rndrng_Prvdr_Zip5
-    //and g.Year    = p.Year;
-
+// Simplified: instead of 50k provider-level rows, providers are bucketed into
+// risk-score bands per Year/State/ProviderType. This turns the entity into a
+// true "distribution" (how many providers / beneficiaries fall in each band)
+// that is light-weight and directly chartable as a histogram.
 view RiskScoreDistribution as
-  select from ProviderSummary as p
-  left join GeoReference as g
-    on  g.ZipCode = p.Rndrng_Prvdr_Zip5
-    and g.Year    = p.Year {
+  select from ProviderSummary as p {
 
     key p.Year,
-    key p.Rndrng_NPI as NPI,
+    key p.Rndrng_Prvdr_State_Abrvtn as State        : String,
+    key p.Rndrng_Prvdr_Type         as ProviderType : String,
+    key case
+          when p.Bene_Avg_Risk_Scre <  0.5 then '1 - Very Low (<0.5)'
+          when p.Bene_Avg_Risk_Scre <  1.0 then '2 - Low (0.5-1.0)'
+          when p.Bene_Avg_Risk_Scre <  1.5 then '3 - Moderate (1.0-1.5)'
+          when p.Bene_Avg_Risk_Scre <  2.0 then '4 - High (1.5-2.0)'
+          else                                   '5 - Very High (>=2.0)'
+        end                         as RiskBand     : String,
 
-    p.Rndrng_Prvdr_Last_Org_Name as ProviderName,
-    p.Rndrng_Prvdr_Type as ProviderType,
-    p.Rndrng_Prvdr_State_Abrvtn as State,
-    p.Rndrng_Prvdr_City as City,
+    count(p.Rndrng_NPI)                    as ProviderCount      : Integer,
+    sum(p.Tot_Benes)                       as TotalBeneficiaries : Integer,
+    sum(p.Tot_Mdcr_Pymt_Amt)               as TotalPaid          : Decimal,
+    avg(p.Bene_Avg_Risk_Scre)              as AvgRiskScore       : Decimal,
+    avg(p.Bene_CC_PH_Hypertension_V2_Pct)  as AvgHypertensionPct : Decimal,
+    avg(p.Bene_CC_PH_Diabetes_V2_Pct)      as AvgDiabetesPct     : Decimal
+  }
+  group by
+    p.Year,
+    p.Rndrng_Prvdr_State_Abrvtn,
+    p.Rndrng_Prvdr_Type,
+    case
+      when p.Bene_Avg_Risk_Scre <  0.5 then '1 - Very Low (<0.5)'
+      when p.Bene_Avg_Risk_Scre <  1.0 then '2 - Low (0.5-1.0)'
+      when p.Bene_Avg_Risk_Scre <  1.5 then '3 - Moderate (1.0-1.5)'
+      when p.Bene_Avg_Risk_Scre <  2.0 then '4 - High (1.5-2.0)'
+      else                                   '5 - Very High (>=2.0)'
+    end;
 
-    p.Bene_Avg_Risk_Scre as AvgRiskScore,
-    p.Tot_Benes as TotalBeneficiaries,
-
-    p.Bene_CC_PH_Hypertension_V2_Pct as HypertensionPct,
-    p.Bene_CC_PH_Diabetes_V2_Pct as DiabetesPct,
-    p.Bene_CC_PH_CKD_V2_Pct as CKDPct,
-    p.Bene_CC_PH_HF_NonIHD_V2_Pct as HeartFailurePct,
-
-    p.Tot_Mdcr_Pymt_Amt as TotalPaid,
-    g.RuralInd
-  };
 // ─── Task 2 Views ────────────────────────────────────────────────────────────
 
 view ProviderCostEfficiency as
