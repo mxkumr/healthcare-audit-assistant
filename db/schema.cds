@@ -278,8 +278,12 @@ view ProviderCostEfficiency as
     p.Tot_Mdcr_Alowd_Amt                      as TotalAllowed       : Decimal,
     p.Bene_Avg_Risk_Scre                      as AvgRiskScore       : Decimal,
 
-    // Cost per beneficiary
-    (p.Tot_Mdcr_Pymt_Amt / p.Tot_Benes)      as CostPerBeneficiary : Decimal,
+    // Constant 1 per provider; SUM(ProviderCount) over a group = #providers,
+    // which powers the "providers per classification" distribution chart in the ALP.
+    cast(1 as Integer)                        as ProviderCount      : Integer,
+
+    // Cost per beneficiary (nullif guards against divide-by-zero / null beneficiaries)
+    (p.Tot_Mdcr_Pymt_Amt / nullif(p.Tot_Benes, 0)) as CostPerBeneficiary : Decimal,
 
     // Risk classification based on Bene_Avg_Risk_Scre
     case

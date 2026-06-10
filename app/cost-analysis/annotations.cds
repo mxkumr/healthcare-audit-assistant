@@ -103,21 +103,24 @@ annotate service.ProviderCostEfficiency with @(
   ],
 
   UI.Chart: {
-    Title    : 'Cost Efficiency by Provider Type',
-    ChartType: #Bar,
-    Dimensions: [
-      { $Type: 'UI.ChartDimensionAttributeType', Dimension: EfficiencyCategory }
+    $Type    : 'UI.ChartDefinitionType',
+    Title    : 'Providers per Efficiency Class',
+    ChartType: #Column,
+    Dimensions: [EfficiencyCategory],
+    DimensionAttributes: [
+      { $Type: 'UI.ChartDimensionAttributeType', Dimension: EfficiencyCategory, Role: #Category }
     ],
-    Measures: [
-      { $Type: 'UI.ChartMeasureAttributeType', Measure: CostPerBeneficiary }
+    Measures : [ProviderCount],
+    MeasureAttributes: [
+      { $Type: 'UI.ChartMeasureAttributeType', Measure: ProviderCount, Role: #Axis1 }
     ]
   },
 
+  // No GroupBy here: the TABLE lists individual providers (per-NPI rows) so the
+  // auditor can see which providers fall in each class. The CHART aggregates
+  // independently via its own Dimensions + the ApplySupported metadata.
   UI.PresentationVariant: {
-    SortOrder: [{
-      Property: CostPerBeneficiary,
-      Descending: true
-    }],
+    SortOrder     : [{ Property: CostPerBeneficiary, Descending: true }],
     Visualizations: ['@UI.LineItem', '@UI.Chart']
   }
 );
