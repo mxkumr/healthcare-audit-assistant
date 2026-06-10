@@ -18,7 +18,8 @@
     "watch-cost-analysis": "cds watch --open com.medicare.costanalysis/index.html?sap-ui-xx-viewCache=false --livereload false",
     "undeploy": "cf undeploy healthcare-audit-assistant --delete-services --delete-service-keys --delete-service-brokers",
     "build": "rimraf resources mta_archives && mbt build --mtar archive",
-    "deploy": "cf deploy mta_archives/archive.mtar --retries 1"
+    "deploy": "cf deploy mta_archives/archive.mtar --retries 1",
+    "watch-provider-classification": "cds watch --open com.medicare.providerclassification/index.html?sap-ui-xx-viewCache=false --livereload false"
   },
   "private": true,
   "cds": {
@@ -32,6 +33,7 @@
     "app/*"
   ],
   "sapux": [
-    "app/cost-analysis"
+    "app/cost-analysis",
+    "app/provider-classification"
   ]
 }
