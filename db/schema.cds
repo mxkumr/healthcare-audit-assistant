@@ -173,10 +173,12 @@ view CostByStateProviderType as
     p.Rndrng_Prvdr_State_Abrvtn,
     p.Rndrng_Prvdr_Type;
 
-// Simplified: dropped the fine-grained Locality dimension and collapsed the raw
-// RuralInd code (R / B / null) into a single readable Rural/Urban/Unknown bucket
-// so the rural-vs-urban story is clear and the ~50% unmatched joins are visible
-// as "Unknown" instead of skewing the chart.
+// Maps the CMS Rural Indicator (RuralInd) to readable locality buckets per the
+// official CMS Zip Code to Carrier Locality File spec (field position 15):
+//   blank = urban, R = rural, B = super rural (lowest-population-density rural).
+// A provider whose ZIP has no GeoReference match at all (g.ZipCode is null after
+// the LEFT JOIN) is the ONLY true "Unknown"; a matched row with a blank RuralInd
+// is genuinely Urban and must not be conflated with an unmatched join.
 view RuralUrbanDistribution as
   select from ProviderSummary as p
   left join GeoReference as g
@@ -186,8 +188,9 @@ view RuralUrbanDistribution as
     key p.Year,
     key p.Rndrng_Prvdr_State_Abrvtn as State : String,
     key case
-          when g.RuralInd is null then 'Unknown'
+          when g.ZipCode is null  then 'Unknown'
           when g.RuralInd  = 'R'  then 'Rural'
+          when g.RuralInd  = 'B'  then 'Super Rural'
           else                         'Urban'
         end                         as RuralUrban : String,
 
@@ -206,8 +209,9 @@ view RuralUrbanDistribution as
     p.Year,
     p.Rndrng_Prvdr_State_Abrvtn,
     case
-      when g.RuralInd is null then 'Unknown'
+      when g.ZipCode is null  then 'Unknown'
       when g.RuralInd  = 'R'  then 'Rural'
+      when g.RuralInd  = 'B'  then 'Super Rural'
       else                         'Urban'
     end;
 
