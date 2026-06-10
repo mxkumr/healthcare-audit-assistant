@@ -139,3 +139,111 @@ entity GeoReference {
   Locality                              : String;
   RuralInd                              : String;
 }
+// ─── Task 1 Views ────────────────────────────────────────────────────────────
+
+//view CostByStateProviderType as
+  //select
+    //p.Year,
+    //p.Rndrng_Prvdr_State_Abrvtn  as State             : String,
+    //p.Rndrng_Prvdr_Type          as ProviderType       : String,
+    //count(p.Rndrng_NPI)          as ProviderCount      : Integer,
+    //sum(p.Tot_Sbmtd_Chrg)        as TotalSubmitted     : Decimal,
+    //sum(p.Tot_Mdcr_Alowd_Amt)    as TotalAllowed       : Decimal,
+    //sum(p.Tot_Mdcr_Pymt_Amt)     as TotalPaid          : Decimal,
+    //sum(p.Tot_Benes)             as TotalBeneficiaries : Integer,
+    //avg(p.Bene_Avg_Risk_Scre)    as AvgRiskScore       : Decimal
+  //from ProviderSummary as p
+  //group by p.Year, p.Rndrng_Prvdr_State_Abrvtn, p.Rndrng_Prvdr_Type;
+
+view CostByStateProviderType as
+  select from ProviderSummary as p {
+    key p.Year,
+    key p.Rndrng_Prvdr_State_Abrvtn as State        : String,
+    key p.Rndrng_Prvdr_Type         as ProviderType  : String,
+
+    count(p.Rndrng_NPI)          as ProviderCount      : Integer,
+    sum(p.Tot_Sbmtd_Chrg)        as TotalSubmitted     : Decimal,
+    sum(p.Tot_Mdcr_Alowd_Amt)    as TotalAllowed       : Decimal,
+    sum(p.Tot_Mdcr_Pymt_Amt)     as TotalPaid          : Decimal,
+    sum(p.Tot_Benes)             as TotalBeneficiaries : Integer,
+    avg(p.Bene_Avg_Risk_Scre)    as AvgRiskScore       : Decimal
+  }
+  group by
+    p.Year,
+    p.Rndrng_Prvdr_State_Abrvtn,
+    p.Rndrng_Prvdr_Type;
+
+// Simplified: dropped the fine-grained Locality dimension and collapsed the raw
+// RuralInd code (R / B / null) into a single readable Rural/Urban/Unknown bucket
+// so the rural-vs-urban story is clear and the ~50% unmatched joins are visible
+// as "Unknown" instead of skewing the chart.
+view RuralUrbanDistribution as
+  select from ProviderSummary as p
+  left join GeoReference as g
+    on  g.ZipCode = p.Rndrng_Prvdr_Zip5
+    and g.Year    = p.Year {
+
+    key p.Year,
+    key p.Rndrng_Prvdr_State_Abrvtn as State : String,
+    key case
+          when g.RuralInd is null then 'Unknown'
+          when g.RuralInd  = 'R'  then 'Rural'
+          else                         'Urban'
+        end                         as RuralUrban : String,
+
+    count(p.Rndrng_NPI)          as ProviderCount      : Integer,
+    sum(p.Tot_Sbmtd_Chrg)        as TotalSubmitted     : Decimal,
+    sum(p.Tot_Mdcr_Alowd_Amt)    as TotalAllowed       : Decimal,
+    sum(p.Tot_Mdcr_Pymt_Amt)     as TotalPaid          : Decimal,
+    sum(p.Tot_Benes)             as TotalBeneficiaries : Integer,
+    // Normalized cost measure: ratio of the sums (NOT an average of ratios),
+    // so it stays correct at this view grain (Year + State + Rural/Urban).
+    cast(sum(p.Tot_Mdcr_Pymt_Amt) as Decimal) / nullif(sum(p.Tot_Benes), 0)
+                                 as PaidPerBene        : Decimal,
+    avg(p.Bene_Avg_Risk_Scre)    as AvgRiskScore       : Decimal
+  }
+  group by
+    p.Year,
+    p.Rndrng_Prvdr_State_Abrvtn,
+    case
+      when g.RuralInd is null then 'Unknown'
+      when g.RuralInd  = 'R'  then 'Rural'
+      else                         'Urban'
+    end;
+
+// Simplified: instead of 50k provider-level rows, providers are bucketed into
+// risk-score bands per Year/State/ProviderType. This turns the entity into a
+// true "distribution" (how many providers / beneficiaries fall in each band)
+// that is light-weight and directly chartable as a histogram.
+view RiskScoreDistribution as
+  select from ProviderSummary as p {
+
+    key p.Year,
+    key p.Rndrng_Prvdr_State_Abrvtn as State        : String,
+    key p.Rndrng_Prvdr_Type         as ProviderType : String,
+    key case
+          when p.Bene_Avg_Risk_Scre <  0.5 then '1 - Very Low (<0.5)'
+          when p.Bene_Avg_Risk_Scre <  1.0 then '2 - Low (0.5-1.0)'
+          when p.Bene_Avg_Risk_Scre <  1.5 then '3 - Moderate (1.0-1.5)'
+          when p.Bene_Avg_Risk_Scre <  2.0 then '4 - High (1.5-2.0)'
+          else                                   '5 - Very High (>=2.0)'
+        end                         as RiskBand     : String,
+
+    count(p.Rndrng_NPI)                    as ProviderCount      : Integer,
+    sum(p.Tot_Benes)                       as TotalBeneficiaries : Integer,
+    sum(p.Tot_Mdcr_Pymt_Amt)               as TotalPaid          : Decimal,
+    avg(p.Bene_Avg_Risk_Scre)              as AvgRiskScore       : Decimal,
+    avg(p.Bene_CC_PH_Hypertension_V2_Pct)  as AvgHypertensionPct : Decimal,
+    avg(p.Bene_CC_PH_Diabetes_V2_Pct)      as AvgDiabetesPct     : Decimal
+  }
+  group by
+    p.Year,
+    p.Rndrng_Prvdr_State_Abrvtn,
+    p.Rndrng_Prvdr_Type,
+    case
+      when p.Bene_Avg_Risk_Scre <  0.5 then '1 - Very Low (<0.5)'
+      when p.Bene_Avg_Risk_Scre <  1.0 then '2 - Low (0.5-1.0)'
+      when p.Bene_Avg_Risk_Scre <  1.5 then '3 - Moderate (1.0-1.5)'
+      when p.Bene_Avg_Risk_Scre <  2.0 then '4 - High (1.5-2.0)'
+      else                                   '5 - Very High (>=2.0)'
+    end;

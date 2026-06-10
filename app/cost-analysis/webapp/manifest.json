@@ -1,0 +1,188 @@
+{
+  "_version": "1.85.0",
+  "sap.app": {
+    "id": "com.medicare.costanalysis",
+    "type": "application",
+    "i18n": "i18n/i18n.properties",
+    "applicationVersion": {
+      "version": "0.0.1"
+    },
+    "title": "{{appTitle}}",
+    "description": "{{appDescription}}",
+    "resources": "resources.json",
+    "sourceTemplate": {
+      "id": "@sap/generator-fiori:alp",
+      "version": "1.25.0",
+      "toolsId": "6ed8e069-6c10-42f6-80a5-7c2307529236"
+    },
+    "dataSources": {
+      "mainService": {
+        "uri": "/medicare/",
+        "type": "OData",
+        "settings": {
+          "annotations": [],
+          "odataVersion": "4.0"
+        }
+      }
+    }
+  },
+  "sap.ui": {
+    "technology": "UI5",
+    "icons": {
+      "icon": "",
+      "favIcon": "",
+      "phone": "",
+      "phone@2": "",
+      "tablet": "",
+      "tablet@2": ""
+    },
+    "deviceTypes": {
+      "desktop": true,
+      "tablet": true,
+      "phone": true
+    }
+  },
+  "sap.ui5": {
+    "flexEnabled": true,
+    "dependencies": {
+      "minUI5Version": "1.148.1",
+      "libs": {
+        "sap.m": {},
+        "sap.ui.core": {},
+        "sap.fe.templates": {}
+      }
+    },
+    "contentDensities": {
+      "compact": true,
+      "cozy": true
+    },
+    "models": {
+      "i18n": {
+        "type": "sap.ui.model.resource.ResourceModel",
+        "settings": {
+          "bundleName": "com.medicare.costanalysis.i18n.i18n"
+        }
+      },
+      "": {
+        "dataSource": "mainService",
+        "preload": true,
+        "settings": {
+          "operationMode": "Server",
+          "autoExpandSelect": true,
+          "earlyRequests": true
+        }
+      },
+      "@i18n": {
+        "type": "sap.ui.model.resource.ResourceModel",
+        "uri": "i18n/i18n.properties"
+      }
+    },
+    "resources": {
+      "css": []
+    },
+    "routing": {
+      "config": {},
+      "routes": [
+        {
+          "pattern": ":?query:",
+          "name": "CostByStateProviderTypeList",
+          "target": "CostByStateProviderTypeList"
+        },
+        {
+          "pattern": "CostByStateProviderType({key}):?query:",
+          "name": "CostByStateProviderTypeObjectPage",
+          "target": "CostByStateProviderTypeObjectPage"
+        }
+      ],
+      "targets": {
+        "CostByStateProviderTypeList": {
+          "type": "Component",
+          "id": "CostByStateProviderTypeList",
+          "name": "sap.fe.templates.ListReport",
+          "options": {
+            "settings": {
+              "contextPath": "/CostByStateProviderType",
+              "variantManagement": "Page",
+              "navigation": {
+                "CostByStateProviderType": {
+                  "detail": {
+                    "route": "CostByStateProviderTypeObjectPage"
+                  }
+                }
+              },
+              "keyPerformanceIndicators": {
+                "TotalPaidKPI": {
+                  "entitySet": "CostByStateProviderType",
+                  "qualifier": "TotalPaidKPI"
+                },
+                "TotalBeneficiariesKPI": {
+                  "entitySet": "CostByStateProviderType",
+                  "qualifier": "TotalBeneficiariesKPI"
+                }
+              },
+              "controlConfiguration": {
+                "@com.sap.vocabularies.UI.v1.LineItem": {
+                  "tableSettings": {
+                    "type": "AnalyticalTable",
+                    "selectionMode": "None"
+                  }
+                },
+                "@com.sap.vocabularies.UI.v1.SelectionFields": {
+                  "filterFields": {
+                    "State": {
+                      "visualFilter": {
+                        "valueList": "@com.sap.vocabularies.Common.v1.ValueList#VFState"
+                      }
+                    },
+                    "ProviderType": {
+                      "visualFilter": {
+                        "valueList": "@com.sap.vocabularies.Common.v1.ValueList#VFProviderType"
+                      }
+                    }
+                  }
+                }
+              },
+              "views": {
+                "paths": [
+                  {
+                    "primary": [
+                      {
+                        "annotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant"
+                      }
+                    ],
+                    "secondary": [
+                      {
+                        "annotationPath": "com.sap.vocabularies.UI.v1.LineItem"
+                      }
+                    ],
+                    "defaultPath": "both"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "CostByStateProviderTypeObjectPage": {
+          "type": "Component",
+          "id": "CostByStateProviderTypeObjectPage",
+          "name": "sap.fe.templates.ObjectPage",
+          "options": {
+            "settings": {
+              "editableHeaderContent": false,
+              "contextPath": "/CostByStateProviderType"
+            }
+          }
+        }
+      }
+    }
+  },
+  "sap.fiori": {
+    "registrationIds": [],
+    "archeType": "analytical"
+  },
+  "sap.fe": {
+    "app": {
+      "enableLazyLoading": true
+    }
+  }
+}
