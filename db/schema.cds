@@ -284,12 +284,21 @@ view ProviderCostEfficiency as
       else 'Very High Risk'
     end                                       as RiskCategory       : String,
 
-    // Efficiency classification based on cost per beneficiary
+    // Relative cost-intensity classification, based on cost per beneficiary.
+    // Thresholds are anchored to the observed distribution of cost/beneficiary
+    // across all ~50k providers (median ≈ $172, p90 ≈ $585, p95 ≈ $893):
+    //   <150  ≈ p45   Highly Efficient   (~43%)
+    //   <300  ≈ p75   Efficient          (~30%)
+    //   <600  ≈ p90   Average            (~17%)
+    //   <900  ≈ p95   Inefficient        (~5%)
+    //   ≥900  top ~5% Outlier            (statistically unusual spend)
+    // NOTE: cost/bene varies by specialty, so this is a relative cost-intensity
+    // signal rather than a pure efficiency judgement.
     case
-      when (p.Tot_Mdcr_Pymt_Amt / p.Tot_Benes) < 500  then 'Highly Efficient'
-      when (p.Tot_Mdcr_Pymt_Amt / p.Tot_Benes) < 1000 then 'Efficient'
-      when (p.Tot_Mdcr_Pymt_Amt / p.Tot_Benes) < 2000 then 'Average'
-      when (p.Tot_Mdcr_Pymt_Amt / p.Tot_Benes) < 5000 then 'Inefficient'
+      when (p.Tot_Mdcr_Pymt_Amt / p.Tot_Benes) < 150 then 'Highly Efficient'
+      when (p.Tot_Mdcr_Pymt_Amt / p.Tot_Benes) < 300 then 'Efficient'
+      when (p.Tot_Mdcr_Pymt_Amt / p.Tot_Benes) < 600 then 'Average'
+      when (p.Tot_Mdcr_Pymt_Amt / p.Tot_Benes) < 900 then 'Inefficient'
       else 'Outlier'
     end                                       as EfficiencyCategory : String,
 
@@ -348,3 +357,43 @@ view SpecialtyRiskProfile as
   group by
     p.Year,
     p.Rndrng_Prvdr_Type;
+
+// Organization classification (Task 2): segments providers by their CMS entity
+// type (Rndrng_Prvdr_Ent_Cd: I = Individual clinician, O = Organization) and
+// compares the two segments on risk, cost and utilization per Year + State.
+// This answers "do organizations bill differently from individual clinicians?"
+// — a structural audit lens distinct from specialty or per-provider views.
+//
+// CostPerBene and ServicesPerBene are ratios of sums (kept exact at this grain),
+// not averages of per-provider ratios.
+view OrganizationClassification as
+  select from ProviderSummary as p {
+    key p.Year,
+    key p.Rndrng_Prvdr_State_Abrvtn          as State              : String,
+    key case
+          when p.Rndrng_Prvdr_Ent_Cd = 'I' then 'Individual'
+          when p.Rndrng_Prvdr_Ent_Cd = 'O' then 'Organization'
+          else                                  'Unknown'
+        end                                  as EntityType         : String,
+
+    count(p.Rndrng_NPI)                      as ProviderCount      : Integer,
+    sum(p.Tot_Benes)                         as TotalBeneficiaries : Integer,
+    sum(p.Tot_Srvcs)                         as TotalServices      : Decimal,
+    sum(p.Tot_Sbmtd_Chrg)                    as TotalSubmitted     : Decimal,
+    sum(p.Tot_Mdcr_Alowd_Amt)                as TotalAllowed       : Decimal,
+    sum(p.Tot_Mdcr_Pymt_Amt)                 as TotalPaid          : Decimal,
+
+    avg(p.Bene_Avg_Risk_Scre)                as AvgRiskScore       : Decimal,
+    cast(sum(p.Tot_Mdcr_Pymt_Amt) as Decimal) / nullif(sum(p.Tot_Benes), 0)
+                                             as CostPerBene        : Decimal,
+    cast(sum(p.Tot_Srvcs) as Decimal)        / nullif(sum(p.Tot_Benes), 0)
+                                             as ServicesPerBene    : Decimal
+  }
+  group by
+    p.Year,
+    p.Rndrng_Prvdr_State_Abrvtn,
+    case
+      when p.Rndrng_Prvdr_Ent_Cd = 'I' then 'Individual'
+      when p.Rndrng_Prvdr_Ent_Cd = 'O' then 'Organization'
+      else                                  'Unknown'
+    end;

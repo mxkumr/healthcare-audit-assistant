@@ -25,6 +25,10 @@ service MedicareService @(path:'/medicare') {
   @readonly
   @cds.redirection.target: false
   entity SpecialtyRiskProfile as projection on medicare.SpecialtyRiskProfile;
+
+  @readonly
+  @cds.redirection.target: false
+  entity OrganizationClassification as projection on medicare.OrganizationClassification;
 }
 
 // ── Aggregation (data-shaping) annotations for the analytical query ────────────
@@ -244,4 +248,52 @@ annotate MedicareService.SpecialtyRiskProfile with @(
   AvgDiabetesPct     @Analytics.Measure: true  @Aggregation.default: #AVG;
   AvgCKDPct          @Analytics.Measure: true  @Aggregation.default: #AVG;
   AvgHeartFailurePct @Analytics.Measure: true  @Aggregation.default: #AVG;
+};
+
+// ── Task 2: OrganizationClassification (Individual vs Organization) ────────────
+// Aggregation metadata lets the ALP chart compare segments (e.g. cost per
+// beneficiary for Individual vs Organization) and roll up by Year / State.
+annotate MedicareService.OrganizationClassification with @(
+  Aggregation.ApplySupported: {
+    Transformations        : ['aggregate', 'groupby', 'filter'],
+    GroupableProperties    : [Year, State, EntityType],
+    AggregatableProperties : [
+      {Property: ProviderCount},
+      {Property: TotalBeneficiaries},
+      {Property: TotalServices},
+      {Property: TotalSubmitted},
+      {Property: TotalAllowed},
+      {Property: TotalPaid},
+      {Property: AvgRiskScore},
+      {Property: CostPerBene},
+      {Property: ServicesPerBene}
+    ]
+  }
+);
+
+annotate MedicareService.OrganizationClassification with @(
+  Aggregation.CustomAggregate #ProviderCount      : 'Edm.Int32',
+  Aggregation.CustomAggregate #TotalBeneficiaries : 'Edm.Int32',
+  Aggregation.CustomAggregate #TotalServices      : 'Edm.Decimal',
+  Aggregation.CustomAggregate #TotalSubmitted     : 'Edm.Decimal',
+  Aggregation.CustomAggregate #TotalAllowed       : 'Edm.Decimal',
+  Aggregation.CustomAggregate #TotalPaid          : 'Edm.Decimal',
+  Aggregation.CustomAggregate #AvgRiskScore       : 'Edm.Decimal',
+  Aggregation.CustomAggregate #CostPerBene        : 'Edm.Decimal',
+  Aggregation.CustomAggregate #ServicesPerBene    : 'Edm.Decimal'
+) {
+  Year               @Analytics.Dimension: true;
+  State              @Analytics.Dimension: true;
+  EntityType         @Analytics.Dimension: true;
+  ProviderCount      @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalBeneficiaries @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalServices      @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalSubmitted     @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalAllowed       @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalPaid          @Analytics.Measure: true  @Aggregation.default: #SUM;
+  // Ratios + risk mean: AVG rollup across states is an approximation; exact
+  // per-segment figures are shown at the row grain (Year + State + EntityType).
+  AvgRiskScore       @Analytics.Measure: true  @Aggregation.default: #AVG;
+  CostPerBene        @Analytics.Measure: true  @Aggregation.default: #AVG;
+  ServicesPerBene    @Analytics.Measure: true  @Aggregation.default: #AVG;
 };
