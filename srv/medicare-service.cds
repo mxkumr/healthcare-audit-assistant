@@ -17,6 +17,18 @@ service MedicareService @(path:'/medicare') {
   @readonly
   @cds.redirection.target: false
   entity RiskScoreDistribution    as projection on medicare.RiskScoreDistribution;
+
+  @readonly
+  @cds.redirection.target: false
+  entity ProviderCostEfficiency as projection on medicare.ProviderCostEfficiency;
+
+  @readonly
+  @cds.redirection.target: false
+  entity SpecialtyRiskProfile as projection on medicare.SpecialtyRiskProfile;
+
+  @readonly
+  @cds.redirection.target: false
+  entity OrganizationClassification as projection on medicare.OrganizationClassification;
 }
 
 // ── Aggregation (data-shaping) annotations for the analytical query ────────────
@@ -139,4 +151,149 @@ annotate MedicareService.RiskScoreDistribution with @(
   AvgRiskScore       @Analytics.Measure: true  @Aggregation.default: #AVG;
   AvgHypertensionPct @Analytics.Measure: true  @Aggregation.default: #AVG;
   AvgDiabetesPct     @Analytics.Measure: true  @Aggregation.default: #AVG;
+};
+
+// ── Task 2: ProviderCostEfficiency (classification) ───────────────────────────
+// Aggregation metadata lets the ALP chart roll providers up by their
+// classification dimensions (Efficiency / Risk / Utilization / Specialty).
+annotate MedicareService.ProviderCostEfficiency with @(
+  Aggregation.ApplySupported: {
+    Transformations        : ['aggregate', 'groupby', 'filter'],
+    GroupableProperties    : [
+      Year, State, ProviderType,
+      EfficiencyCategory, RiskCategory, UtilizationCategory
+    ],
+    AggregatableProperties : [
+      {Property: ProviderCount},
+      {Property: TotalPaid},
+      {Property: TotalSubmitted},
+      {Property: TotalAllowed},
+      {Property: TotalBeneficiaries},
+      {Property: CostPerBeneficiary},
+      {Property: AvgRiskScore}
+    ]
+  }
+);
+
+annotate MedicareService.ProviderCostEfficiency with @(
+  Aggregation.CustomAggregate #ProviderCount      : 'Edm.Int32',
+  Aggregation.CustomAggregate #TotalPaid          : 'Edm.Decimal',
+  Aggregation.CustomAggregate #TotalSubmitted     : 'Edm.Decimal',
+  Aggregation.CustomAggregate #TotalAllowed       : 'Edm.Decimal',
+  Aggregation.CustomAggregate #TotalBeneficiaries : 'Edm.Int32',
+  Aggregation.CustomAggregate #CostPerBeneficiary : 'Edm.Decimal',
+  Aggregation.CustomAggregate #AvgRiskScore       : 'Edm.Decimal'
+) {
+  Year                @Analytics.Dimension: true;
+  State               @Analytics.Dimension: true;
+  ProviderType        @Analytics.Dimension: true;
+  EfficiencyCategory  @Analytics.Dimension: true;
+  RiskCategory        @Analytics.Dimension: true;
+  UtilizationCategory @Analytics.Dimension: true;
+  ProviderCount       @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalPaid           @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalSubmitted      @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalAllowed        @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalBeneficiaries  @Analytics.Measure: true  @Aggregation.default: #SUM;
+  // CostPerBeneficiary is a ratio -> AVG across a group is unweighted; the exact
+  // per-provider value is visible in the (non-aggregated) table rows.
+  CostPerBeneficiary  @Analytics.Measure: true  @Aggregation.default: #AVG;
+  AvgRiskScore        @Analytics.Measure: true  @Aggregation.default: #AVG;
+};
+
+// ── Task 2: SpecialtyRiskProfile (specialty-level classification) ──────────────
+// The view is already aggregated to one row per Year + ProviderType; the
+// aggregation metadata lets the ALP chart roll specialties up by their derived
+// ComplexityTier (e.g. "how many specialties are High Complexity?").
+annotate MedicareService.SpecialtyRiskProfile with @(
+  Aggregation.ApplySupported: {
+    Transformations        : ['aggregate', 'groupby', 'filter'],
+    GroupableProperties    : [Year, ProviderType, ComplexityTier],
+    AggregatableProperties : [
+      {Property: ProviderCount},
+      {Property: TotalBeneficiaries},
+      {Property: TotalPaid},
+      {Property: AvgRiskScore},
+      {Property: AvgCostPerBene},
+      {Property: AvgHypertensionPct},
+      {Property: AvgDiabetesPct},
+      {Property: AvgCKDPct},
+      {Property: AvgHeartFailurePct}
+    ]
+  }
+);
+
+annotate MedicareService.SpecialtyRiskProfile with @(
+  Aggregation.CustomAggregate #ProviderCount      : 'Edm.Int32',
+  Aggregation.CustomAggregate #TotalBeneficiaries : 'Edm.Int32',
+  Aggregation.CustomAggregate #TotalPaid          : 'Edm.Decimal',
+  Aggregation.CustomAggregate #AvgRiskScore       : 'Edm.Decimal',
+  Aggregation.CustomAggregate #AvgCostPerBene     : 'Edm.Decimal',
+  Aggregation.CustomAggregate #AvgHypertensionPct : 'Edm.Decimal',
+  Aggregation.CustomAggregate #AvgDiabetesPct     : 'Edm.Decimal',
+  Aggregation.CustomAggregate #AvgCKDPct          : 'Edm.Decimal',
+  Aggregation.CustomAggregate #AvgHeartFailurePct : 'Edm.Decimal'
+) {
+  Year               @Analytics.Dimension: true;
+  ProviderType       @Analytics.Dimension: true;
+  ComplexityTier     @Analytics.Dimension: true;
+  ProviderCount      @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalBeneficiaries @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalPaid          @Analytics.Measure: true  @Aggregation.default: #SUM;
+  // The Avg* measures are specialty-level means; SUM rollups across specialties
+  // are not meaningful, so AVG is the safe default for the chart aggregation.
+  AvgRiskScore       @Analytics.Measure: true  @Aggregation.default: #AVG;
+  AvgCostPerBene     @Analytics.Measure: true  @Aggregation.default: #AVG;
+  AvgHypertensionPct @Analytics.Measure: true  @Aggregation.default: #AVG;
+  AvgDiabetesPct     @Analytics.Measure: true  @Aggregation.default: #AVG;
+  AvgCKDPct          @Analytics.Measure: true  @Aggregation.default: #AVG;
+  AvgHeartFailurePct @Analytics.Measure: true  @Aggregation.default: #AVG;
+};
+
+// ── Task 2: OrganizationClassification (Individual vs Organization) ────────────
+// Aggregation metadata lets the ALP chart compare segments (e.g. cost per
+// beneficiary for Individual vs Organization) and roll up by Year / State.
+annotate MedicareService.OrganizationClassification with @(
+  Aggregation.ApplySupported: {
+    Transformations        : ['aggregate', 'groupby', 'filter'],
+    GroupableProperties    : [Year, State, EntityType],
+    AggregatableProperties : [
+      {Property: ProviderCount},
+      {Property: TotalBeneficiaries},
+      {Property: TotalServices},
+      {Property: TotalSubmitted},
+      {Property: TotalAllowed},
+      {Property: TotalPaid},
+      {Property: AvgRiskScore},
+      {Property: CostPerBene},
+      {Property: ServicesPerBene}
+    ]
+  }
+);
+
+annotate MedicareService.OrganizationClassification with @(
+  Aggregation.CustomAggregate #ProviderCount      : 'Edm.Int32',
+  Aggregation.CustomAggregate #TotalBeneficiaries : 'Edm.Int32',
+  Aggregation.CustomAggregate #TotalServices      : 'Edm.Decimal',
+  Aggregation.CustomAggregate #TotalSubmitted     : 'Edm.Decimal',
+  Aggregation.CustomAggregate #TotalAllowed       : 'Edm.Decimal',
+  Aggregation.CustomAggregate #TotalPaid          : 'Edm.Decimal',
+  Aggregation.CustomAggregate #AvgRiskScore       : 'Edm.Decimal',
+  Aggregation.CustomAggregate #CostPerBene        : 'Edm.Decimal',
+  Aggregation.CustomAggregate #ServicesPerBene    : 'Edm.Decimal'
+) {
+  Year               @Analytics.Dimension: true;
+  State              @Analytics.Dimension: true;
+  EntityType         @Analytics.Dimension: true;
+  ProviderCount      @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalBeneficiaries @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalServices      @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalSubmitted     @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalAllowed       @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalPaid          @Analytics.Measure: true  @Aggregation.default: #SUM;
+  // Ratios + risk mean: AVG rollup across states is an approximation; exact
+  // per-segment figures are shown at the row grain (Year + State + EntityType).
+  AvgRiskScore       @Analytics.Measure: true  @Aggregation.default: #AVG;
+  CostPerBene        @Analytics.Measure: true  @Aggregation.default: #AVG;
+  ServicesPerBene    @Analytics.Measure: true  @Aggregation.default: #AVG;
 };

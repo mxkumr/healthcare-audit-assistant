@@ -173,10 +173,12 @@ view CostByStateProviderType as
     p.Rndrng_Prvdr_State_Abrvtn,
     p.Rndrng_Prvdr_Type;
 
-// Simplified: dropped the fine-grained Locality dimension and collapsed the raw
-// RuralInd code (R / B / null) into a single readable Rural/Urban/Unknown bucket
-// so the rural-vs-urban story is clear and the ~50% unmatched joins are visible
-// as "Unknown" instead of skewing the chart.
+// Maps the CMS Rural Indicator (RuralInd) to readable locality buckets per the
+// official CMS Zip Code to Carrier Locality File spec (field position 15):
+//   blank = urban, R = rural, B = super rural (lowest-population-density rural).
+// A provider whose ZIP has no GeoReference match at all (g.ZipCode is null after
+// the LEFT JOIN) is the ONLY true "Unknown"; a matched row with a blank RuralInd
+// is genuinely Urban and must not be conflated with an unmatched join.
 view RuralUrbanDistribution as
   select from ProviderSummary as p
   left join GeoReference as g
@@ -186,8 +188,9 @@ view RuralUrbanDistribution as
     key p.Year,
     key p.Rndrng_Prvdr_State_Abrvtn as State : String,
     key case
-          when g.RuralInd is null then 'Unknown'
+          when g.ZipCode is null  then 'Unknown'
           when g.RuralInd  = 'R'  then 'Rural'
+          when g.RuralInd  = 'B'  then 'Super Rural'
           else                         'Urban'
         end                         as RuralUrban : String,
 
@@ -206,8 +209,9 @@ view RuralUrbanDistribution as
     p.Year,
     p.Rndrng_Prvdr_State_Abrvtn,
     case
-      when g.RuralInd is null then 'Unknown'
+      when g.ZipCode is null  then 'Unknown'
       when g.RuralInd  = 'R'  then 'Rural'
+      when g.RuralInd  = 'B'  then 'Super Rural'
       else                         'Urban'
     end;
 
@@ -246,4 +250,150 @@ view RiskScoreDistribution as
       when p.Bene_Avg_Risk_Scre <  1.5 then '3 - Moderate (1.0-1.5)'
       when p.Bene_Avg_Risk_Scre <  2.0 then '4 - High (1.5-2.0)'
       else                                   '5 - Very High (>=2.0)'
+    end;
+
+// ─── Task 2 Views ────────────────────────────────────────────────────────────
+
+view ProviderCostEfficiency as
+  select from ProviderSummary as p {
+    key p.Year,
+    key p.Rndrng_NPI                          as NPI                : String,
+    p.Rndrng_Prvdr_Last_Org_Name              as ProviderName       : String,
+    p.Rndrng_Prvdr_First_Name                 as FirstName          : String,
+    p.Rndrng_Prvdr_Type                       as ProviderType       : String,
+    p.Rndrng_Prvdr_State_Abrvtn               as State              : String,
+    p.Rndrng_Prvdr_City                       as City               : String,
+    p.Tot_Benes                               as TotalBeneficiaries : Integer,
+    p.Tot_Mdcr_Pymt_Amt                       as TotalPaid          : Decimal,
+    p.Tot_Sbmtd_Chrg                          as TotalSubmitted     : Decimal,
+    p.Tot_Mdcr_Alowd_Amt                      as TotalAllowed       : Decimal,
+    p.Bene_Avg_Risk_Scre                      as AvgRiskScore       : Decimal,
+
+    // Constant 1 per provider; SUM(ProviderCount) over a group = #providers,
+    // which powers the "providers per classification" distribution chart in the ALP.
+    cast(1 as Integer)                        as ProviderCount      : Integer,
+
+    // Cost per beneficiary (nullif guards against divide-by-zero / null beneficiaries)
+    (p.Tot_Mdcr_Pymt_Amt / nullif(p.Tot_Benes, 0)) as CostPerBeneficiary : Decimal,
+
+    // Risk classification based on Bene_Avg_Risk_Scre
+    case
+      when p.Bene_Avg_Risk_Scre < 1.0 then 'Low Risk'
+      when p.Bene_Avg_Risk_Scre < 1.5 then 'Moderate Risk'
+      when p.Bene_Avg_Risk_Scre < 2.0 then 'High Risk'
+      else 'Very High Risk'
+    end                                       as RiskCategory       : String,
+
+    // Relative cost-intensity classification, based on cost per beneficiary.
+    // Thresholds are anchored to the observed distribution of cost/beneficiary
+    // across all ~50k providers (median ≈ $172, p90 ≈ $585, p95 ≈ $893):
+    //   <150  ≈ p45   Highly Efficient   (~43%)
+    //   <300  ≈ p75   Efficient          (~30%)
+    //   <600  ≈ p90   Average            (~17%)
+    //   <900  ≈ p95   Inefficient        (~5%)
+    //   ≥900  top ~5% Outlier            (statistically unusual spend)
+    // NOTE: cost/bene varies by specialty, so this is a relative cost-intensity
+    // signal rather than a pure efficiency judgement.
+    case
+      when (p.Tot_Mdcr_Pymt_Amt / p.Tot_Benes) < 150 then 'Highly Efficient'
+      when (p.Tot_Mdcr_Pymt_Amt / p.Tot_Benes) < 300 then 'Efficient'
+      when (p.Tot_Mdcr_Pymt_Amt / p.Tot_Benes) < 600 then 'Average'
+      when (p.Tot_Mdcr_Pymt_Amt / p.Tot_Benes) < 900 then 'Inefficient'
+      else 'Outlier'
+    end                                       as EfficiencyCategory : String,
+
+    // Utilization behavior
+    case
+      when p.Tot_Srvcs / p.Tot_Benes < 5  then 'Low Utilization'
+      when p.Tot_Srvcs / p.Tot_Benes < 15 then 'Moderate Utilization'
+      else 'High Utilization'
+    end                                       as UtilizationCategory : String,
+
+    p.Bene_CC_PH_Diabetes_V2_Pct             as DiabetesPct        : Decimal,
+    p.Bene_CC_PH_Hypertension_V2_Pct         as HypertensionPct    : Decimal,
+    p.Bene_CC_PH_CKD_V2_Pct                  as CKDPct             : Decimal,
+    p.Bene_CC_PH_HF_NonIHD_V2_Pct            as HeartFailurePct    : Decimal
+  };
+
+// Specialty-level classification (Task 2): collapses ~50k individual providers
+// into one row per Year + ProviderType, profiling each SPECIALTY by patient
+// complexity (avg risk score), comorbidity burden and normalized cost. The
+// derived ComplexityTier answers "is Internal Medicine a high-complexity
+// specialty?" rather than judging a single provider.
+//
+// ComplexityTier thresholds reuse the same risk-score cut points as the
+// provider-level RiskCategory (1.0 / 1.5 / 2.0) so the specialty tier and the
+// provider tier are directly comparable across the Task 2 dashboards.
+//
+// AvgCostPerBene is a ratio of sums (total paid / total beneficiaries) so it
+// stays exact at the specialty grain instead of averaging per-provider ratios.
+view SpecialtyRiskProfile as
+  select from ProviderSummary as p {
+    key p.Year,
+    key p.Rndrng_Prvdr_Type                  as ProviderType        : String,
+
+    count(p.Rndrng_NPI)                      as ProviderCount       : Integer,
+    sum(p.Tot_Benes)                         as TotalBeneficiaries  : Integer,
+    sum(p.Tot_Mdcr_Pymt_Amt)                 as TotalPaid           : Decimal,
+
+    avg(p.Bene_Avg_Risk_Scre)                as AvgRiskScore        : Decimal,
+    cast(sum(p.Tot_Mdcr_Pymt_Amt) as Decimal) / nullif(sum(p.Tot_Benes), 0)
+                                             as AvgCostPerBene      : Decimal,
+
+    avg(p.Bene_CC_PH_Hypertension_V2_Pct)    as AvgHypertensionPct  : Decimal,
+    avg(p.Bene_CC_PH_Diabetes_V2_Pct)        as AvgDiabetesPct      : Decimal,
+    avg(p.Bene_CC_PH_CKD_V2_Pct)             as AvgCKDPct           : Decimal,
+    avg(p.Bene_CC_PH_HF_NonIHD_V2_Pct)       as AvgHeartFailurePct  : Decimal,
+
+    // Specialty patient-complexity tier, derived from the specialty's mean risk
+    // score (aligned with provider-level RiskCategory thresholds).
+    case
+      when avg(p.Bene_Avg_Risk_Scre) < 1.0 then 'Low Complexity'
+      when avg(p.Bene_Avg_Risk_Scre) < 1.5 then 'Moderate Complexity'
+      when avg(p.Bene_Avg_Risk_Scre) < 2.0 then 'High Complexity'
+      else                                      'Very High Complexity'
+    end                                      as ComplexityTier      : String
+  }
+  group by
+    p.Year,
+    p.Rndrng_Prvdr_Type;
+
+// Organization classification (Task 2): segments providers by their CMS entity
+// type (Rndrng_Prvdr_Ent_Cd: I = Individual clinician, O = Organization) and
+// compares the two segments on risk, cost and utilization per Year + State.
+// This answers "do organizations bill differently from individual clinicians?"
+// — a structural audit lens distinct from specialty or per-provider views.
+//
+// CostPerBene and ServicesPerBene are ratios of sums (kept exact at this grain),
+// not averages of per-provider ratios.
+view OrganizationClassification as
+  select from ProviderSummary as p {
+    key p.Year,
+    key p.Rndrng_Prvdr_State_Abrvtn          as State              : String,
+    key case
+          when p.Rndrng_Prvdr_Ent_Cd = 'I' then 'Individual'
+          when p.Rndrng_Prvdr_Ent_Cd = 'O' then 'Organization'
+          else                                  'Unknown'
+        end                                  as EntityType         : String,
+
+    count(p.Rndrng_NPI)                      as ProviderCount      : Integer,
+    sum(p.Tot_Benes)                         as TotalBeneficiaries : Integer,
+    sum(p.Tot_Srvcs)                         as TotalServices      : Decimal,
+    sum(p.Tot_Sbmtd_Chrg)                    as TotalSubmitted     : Decimal,
+    sum(p.Tot_Mdcr_Alowd_Amt)                as TotalAllowed       : Decimal,
+    sum(p.Tot_Mdcr_Pymt_Amt)                 as TotalPaid          : Decimal,
+
+    avg(p.Bene_Avg_Risk_Scre)                as AvgRiskScore       : Decimal,
+    cast(sum(p.Tot_Mdcr_Pymt_Amt) as Decimal) / nullif(sum(p.Tot_Benes), 0)
+                                             as CostPerBene        : Decimal,
+    cast(sum(p.Tot_Srvcs) as Decimal)        / nullif(sum(p.Tot_Benes), 0)
+                                             as ServicesPerBene    : Decimal
+  }
+  group by
+    p.Year,
+    p.Rndrng_Prvdr_State_Abrvtn,
+    case
+      when p.Rndrng_Prvdr_Ent_Cd = 'I' then 'Individual'
+      when p.Rndrng_Prvdr_Ent_Cd = 'O' then 'Organization'
+      else                                  'Unknown'
     end;
