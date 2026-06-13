@@ -1,8 +1,9 @@
 sap.ui.define([
     "sap/ui/core/mvc/Controller",
     "sap/ui/model/json/JSONModel",
-    "sap/m/MessageToast"
-], function (Controller, JSONModel, MessageToast) {
+    "sap/m/MessageToast",
+    "sap/ui/vbm/AnalyticMap"
+], function (Controller, JSONModel, MessageToast, AnalyticMap) {
     "use strict";
 
     var YEAR = "2023";
@@ -10,7 +11,12 @@ sap.ui.define([
 
     // Sequential blue palette (light → dark) for the choropleth.
     var BLUES = ["#cfe3f5", "#9ecae1", "#6baed6", "#3182bd", "#08519c"];
-    var NO_DATA = "#3a4a5e";
+    var NO_DATA = "#34465c";
+
+    // sap.ui.vbm needs the L1 (state-level) US region geometry. Pin it to the
+    // same CDN version the app bootstraps from so it resolves standalone.
+    AnalyticMap.GeoJSONURL =
+        "https://sapui5.hana.ondemand.com/1.148.1/test-resources/sap/ui/vbm/demokit/media/analyticmap/L1_US.json";
 
     return Controller.extend("com.medicare.auditdashboard.controller.App", {
 
@@ -20,12 +26,18 @@ sap.ui.define([
                 providerType: [],
                 ruralUrban: [],
                 riskDist: [],
-                outliers: []
+                outliers: [],
+                riskAssoc: [],
+                credGap: [],
+                placeCharge: [],
+                placeVolume: [],
+                mapRegions: [],
+                mapLegend: []
             });
             this.getView().setModel(this._oModel, "dash");
 
             this._styleCharts();
-            this._loadMapGeometry().then(this._loadAll.bind(this));
+            this._loadAll();
         },
 
         onMenuToggle: function () {
@@ -41,6 +53,9 @@ sap.ui.define([
             this._loadRiskDist();
             this._loadOutliers();
             this._loadMap();
+            this._loadRiskAssoc();
+            this._loadCredGap();
+            this._loadPlaceAnalysis();
         },
 
         _get: function (sUrl) {
@@ -157,6 +172,86 @@ sap.ui.define([
                 });
         },
 
+        // ── Task 3 · Risk ↔ Payment association (bubble) ───────────────────
+        // RiskPaymentAssociation is already one row per Year+Specialty, so the
+        // ratio measures (PaidPerBene, AvgRiskScore) are exact at this grain.
+        _loadRiskAssoc: function () {
+            var that = this;
+            this._get("/medicare/RiskPaymentAssociation?$apply=filter(Year eq '" + YEAR +
+                "')/groupby((ProviderType),aggregate(AvgRiskScore,PaidPerBene,TotalBeneficiaries,TotalPaid))")
+                .then(function (rows) {
+                    var data = rows.map(function (r) {
+                        return {
+                            type: r.ProviderType || "Unknown",
+                            risk: parseFloat(r.AvgRiskScore) || 0,
+                            paid: parseFloat(r.PaidPerBene) || 0,
+                            benes: parseFloat(r.TotalBeneficiaries) || 0,
+                            _tot: parseFloat(r.TotalPaid) || 0
+                        };
+                    }).filter(function (d) { return d.risk > 0 && d.paid > 0; })
+                      .sort(function (a, b) { return b._tot - a._tot; }).slice(0, 15);
+                    that._oModel.setProperty("/riskAssoc", data);
+                });
+        },
+
+        // ── Task 3 · Charge gap by credential (bar) ────────────────────────
+        // One row per Year+Credential -> PaymentToChargePct / AllowedToChargePct
+        // are exact ratio-of-sums at this grain.
+        _loadCredGap: function () {
+            var that = this;
+            this._get("/medicare/CredentialChargeGap?$apply=filter(Year eq '" + YEAR +
+                "')/groupby((Credential),aggregate(PaymentToChargePct,AllowedToChargePct,ProviderCount))")
+                .then(function (rows) {
+                    var data = rows.map(function (r) {
+                        return {
+                            cred: r.Credential || "Unspecified",
+                            paidPct: parseFloat((parseFloat(r.PaymentToChargePct) || 0).toFixed(1)),
+                            allowedPct: parseFloat((parseFloat(r.AllowedToChargePct) || 0).toFixed(1)),
+                            _prov: parseFloat(r.ProviderCount) || 0
+                        };
+                    }).sort(function (a, b) { return b._prov - a._prov; }).slice(0, 8)
+                      .sort(function (a, b) { return a.paidPct - b.paidPct; });
+                    that._oModel.setProperty("/credGap", data);
+                });
+        },
+
+        // ── Task 3 · Facility vs Office (volume-weighted charges + split) ──
+        // Per-place averages are weighted by service volume across procedures so
+        // the rollup honours the procedure-level (apples-to-apples) grain.
+        _loadPlaceAnalysis: function () {
+            var that = this;
+            this._get("/medicare/ServicePlaceAnalysis?$apply=filter(Year eq '" + YEAR +
+                "')/groupby((PlaceOfService,ProcedureCode),aggregate(" +
+                "AvgSubmittedChrg,AvgAllowedAmt,AvgPaidAmt,TotalServices))")
+                .then(function (rows) {
+                    var acc = {};
+                    rows.forEach(function (r) {
+                        var p = r.PlaceOfService || "Other";
+                        var svc = parseFloat(r.TotalServices) || 0;
+                        if (!acc[p]) { acc[p] = { sub: 0, alw: 0, paid: 0, svc: 0 }; }
+                        acc[p].sub += (parseFloat(r.AvgSubmittedChrg) || 0) * svc;
+                        acc[p].alw += (parseFloat(r.AvgAllowedAmt) || 0) * svc;
+                        acc[p].paid += (parseFloat(r.AvgPaidAmt) || 0) * svc;
+                        acc[p].svc += svc;
+                    });
+                    var order = ["Facility", "Office", "Other"];
+                    var charge = [], volume = [];
+                    order.forEach(function (p) {
+                        var a = acc[p];
+                        if (!a || a.svc <= 0) { return; }
+                        charge.push({
+                            place: p,
+                            submitted: +(a.sub / a.svc).toFixed(2),
+                            allowed: +(a.alw / a.svc).toFixed(2),
+                            paid: +(a.paid / a.svc).toFixed(2)
+                        });
+                        volume.push({ name: p, value: a.svc });
+                    });
+                    that._oModel.setProperty("/placeCharge", charge);
+                    that._oModel.setProperty("/placeVolume", volume);
+                });
+        },
+
         // ── VizFrame dark-theme styling ────────────────────────────────────
         _styleCharts: function () {
             var common = {
@@ -189,17 +284,47 @@ sap.ui.define([
                     plotArea: { dataLabel: { visible: true }, colorPalette: ["#6f5bd6"] }
                 }));
             }
+
+            // ── Task 3 charts ──────────────────────────────────────────────
+            var oBubble = this.byId("vizRiskPay");
+            if (oBubble) {
+                oBubble.setVizProperties(Object.assign({}, common, {
+                    legend: { visible: true },
+                    valueAxis:  { title: { visible: true, text: "Avg HCC Risk Score" } },
+                    valueAxis2: { title: { visible: true, text: "Paid / Beneficiary ($)" }, label: { formatString: "$#,##0" } },
+                    plotArea: { dataLabel: { visible: false } }
+                }));
+            }
+            var oCred = this.byId("vizCredGap");
+            if (oCred) {
+                oCred.setVizProperties(Object.assign({}, common, {
+                    legend: { visible: true },
+                    valueAxis: { title: { visible: false }, label: { formatString: "#,##0'%'" } },
+                    categoryAxis: { title: { visible: false } },
+                    plotArea: { dataLabel: { visible: true, formatString: "#,##0.0'%'" }, colorPalette: ["#4db1ff", "#2d8a5e"] }
+                }));
+            }
+            var oPlace = this.byId("vizPlace");
+            if (oPlace) {
+                oPlace.setVizProperties(Object.assign({}, common, {
+                    legend: { visible: true },
+                    valueAxis: { title: { visible: false }, label: { formatString: "$#,##0" } },
+                    categoryAxis: { title: { visible: false } },
+                    plotArea: { dataLabel: { visible: true, formatString: "$#,##0" }, colorPalette: ["#7e8aa2", "#4db1ff", "#2d8a5e"] }
+                }));
+            }
+            var oPlaceVol = this.byId("vizPlaceVol");
+            if (oPlaceVol) {
+                oPlaceVol.setVizProperties(Object.assign({}, common, {
+                    legend: { visible: true },
+                    plotArea: { dataLabel: { visible: true, type: "percentage" }, colorPalette: ["#4db1ff", "#2d8a5e", "#7e8aa2"] }
+                }));
+            }
         },
 
-        // ── Choropleth map ─────────────────────────────────────────────────
-        _loadMapGeometry: function () {
-            var that = this;
-            return fetch("data/us-states-paths.json")
-                .then(function (r) { return r.json(); })
-                .then(function (j) { that._oMap = j; })
-                .catch(function () { /* map optional */ });
-        },
-
+        // ── Choropleth map (sap.ui.vbm.AnalyticMap, US state regions) ──────
+        // We colour each US-XX region by Total Medicare Paid using quantile
+        // bands, and feed the AnalyticMap via the bound /mapRegions array.
         _loadMap: function () {
             var that = this;
             this._get("/medicare/CostByStateProviderType?$apply=filter(Year eq '" + YEAR +
@@ -208,100 +333,63 @@ sap.ui.define([
                     var m = {};
                     rows.forEach(function (r) {
                         var v = parseFloat(r.TotalPaid) || 0;
-                        if (r.State && v > 0) { m[r.State] = v; }
+                        if (r.State && /^[A-Z]{2}$/.test(r.State) && v > 0) { m[r.State] = v; }
                     });
-                    that._renderMap(m);
+                    that._buildRegions(m);
                 });
         },
 
-        _renderMap: function (mValues) {
-            var oHtml = this.byId("mapHtml");
-            var oMap = this._oMap;
-            if (!oHtml || !oMap) { return; }
+        _fmtUsd: function (v) {
+            return v >= 1e9 ? "$" + (v / 1e9).toFixed(1) + "B"
+                : v >= 1e6 ? "$" + (v / 1e6).toFixed(0) + "M"
+                : "$" + Math.round(v).toLocaleString();
+        },
 
-            var inset = ["AK", "HI", "PR"];
-            var vals = Object.keys(mValues).map(function (s) { return mValues[s]; })
+        _buildRegions: function (mValues) {
+            var states = Object.keys(mValues);
+            var vals = states.map(function (s) { return mValues[s]; })
                 .sort(function (a, b) { return a - b; });
             var q = function (p) { return vals.length ? vals[Math.floor((vals.length - 1) * p)] : 0; };
             var cut = [q(0.2), q(0.4), q(0.6), q(0.8)];
-            var color = function (v) {
-                if (!v) { return NO_DATA; }
-                for (var i = 0; i < cut.length; i++) { if (v <= cut[i]) { return BLUES[i]; } }
-                return BLUES[4];
-            };
-            var fmt = function (v) {
-                return v >= 1e9 ? "$" + (v / 1e9).toFixed(1) + "B"
-                    : v >= 1e6 ? "$" + (v / 1e6).toFixed(0) + "M" : "$" + Math.round(v);
+            var band = function (v) {
+                for (var i = 0; i < cut.length; i++) { if (v <= cut[i]) { return i; } }
+                return 4;
             };
 
-            this._tips = {};
-            var svg = ["<svg xmlns='http://www.w3.org/2000/svg' viewBox='" + oMap.viewBox +
-                "' width='100%' style='display:block'>"];
+            var regions = states.map(function (s) {
+                var v = mValues[s];
+                return {
+                    code: "US-" + s,
+                    color: BLUES[band(v)],
+                    tooltip: s + " — " + this._fmtUsd(v)
+                };
+            }, this);
 
-            var addPath = function (st, d, sw, tf) {
-                var v = mValues[st];
-                this._tips[st] = v ? st + ": " + fmt(v) : st + ": no data";
-                svg.push("<path d='" + d + "' " + (tf ? "transform='" + tf + "' " : "") +
-                    "data-state='" + st + "' fill='" + color(v) +
-                    "' stroke='#1c2733' stroke-width='" + sw + "' style='cursor:pointer'/>");
-            }.bind(this);
-
-            Object.keys(oMap.states).forEach(function (st) {
-                if (inset.indexOf(st) < 0) { addPath(st, oMap.states[st], "0.7"); }
-            });
-            var lbl = { AK: [18, 415], HI: [18, 495], PR: [800, 465] };
-            inset.forEach(function (st) {
-                var d = oMap.states[st], ins = oMap.insets[st];
-                if (!d || !ins) { return; }
-                svg.push("<text x='" + lbl[st][0] + "' y='" + lbl[st][1] +
-                    "' font-size='11' fill='#9fb0c3'>" + st + "</text>");
-                addPath(st, d, "1.2", "translate(" + ins.tx + "," + ins.ty + ") scale(" + ins.sx + "," + ins.sy + ")");
-            });
-
-            // Legend (High → Low gradient bar)
-            svg.push("<g transform='translate(862,150)'>");
-            svg.push("<text x='26' y='-8' font-size='11' fill='#c2cedd'>High</text>");
-            for (var i = 0; i < BLUES.length; i++) {
-                svg.push("<rect x='0' y='" + (i * 22) + "' width='18' height='22' fill='" + BLUES[4 - i] + "'/>");
+            // Legend: High → Low so the darkest (highest spend) sits on top.
+            var bounds = [0].concat(cut);
+            var legend = [];
+            for (var i = 4; i >= 0; i--) {
+                var lo = bounds[i];
+                var label = (i === 4)
+                    ? "> " + this._fmtUsd(cut[3])
+                    : this._fmtUsd(lo) + " – " + this._fmtUsd(bounds[i + 1]);
+                legend.push({ text: label, color: BLUES[i] });
             }
-            svg.push("<text x='26' y='" + (BLUES.length * 22) + "' font-size='11' fill='#c2cedd'>Low</text>");
-            svg.push("</g>");
 
-            svg.push("</svg>");
-            oHtml.setContent("<div style='position:relative;width:100%'>" + svg.join("") + "</div>");
-            oHtml.attachEventOnce("afterRendering", this._wireMapTip, this);
+            this._oModel.setProperty("/mapRegions", regions);
+            this._oModel.setProperty("/mapLegend", legend);
+
+            var oMap = this.byId("vbiMap");
+            if (oMap && oMap.setVisualFrame) {
+                oMap.setVisualFrame({ minLon: -130, maxLon: -64, minLat: 20, maxLat: 52, minLOD: 2 });
+            }
         },
 
-        _wireMapTip: function () {
-            var oHtml = this.byId("mapHtml");
-            var dom = oHtml && oHtml.getDomRef();
-            var box = dom && dom.querySelector("div");
-            var svg = dom && dom.querySelector("svg");
-            if (!box || !svg) { return; }
-
-            var tip = document.createElement("div");
-            tip.setAttribute("style", "position:absolute;pointer-events:none;background:rgba(8,16,28,0.92);" +
-                "color:#fff;padding:4px 8px;border-radius:4px;font:12px Arial;white-space:nowrap;" +
-                "transform:translate(-50%,-140%);display:none;z-index:5;border:1px solid #2b3a4d");
-            box.appendChild(tip);
-
-            var tips = this._tips || {};
-            var active = null;
-            svg.addEventListener("mousemove", function (e) {
-                var st = e.target && e.target.getAttribute && e.target.getAttribute("data-state");
-                if (!st) { tip.style.display = "none"; if (active) { active.style.filter = ""; active = null; } return; }
-                if (active && active !== e.target) { active.style.filter = ""; }
-                active = e.target;
-                e.target.style.filter = "brightness(1.25)";
-                var r = box.getBoundingClientRect();
-                tip.textContent = tips[st] || st;
-                tip.style.left = (e.clientX - r.left) + "px";
-                tip.style.top = (e.clientY - r.top) + "px";
-                tip.style.display = "block";
-            });
-            svg.addEventListener("mouseleave", function () {
-                tip.style.display = "none"; if (active) { active.style.filter = ""; active = null; }
-            });
+        onRegionClick: function (oEvt) {
+            var sCode = oEvt.getParameter("code");
+            var aReg = this._oModel.getProperty("/mapRegions") || [];
+            var hit = aReg.filter(function (r) { return r.code === sCode; })[0];
+            MessageToast.show(hit ? hit.tooltip : (sCode || "No data"));
         }
     });
 });

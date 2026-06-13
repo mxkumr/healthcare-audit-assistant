@@ -6,6 +6,7 @@
     xmlns:f="sap.f"
     xmlns:card="sap.f.cards"
     xmlns:core="sap.ui.core"
+    xmlns:vbm="sap.ui.vbm"
     xmlns:viz="sap.viz.ui5.controls"
     xmlns:vizData="sap.viz.ui5.data"
     xmlns:vizFeeds="sap.viz.ui5.controls.common.feeds"
@@ -55,12 +56,23 @@
             <ScrollContainer height="100%" width="100%" vertical="true" horizontal="false" class="medDashScroll">
                 <f:GridContainer class="medDashGrid">
                     <f:layout>
-                        <f:GridContainerSettings rowSize="5rem" columnSize="5.5rem" gap="1rem" columns="12"/>
+                        <f:GridContainerSettings rowSize="2rem" columnSize="6rem" gap="1rem" columns="12"/>
                     </f:layout>
+                    <f:layoutM>
+                        <f:GridContainerSettings rowSize="2rem" columnSize="6rem" gap="0.85rem" columns="8"/>
+                    </f:layoutM>
+                    <f:layoutS>
+                        <f:GridContainerSettings rowSize="2rem" columnSize="6rem" gap="0.75rem" columns="4"/>
+                    </f:layoutS>
+
+                    <!-- ══ Section · Key Metrics ════════════════════════════════ -->
+                    <Title text="Key Metrics" level="H3" class="medSectionTitle medFirstSection">
+                        <layoutData><f:GridContainerItemLayoutData columns="12" rows="1"/></layoutData>
+                    </Title>
 
                     <!-- KPI 1: Total Medicare Spend -->
                     <f:Card class="medKpiCard">
-                        <f:layoutData><f:GridContainerItemLayoutData columns="3" rows="3"/></f:layoutData>
+                        <f:layoutData><f:GridContainerItemLayoutData columns="3" rows="4"/></f:layoutData>
                         <f:header>
                             <card:NumericHeader
                                 title="Total Medicare Spend"
@@ -74,7 +86,7 @@
 
                     <!-- KPI 2: Total Providers -->
                     <f:Card class="medKpiCard">
-                        <f:layoutData><f:GridContainerItemLayoutData columns="3" rows="3"/></f:layoutData>
+                        <f:layoutData><f:GridContainerItemLayoutData columns="3" rows="4"/></f:layoutData>
                         <f:header>
                             <card:NumericHeader
                                 title="Total Providers"
@@ -88,7 +100,7 @@
 
                     <!-- KPI 3: Avg HCC Risk Score -->
                     <f:Card class="medKpiCard">
-                        <f:layoutData><f:GridContainerItemLayoutData columns="3" rows="3"/></f:layoutData>
+                        <f:layoutData><f:GridContainerItemLayoutData columns="3" rows="4"/></f:layoutData>
                         <f:header>
                             <card:NumericHeader
                                 title="Avg HCC Risk Score"
@@ -101,7 +113,7 @@
 
                     <!-- KPI 4: Beneficiaries -->
                     <f:Card class="medKpiCard">
-                        <f:layoutData><f:GridContainerItemLayoutData columns="3" rows="3"/></f:layoutData>
+                        <f:layoutData><f:GridContainerItemLayoutData columns="3" rows="4"/></f:layoutData>
                         <f:header>
                             <card:NumericHeader
                                 title="Beneficiaries"
@@ -113,27 +125,44 @@
                         </f:header>
                     </f:Card>
 
+                    <!-- ══ Section · Cost &amp; Geography ═══════════════════════════ -->
+                    <Title text="Cost &amp; Geography" level="H3" class="medSectionTitle">
+                        <layoutData><f:GridContainerItemLayoutData columns="12" rows="1"/></layoutData>
+                    </Title>
+
                     <!-- Cost by State (choropleth) -->
                     <f:Card class="medChartCard">
-                        <f:layoutData><f:GridContainerItemLayoutData columns="7" rows="9"/></f:layoutData>
+                        <f:layoutData><f:GridContainerItemLayoutData columns="7" rows="12"/></f:layoutData>
                         <f:header>
                             <card:Header title="Cost by State" subtitle="Total Medicare Paid · 2023"/>
                         </f:header>
                         <f:content>
-                            <VBox height="100%" class="medMapBox">
-                                <core:HTML id="mapHtml" content="&lt;div&gt;&lt;/div&gt;"/>
+                            <VBox height="470px" class="medMapBox">
+                                <vbm:AnalyticMap id="vbiMap" width="100%" height="470px"
+                                    initialPosition="-96;39;0" initialZoom="3"
+                                    regions="{dash>/mapRegions}"
+                                    regionClick=".onRegionClick">
+                                    <vbm:regions>
+                                        <vbm:Region code="{dash>code}" color="{dash>color}" tooltip="{dash>tooltip}"/>
+                                    </vbm:regions>
+                                    <vbm:legend>
+                                        <vbm:Legend id="mapLegend" caption="Total Medicare Paid" items="{dash>/mapLegend}">
+                                            <vbm:LegendItem text="{dash>text}" color="{dash>color}"/>
+                                        </vbm:Legend>
+                                    </vbm:legend>
+                                </vbm:AnalyticMap>
                             </VBox>
                         </f:content>
                     </f:Card>
 
                     <!-- Cost by Provider Type (Top 10) -->
                     <f:Card class="medChartCard">
-                        <f:layoutData><f:GridContainerItemLayoutData columns="5" rows="9"/></f:layoutData>
+                        <f:layoutData><f:GridContainerItemLayoutData columns="5" rows="12"/></f:layoutData>
                         <f:header>
                             <card:Header title="Cost by Provider Type" subtitle="Top 10 specialties by Total Paid · 2023"/>
                         </f:header>
                         <f:content>
-                            <viz:VizFrame id="vizProviderType" vizType="bar" height="100%" width="100%"
+                            <viz:VizFrame id="vizProviderType" vizType="bar" height="470px" width="100%"
                                 uiConfig="{applicationSet:'fiori'}">
                                 <viz:dataset>
                                     <vizData:FlattenedDataset data="{dash>/providerType}">
@@ -153,6 +182,11 @@
                         </f:content>
                     </f:Card>
 
+                    <!-- ══ Section · Population &amp; Risk ══════════════════════════ -->
+                    <Title text="Population &amp; Risk" level="H3" class="medSectionTitle">
+                        <layoutData><f:GridContainerItemLayoutData columns="12" rows="1"/></layoutData>
+                    </Title>
+
                     <!-- Rural vs Urban Distribution -->
                     <f:Card class="medChartCard">
                         <f:layoutData><f:GridContainerItemLayoutData columns="4" rows="8"/></f:layoutData>
@@ -160,7 +194,7 @@
                             <card:Header title="Rural vs Urban Distribution" subtitle="Beneficiaries · 2023"/>
                         </f:header>
                         <f:content>
-                            <viz:VizFrame id="vizRuralUrban" vizType="donut" height="100%" width="100%"
+                            <viz:VizFrame id="vizRuralUrban" vizType="donut" height="290px" width="100%"
                                 uiConfig="{applicationSet:'fiori'}">
                                 <viz:dataset>
                                     <vizData:FlattenedDataset data="{dash>/ruralUrban}">
@@ -187,7 +221,7 @@
                             <card:Header title="Risk Score Distribution" subtitle="Providers by risk band · 2023"/>
                         </f:header>
                         <f:content>
-                            <viz:VizFrame id="vizRiskDist" vizType="column" height="100%" width="100%"
+                            <viz:VizFrame id="vizRiskDist" vizType="column" height="290px" width="100%"
                                 uiConfig="{applicationSet:'fiori'}">
                                 <viz:dataset>
                                     <vizData:FlattenedDataset data="{dash>/riskDist}">
@@ -231,6 +265,126 @@
                                     </ColumnListItem>
                                 </items>
                             </Table>
+                        </f:content>
+                    </f:Card>
+
+                    <!-- ══ Task 3 · Association Analysis ════════════════════════ -->
+                    <Title text="Association Analysis" level="H3" class="medSectionTitle">
+                        <layoutData><f:GridContainerItemLayoutData columns="12" rows="1"/></layoutData>
+                    </Title>
+
+                    <!-- Risk ↔ Payment by Specialty (bubble) -->
+                    <f:Card class="medChartCard">
+                        <f:layoutData><f:GridContainerItemLayoutData columns="6" rows="9"/></f:layoutData>
+                        <f:header>
+                            <card:Header title="Patient Risk vs Payment" subtitle="Paid/Bene vs Avg HCC risk · bubble = beneficiaries · Top 15 specialties · 2023"/>
+                        </f:header>
+                        <f:content>
+                            <viz:VizFrame id="vizRiskPay" vizType="bubble" height="330px" width="100%"
+                                uiConfig="{applicationSet:'fiori'}">
+                                <viz:dataset>
+                                    <vizData:FlattenedDataset data="{dash>/riskAssoc}">
+                                        <vizData:dimensions>
+                                            <vizData:DimensionDefinition name="Specialty" value="{dash>type}"/>
+                                        </vizData:dimensions>
+                                        <vizData:measures>
+                                            <vizData:MeasureDefinition name="Avg Risk Score" value="{dash>risk}"/>
+                                            <vizData:MeasureDefinition name="Paid per Beneficiary" value="{dash>paid}"/>
+                                            <vizData:MeasureDefinition name="Beneficiaries" value="{dash>benes}"/>
+                                        </vizData:measures>
+                                    </vizData:FlattenedDataset>
+                                </viz:dataset>
+                                <viz:feeds>
+                                    <vizFeeds:FeedItem uid="valueAxis"  type="Measure"   values="Avg Risk Score"/>
+                                    <vizFeeds:FeedItem uid="valueAxis2" type="Measure"   values="Paid per Beneficiary"/>
+                                    <vizFeeds:FeedItem uid="bubbleWidth" type="Measure"  values="Beneficiaries"/>
+                                    <vizFeeds:FeedItem uid="color"      type="Dimension" values="Specialty"/>
+                                </viz:feeds>
+                            </viz:VizFrame>
+                        </f:content>
+                    </f:Card>
+
+                    <!-- Charge Gap by Credential (bar) -->
+                    <f:Card class="medChartCard">
+                        <f:layoutData><f:GridContainerItemLayoutData columns="6" rows="9"/></f:layoutData>
+                        <f:header>
+                            <card:Header title="Charge Gap by Credential" subtitle="Paid-to-charge &amp; allowed-to-charge ratio · Top 8 by providers · 2023"/>
+                        </f:header>
+                        <f:content>
+                            <viz:VizFrame id="vizCredGap" vizType="bar" height="330px" width="100%"
+                                uiConfig="{applicationSet:'fiori'}">
+                                <viz:dataset>
+                                    <vizData:FlattenedDataset data="{dash>/credGap}">
+                                        <vizData:dimensions>
+                                            <vizData:DimensionDefinition name="Credential" value="{dash>cred}"/>
+                                        </vizData:dimensions>
+                                        <vizData:measures>
+                                            <vizData:MeasureDefinition name="Allowed / Charge %" value="{dash>allowedPct}"/>
+                                            <vizData:MeasureDefinition name="Paid / Charge %" value="{dash>paidPct}"/>
+                                        </vizData:measures>
+                                    </vizData:FlattenedDataset>
+                                </viz:dataset>
+                                <viz:feeds>
+                                    <vizFeeds:FeedItem uid="valueAxis"   type="Measure"   values="Allowed / Charge %,Paid / Charge %"/>
+                                    <vizFeeds:FeedItem uid="categoryAxis" type="Dimension" values="Credential"/>
+                                </viz:feeds>
+                            </viz:VizFrame>
+                        </f:content>
+                    </f:Card>
+
+                    <!-- Facility vs Office charges (column) -->
+                    <f:Card class="medChartCard">
+                        <f:layoutData><f:GridContainerItemLayoutData columns="7" rows="8"/></f:layoutData>
+                        <f:header>
+                            <card:Header title="Facility vs Office Charges" subtitle="Volume-weighted avg per service line · 2023"/>
+                        </f:header>
+                        <f:content>
+                            <viz:VizFrame id="vizPlace" vizType="column" height="290px" width="100%"
+                                uiConfig="{applicationSet:'fiori'}">
+                                <viz:dataset>
+                                    <vizData:FlattenedDataset data="{dash>/placeCharge}">
+                                        <vizData:dimensions>
+                                            <vizData:DimensionDefinition name="Place of Service" value="{dash>place}"/>
+                                        </vizData:dimensions>
+                                        <vizData:measures>
+                                            <vizData:MeasureDefinition name="Submitted" value="{dash>submitted}"/>
+                                            <vizData:MeasureDefinition name="Allowed" value="{dash>allowed}"/>
+                                            <vizData:MeasureDefinition name="Paid" value="{dash>paid}"/>
+                                        </vizData:measures>
+                                    </vizData:FlattenedDataset>
+                                </viz:dataset>
+                                <viz:feeds>
+                                    <vizFeeds:FeedItem uid="valueAxis"   type="Measure"   values="Submitted,Allowed,Paid"/>
+                                    <vizFeeds:FeedItem uid="categoryAxis" type="Dimension" values="Place of Service"/>
+                                </viz:feeds>
+                            </viz:VizFrame>
+                        </f:content>
+                    </f:Card>
+
+                    <!-- Where care is delivered (service volume split) -->
+                    <f:Card class="medChartCard">
+                        <f:layoutData><f:GridContainerItemLayoutData columns="5" rows="8"/></f:layoutData>
+                        <f:header>
+                            <card:Header title="Where Care Is Delivered" subtitle="Total services by place of service · 2023"/>
+                        </f:header>
+                        <f:content>
+                            <viz:VizFrame id="vizPlaceVol" vizType="donut" height="290px" width="100%"
+                                uiConfig="{applicationSet:'fiori'}">
+                                <viz:dataset>
+                                    <vizData:FlattenedDataset data="{dash>/placeVolume}">
+                                        <vizData:dimensions>
+                                            <vizData:DimensionDefinition name="Place" value="{dash>name}"/>
+                                        </vizData:dimensions>
+                                        <vizData:measures>
+                                            <vizData:MeasureDefinition name="Services" value="{dash>value}"/>
+                                        </vizData:measures>
+                                    </vizData:FlattenedDataset>
+                                </viz:dataset>
+                                <viz:feeds>
+                                    <vizFeeds:FeedItem uid="size"  type="Measure"   values="Services"/>
+                                    <vizFeeds:FeedItem uid="color" type="Dimension" values="Place"/>
+                                </viz:feeds>
+                            </viz:VizFrame>
                         </f:content>
                     </f:Card>
 
