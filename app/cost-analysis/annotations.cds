@@ -595,18 +595,19 @@ annotate service.RiskPaymentAssociation with @(
 // ── (B) ServicePlaceAnalysis: Facility vs Office ──────────────────────────────
 annotate service.ServicePlaceAnalysis with @(
 
-  UI.SelectionFields: [Year, State, PlaceOfService],
+  UI.SelectionFields: [Year, ProcedureCode, State, PlaceOfService],
 
   UI.HeaderInfo: {
     $Type         : 'UI.HeaderInfoType',
     TypeName      : 'Place-of-Service Record',
     TypeNamePlural: 'Place-of-Service Records',
     Title         : { $Type: 'UI.DataField', Value: PlaceOfService },
-    Description   : { $Type: 'UI.DataField', Value: State }
+    Description   : { $Type: 'UI.DataField', Value: ProcedureCode }
   },
 
   UI.LineItem: [
     { Value: Year,               Label: 'Year' },
+    { Value: ProcedureCode,      Label: 'HCPCS Code' },
     { Value: State,              Label: 'State' },
     { Value: PlaceOfService,     Label: 'Place of Service' },
     { Value: ServiceLineCount,   Label: 'Service Lines' },
@@ -622,6 +623,7 @@ annotate service.ServicePlaceAnalysis with @(
     $Type: 'UI.FieldGroupType',
     Data : [
       { $Type: 'UI.DataField', Value: Year,               Label: 'Year' },
+      { $Type: 'UI.DataField', Value: ProcedureCode,      Label: 'HCPCS Code' },
       { $Type: 'UI.DataField', Value: State,              Label: 'State' },
       { $Type: 'UI.DataField', Value: PlaceOfService,     Label: 'Place of Service' },
       { $Type: 'UI.DataField', Value: ServiceLineCount,   Label: 'Service Lines' },

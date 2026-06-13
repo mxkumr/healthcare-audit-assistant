@@ -455,6 +455,10 @@ view RiskPaymentAssociation as
 view ServicePlaceAnalysis as
   select from ServiceDetails as s {
     key s.Year,
+    // ProcedureCode in the key/grouping keeps the Facility-vs-Office comparison
+    // apples-to-apples: the same HCPCS code is compared across settings instead
+    // of blending different procedure mixes into a misleading average.
+    key s.HCPCS_Cd                           as ProcedureCode        : String,
     key s.Rndrng_Prvdr_State_Abrvtn          as State               : String,
     key case
           when s.Place_Of_Srvc = 'F' then 'Facility'
@@ -480,6 +484,7 @@ view ServicePlaceAnalysis as
   }
   group by
     s.Year,
+    s.HCPCS_Cd,
     s.Rndrng_Prvdr_State_Abrvtn,
     case
       when s.Place_Of_Srvc = 'F' then 'Facility'
@@ -495,10 +500,16 @@ view ServicePlaceAnalysis as
 view CredentialChargeGap as
   select from ProviderSummary as p {
     key p.Year,
+    // Normalize free-text credentials so equivalent variants collapse into one
+    // axis label (e.g. "MD" / "M.D." → "M.D."), instead of fragmenting the
+    // dashboard across punctuation/casing differences.
     key case
-          when p.Rndrng_Prvdr_Crdntls is null or p.Rndrng_Prvdr_Crdntls = ''
-            then 'Unspecified'
-          else p.Rndrng_Prvdr_Crdntls
+          when p.Rndrng_Prvdr_Crdntls is null or p.Rndrng_Prvdr_Crdntls = '' then 'Unspecified'
+          when upper(replace(p.Rndrng_Prvdr_Crdntls, '.', '')) = 'MD'  then 'M.D.'
+          when upper(replace(p.Rndrng_Prvdr_Crdntls, '.', '')) = 'DO'  then 'D.O.'
+          when upper(p.Rndrng_Prvdr_Crdntls) like '%PA%'               then 'Physician Assistant'
+          when upper(p.Rndrng_Prvdr_Crdntls) like '%NP%'               then 'Nurse Practitioner'
+          else upper(p.Rndrng_Prvdr_Crdntls)
         end                                  as Credential          : String,
 
     count(p.Rndrng_NPI)                      as ProviderCount       : Integer,
@@ -520,7 +531,10 @@ view CredentialChargeGap as
   group by
     p.Year,
     case
-      when p.Rndrng_Prvdr_Crdntls is null or p.Rndrng_Prvdr_Crdntls = ''
-        then 'Unspecified'
-      else p.Rndrng_Prvdr_Crdntls
+      when p.Rndrng_Prvdr_Crdntls is null or p.Rndrng_Prvdr_Crdntls = '' then 'Unspecified'
+      when upper(replace(p.Rndrng_Prvdr_Crdntls, '.', '')) = 'MD'  then 'M.D.'
+      when upper(replace(p.Rndrng_Prvdr_Crdntls, '.', '')) = 'DO'  then 'D.O.'
+      when upper(p.Rndrng_Prvdr_Crdntls) like '%PA%'               then 'Physician Assistant'
+      when upper(p.Rndrng_Prvdr_Crdntls) like '%NP%'               then 'Nurse Practitioner'
+      else upper(p.Rndrng_Prvdr_Crdntls)
     end;

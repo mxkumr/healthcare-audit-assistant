@@ -358,7 +358,7 @@ annotate MedicareService.RiskPaymentAssociation with @(
 annotate MedicareService.ServicePlaceAnalysis with @(
   Aggregation.ApplySupported: {
     Transformations        : ['aggregate', 'groupby', 'filter'],
-    GroupableProperties    : [Year, State, PlaceOfService],
+    GroupableProperties    : [Year, ProcedureCode, State, PlaceOfService],
     AggregatableProperties : [
       {Property: ServiceLineCount},
       {Property: TotalServices},
@@ -381,6 +381,7 @@ annotate MedicareService.ServicePlaceAnalysis with @(
   Aggregation.CustomAggregate #PaymentToChargePct : 'Edm.Decimal'
 ) {
   Year               @Analytics.Dimension: true;
+  ProcedureCode      @Analytics.Dimension: true;
   State              @Analytics.Dimension: true;
   PlaceOfService     @Analytics.Dimension: true;
   ServiceLineCount   @Analytics.Measure: true  @Aggregation.default: #SUM;
