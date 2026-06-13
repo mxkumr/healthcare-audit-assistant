@@ -85,3 +85,67 @@
     text-transform: uppercase;
     font-size: 0.8rem;
 }
+
+/* ── Insights cards (highest / lowest / average per category) ─────────── */
+.medInsightCard .sapFCardContent {
+    display: block;
+    overflow-y: auto;
+}
+.medInsightList .sapMListUl {
+    background: transparent;
+}
+.medInsightLi {
+    padding: 0.45rem 0.6rem;
+    border-bottom: 1px solid #21344f;
+}
+.medInsightRow {
+    gap: 0.3rem;
+}
+.medInsightCat .sapMText {
+    color: #c9d6e6;
+    font-weight: 700;
+    font-size: 0.78rem;
+    letter-spacing: 0.2px;
+}
+.medInsightCat {
+    margin-bottom: 0.15rem;
+}
+.medInsightLine {
+    gap: 0.5rem;
+}
+/* Tiny coloured pill marking HIGH / LOW / AVG */
+.medInsightTag .sapMText {
+    display: inline-block;
+    min-width: 2.6rem;
+    text-align: center;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    line-height: 1.15rem;
+    border-radius: 4px;
+    padding: 0 0.2rem;
+}
+.medTagHigh .sapMText { color: #57d9a3; background: rgba(45, 138, 94, 0.18); }
+.medTagLow  .sapMText { color: #ff8a8a; background: rgba(199, 68, 68, 0.18); }
+.medTagAvg  .sapMText { color: #8fb8ff; background: rgba(45, 100, 180, 0.18); }
+.medInsightName .sapMText {
+    color: #9fb0c3;
+    font-size: 0.78rem;
+}
+.medInsightVal .sapMText {
+    color: #eaf1f9;
+    font-weight: 700;
+    font-size: 0.82rem;
+    white-space: nowrap;
+}
+
+/* ── Responsive fallback: stack into a single column on small screens so
+      the spans never overflow the available width. ─────────────────────── */
+@media (max-width: 768px) {
+    .medDashGrid {
+        grid-template-columns: 1fr !important;
+    }
+    .medDashGrid > * {
+        grid-column: 1 / -1 !important;
+    }
+}

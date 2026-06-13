@@ -32,7 +32,12 @@ sap.ui.define([
                 placeCharge: [],
                 placeVolume: [],
                 mapRegions: [],
-                mapLegend: []
+                mapLegend: [],
+                insights: {
+                    cost:  [this._blankInsight(), this._blankInsight()],
+                    pop:   [this._blankInsight(), this._blankInsight()],
+                    assoc: [this._blankInsight(), this._blankInsight(), this._blankInsight()]
+                }
             });
             this.getView().setModel(this._oModel, "dash");
 
@@ -124,10 +129,13 @@ sap.ui.define([
             this._get("/medicare/CostByStateProviderType?$apply=filter(Year eq '" + YEAR +
                 "')/groupby((ProviderType),aggregate(TotalPaid))")
                 .then(function (rows) {
-                    var data = rows.map(function (r) {
+                    var full = rows.map(function (r) {
                         return { name: r.ProviderType || "Unknown", value: (parseFloat(r.TotalPaid) || 0) / 1e9 };
-                    }).sort(function (a, b) { return b.value - a.value; }).slice(0, 10);
-                    that._oModel.setProperty("/providerType", data);
+                    }).sort(function (a, b) { return b.value - a.value; });
+                    that._oModel.setProperty("/providerType", full.slice(0, 10));
+                    that._oModel.setProperty("/insights/cost/1",
+                        that._insight("Cost · Provider Type", full, "name", "value",
+                            function (v) { return that._fmtUsd(v * 1e9); }));
                 });
         },
 
@@ -140,6 +148,8 @@ sap.ui.define([
                         return { name: r.RuralUrban || "Unknown", value: parseFloat(r.TotalBeneficiaries) || 0 };
                     }).sort(function (a, b) { return b.value - a.value; });
                     that._oModel.setProperty("/ruralUrban", data);
+                    that._oModel.setProperty("/insights/pop/0",
+                        that._insight("Beneficiaries · Area", data, "name", "value", that._fmtNum.bind(that)));
                 });
         },
 
@@ -152,6 +162,8 @@ sap.ui.define([
                         return { name: (r.RiskBand || "").replace(/^[0-9]+\s*-\s*/, ""), value: parseFloat(r.ProviderCount) || 0 };
                     }).sort(function (a, b) { return a.name.localeCompare(b.name); });
                     that._oModel.setProperty("/riskDist", data);
+                    that._oModel.setProperty("/insights/pop/1",
+                        that._insight("Providers · Risk Band", data, "name", "value", that._fmtNum.bind(that)));
                 });
         },
 
@@ -189,8 +201,10 @@ sap.ui.define([
                             _tot: parseFloat(r.TotalPaid) || 0
                         };
                     }).filter(function (d) { return d.risk > 0 && d.paid > 0; })
-                      .sort(function (a, b) { return b._tot - a._tot; }).slice(0, 15);
-                    that._oModel.setProperty("/riskAssoc", data);
+                      .sort(function (a, b) { return b._tot - a._tot; });
+                    that._oModel.setProperty("/riskAssoc", data.slice(0, 15));
+                    that._oModel.setProperty("/insights/assoc/0",
+                        that._insight("Paid / Bene · Specialty", data, "type", "paid", that._fmtUsd.bind(that)));
                 });
         },
 
@@ -202,16 +216,21 @@ sap.ui.define([
             this._get("/medicare/CredentialChargeGap?$apply=filter(Year eq '" + YEAR +
                 "')/groupby((Credential),aggregate(PaymentToChargePct,AllowedToChargePct,ProviderCount))")
                 .then(function (rows) {
-                    var data = rows.map(function (r) {
+                    var full = rows.map(function (r) {
                         return {
                             cred: r.Credential || "Unspecified",
                             paidPct: parseFloat((parseFloat(r.PaymentToChargePct) || 0).toFixed(1)),
                             allowedPct: parseFloat((parseFloat(r.AllowedToChargePct) || 0).toFixed(1)),
                             _prov: parseFloat(r.ProviderCount) || 0
                         };
-                    }).sort(function (a, b) { return b._prov - a._prov; }).slice(0, 8)
-                      .sort(function (a, b) { return a.paidPct - b.paidPct; });
+                    });
+                    var data = full.slice().sort(function (a, b) { return b._prov - a._prov; }).slice(0, 8)
+                        .sort(function (a, b) { return a.paidPct - b.paidPct; });
                     that._oModel.setProperty("/credGap", data);
+                    // Only credentials with enough providers, so rare titles don't skew the high/low.
+                    var sig = full.filter(function (d) { return d._prov >= 20; });
+                    that._oModel.setProperty("/insights/assoc/1",
+                        that._insight("Paid-to-Charge · Credential", sig, "cred", "paidPct", that._fmtPct.bind(that)));
                 });
         },
 
@@ -249,6 +268,8 @@ sap.ui.define([
                     });
                     that._oModel.setProperty("/placeCharge", charge);
                     that._oModel.setProperty("/placeVolume", volume);
+                    that._oModel.setProperty("/insights/assoc/2",
+                        that._insight("Avg Paid / Service · Place", charge, "place", "paid", that._fmtUsd.bind(that)));
                 });
         },
 
@@ -345,6 +366,51 @@ sap.ui.define([
                 : "$" + Math.round(v).toLocaleString();
         },
 
+        _fmtNum: function (v) {
+            return v >= 1e6 ? (v / 1e6).toFixed(1) + "M"
+                : v >= 1e3 ? (v / 1e3).toFixed(0) + "K"
+                : Math.round(v).toLocaleString();
+        },
+
+        _fmtPct: function (v) { return (parseFloat(v) || 0).toFixed(1) + "%"; },
+
+        // Placeholder shown until each loader resolves and fills the card.
+        _blankInsight: function () {
+            return {
+                cat: "—",
+                high: { label: "—", value: "—" },
+                low:  { label: "—", value: "—" },
+                avg:  { value: "—" }
+            };
+        },
+
+        // Compute highest / lowest / average for one category. `arr` is a list of
+        // objects; `kLabel`/`kVal` name the label and numeric fields; `fmt` formats
+        // the value for display.
+        _insight: function (sCat, arr, kLabel, kVal, fmt) {
+            var rows = (arr || []).filter(function (r) {
+                return r && isFinite(parseFloat(r[kVal]));
+            });
+            if (!rows.length) {
+                var b = this._blankInsight();
+                b.cat = sCat;
+                return b;
+            }
+            var hi = rows[0], lo = rows[0], sum = 0;
+            rows.forEach(function (r) {
+                var v = parseFloat(r[kVal]);
+                if (v > parseFloat(hi[kVal])) { hi = r; }
+                if (v < parseFloat(lo[kVal])) { lo = r; }
+                sum += v;
+            });
+            return {
+                cat: sCat,
+                high: { label: String(hi[kLabel]), value: fmt(parseFloat(hi[kVal])) },
+                low:  { label: String(lo[kLabel]), value: fmt(parseFloat(lo[kVal])) },
+                avg:  { value: fmt(sum / rows.length) }
+            };
+        },
+
         _buildRegions: function (mValues) {
             var states = Object.keys(mValues);
             var vals = states.map(function (s) { return mValues[s]; })
@@ -378,6 +444,10 @@ sap.ui.define([
 
             this._oModel.setProperty("/mapRegions", regions);
             this._oModel.setProperty("/mapLegend", legend);
+
+            var stateRows = states.map(function (s) { return { state: s, paid: mValues[s] }; });
+            this._oModel.setProperty("/insights/cost/0",
+                this._insight("Cost · State", stateRows, "state", "paid", this._fmtUsd.bind(this)));
 
             var oMap = this.byId("vbiMap");
             if (oMap && oMap.setVisualFrame) {

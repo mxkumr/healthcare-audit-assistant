@@ -4,6 +4,7 @@
     xmlns="sap.m"
     xmlns:tnt="sap.tnt"
     xmlns:f="sap.f"
+    xmlns:grid="sap.ui.layout.cssgrid"
     xmlns:card="sap.f.cards"
     xmlns:core="sap.ui.core"
     xmlns:vbm="sap.ui.vbm"
@@ -54,25 +55,16 @@
         <!-- ── Main dashboard content ──────────────────────────────────── -->
         <tnt:mainContents>
             <ScrollContainer height="100%" width="100%" vertical="true" horizontal="false" class="medDashScroll">
-                <f:GridContainer class="medDashGrid">
-                    <f:layout>
-                        <f:GridContainerSettings rowSize="2rem" columnSize="6rem" gap="1rem" columns="12"/>
-                    </f:layout>
-                    <f:layoutM>
-                        <f:GridContainerSettings rowSize="2rem" columnSize="6rem" gap="0.85rem" columns="8"/>
-                    </f:layoutM>
-                    <f:layoutS>
-                        <f:GridContainerSettings rowSize="2rem" columnSize="6rem" gap="0.75rem" columns="4"/>
-                    </f:layoutS>
+                <grid:CSSGrid class="medDashGrid" gridTemplateColumns="repeat(12, 1fr)" gridGap="1rem">
 
                     <!-- ══ Section · Key Metrics ════════════════════════════════ -->
                     <Title text="Key Metrics" level="H3" class="medSectionTitle medFirstSection">
-                        <layoutData><f:GridContainerItemLayoutData columns="12" rows="1"/></layoutData>
+                        <layoutData><grid:GridItemLayoutData gridColumn="span 12"/></layoutData>
                     </Title>
 
                     <!-- KPI 1: Total Medicare Spend -->
                     <f:Card class="medKpiCard">
-                        <f:layoutData><f:GridContainerItemLayoutData columns="3" rows="4"/></f:layoutData>
+                        <f:layoutData><grid:GridItemLayoutData gridColumn="span 3"/></f:layoutData>
                         <f:header>
                             <card:NumericHeader
                                 title="Total Medicare Spend"
@@ -86,7 +78,7 @@
 
                     <!-- KPI 2: Total Providers -->
                     <f:Card class="medKpiCard">
-                        <f:layoutData><f:GridContainerItemLayoutData columns="3" rows="4"/></f:layoutData>
+                        <f:layoutData><grid:GridItemLayoutData gridColumn="span 3"/></f:layoutData>
                         <f:header>
                             <card:NumericHeader
                                 title="Total Providers"
@@ -100,7 +92,7 @@
 
                     <!-- KPI 3: Avg HCC Risk Score -->
                     <f:Card class="medKpiCard">
-                        <f:layoutData><f:GridContainerItemLayoutData columns="3" rows="4"/></f:layoutData>
+                        <f:layoutData><grid:GridItemLayoutData gridColumn="span 3"/></f:layoutData>
                         <f:header>
                             <card:NumericHeader
                                 title="Avg HCC Risk Score"
@@ -113,7 +105,7 @@
 
                     <!-- KPI 4: Beneficiaries -->
                     <f:Card class="medKpiCard">
-                        <f:layoutData><f:GridContainerItemLayoutData columns="3" rows="4"/></f:layoutData>
+                        <f:layoutData><grid:GridItemLayoutData gridColumn="span 3"/></f:layoutData>
                         <f:header>
                             <card:NumericHeader
                                 title="Beneficiaries"
@@ -127,12 +119,12 @@
 
                     <!-- ══ Section · Cost &amp; Geography ═══════════════════════════ -->
                     <Title text="Cost &amp; Geography" level="H3" class="medSectionTitle">
-                        <layoutData><f:GridContainerItemLayoutData columns="12" rows="1"/></layoutData>
+                        <layoutData><grid:GridItemLayoutData gridColumn="span 12"/></layoutData>
                     </Title>
 
                     <!-- Cost by State (choropleth) -->
                     <f:Card class="medChartCard">
-                        <f:layoutData><f:GridContainerItemLayoutData columns="7" rows="12"/></f:layoutData>
+                        <f:layoutData><grid:GridItemLayoutData gridColumn="span 5"/></f:layoutData>
                         <f:header>
                             <card:Header title="Cost by State" subtitle="Total Medicare Paid · 2023"/>
                         </f:header>
@@ -157,7 +149,7 @@
 
                     <!-- Cost by Provider Type (Top 10) -->
                     <f:Card class="medChartCard">
-                        <f:layoutData><f:GridContainerItemLayoutData columns="5" rows="12"/></f:layoutData>
+                        <f:layoutData><grid:GridItemLayoutData gridColumn="span 4"/></f:layoutData>
                         <f:header>
                             <card:Header title="Cost by Provider Type" subtitle="Top 10 specialties by Total Paid · 2023"/>
                         </f:header>
@@ -182,14 +174,53 @@
                         </f:content>
                     </f:Card>
 
+                    <!-- Cost insights: highest / lowest / average per category -->
+                    <f:Card class="medChartCard medInsightCard">
+                        <f:layoutData><grid:GridItemLayoutData gridColumn="span 3"/></f:layoutData>
+                        <f:header>
+                            <card:Header title="Cost Highlights" subtitle="Highest · Lowest · Average · 2023"/>
+                        </f:header>
+                        <f:content>
+                            <List items="{dash>/insights/cost}" showSeparators="None"
+                                backgroundDesign="Transparent" class="medInsightList">
+                                <CustomListItem class="medInsightLi">
+                                    <VBox class="medInsightRow">
+                                        <Text text="{dash>cat}" class="medInsightCat"/>
+                                        <HBox class="medInsightLine" justifyContent="SpaceBetween" alignItems="Center">
+                                            <Text text="HIGH" class="medInsightTag medTagHigh"/>
+                                            <Text text="{dash>high/label}" wrapping="false" class="medInsightName">
+                                                <layoutData><FlexItemData growFactor="1" baseSize="0%"/></layoutData>
+                                            </Text>
+                                            <Text text="{dash>high/value}" class="medInsightVal"/>
+                                        </HBox>
+                                        <HBox class="medInsightLine" justifyContent="SpaceBetween" alignItems="Center">
+                                            <Text text="LOW" class="medInsightTag medTagLow"/>
+                                            <Text text="{dash>low/label}" wrapping="false" class="medInsightName">
+                                                <layoutData><FlexItemData growFactor="1" baseSize="0%"/></layoutData>
+                                            </Text>
+                                            <Text text="{dash>low/value}" class="medInsightVal"/>
+                                        </HBox>
+                                        <HBox class="medInsightLine" justifyContent="SpaceBetween" alignItems="Center">
+                                            <Text text="AVG" class="medInsightTag medTagAvg"/>
+                                            <Text text="" wrapping="false" class="medInsightName">
+                                                <layoutData><FlexItemData growFactor="1" baseSize="0%"/></layoutData>
+                                            </Text>
+                                            <Text text="{dash>avg/value}" class="medInsightVal"/>
+                                        </HBox>
+                                    </VBox>
+                                </CustomListItem>
+                            </List>
+                        </f:content>
+                    </f:Card>
+
                     <!-- ══ Section · Population &amp; Risk ══════════════════════════ -->
                     <Title text="Population &amp; Risk" level="H3" class="medSectionTitle">
-                        <layoutData><f:GridContainerItemLayoutData columns="12" rows="1"/></layoutData>
+                        <layoutData><grid:GridItemLayoutData gridColumn="span 12"/></layoutData>
                     </Title>
 
                     <!-- Rural vs Urban Distribution -->
                     <f:Card class="medChartCard">
-                        <f:layoutData><f:GridContainerItemLayoutData columns="4" rows="8"/></f:layoutData>
+                        <f:layoutData><grid:GridItemLayoutData gridColumn="span 3"/></f:layoutData>
                         <f:header>
                             <card:Header title="Rural vs Urban Distribution" subtitle="Beneficiaries · 2023"/>
                         </f:header>
@@ -216,7 +247,7 @@
 
                     <!-- Risk Score Distribution -->
                     <f:Card class="medChartCard">
-                        <f:layoutData><f:GridContainerItemLayoutData columns="4" rows="8"/></f:layoutData>
+                        <f:layoutData><grid:GridItemLayoutData gridColumn="span 3"/></f:layoutData>
                         <f:header>
                             <card:Header title="Risk Score Distribution" subtitle="Providers by risk band · 2023"/>
                         </f:header>
@@ -243,7 +274,7 @@
 
                     <!-- Top Cost Outliers -->
                     <f:Card class="medChartCard">
-                        <f:layoutData><f:GridContainerItemLayoutData columns="4" rows="8"/></f:layoutData>
+                        <f:layoutData><grid:GridItemLayoutData gridColumn="span 3"/></f:layoutData>
                         <f:header>
                             <card:Header title="Top Cost Outliers" subtitle="By cost intensity · 2023"/>
                         </f:header>
@@ -268,14 +299,53 @@
                         </f:content>
                     </f:Card>
 
+                    <!-- Population insights: highest / lowest / average per category -->
+                    <f:Card class="medChartCard medInsightCard">
+                        <f:layoutData><grid:GridItemLayoutData gridColumn="span 3"/></f:layoutData>
+                        <f:header>
+                            <card:Header title="Population Highlights" subtitle="Highest · Lowest · Average · 2023"/>
+                        </f:header>
+                        <f:content>
+                            <List items="{dash>/insights/pop}" showSeparators="None"
+                                backgroundDesign="Transparent" class="medInsightList">
+                                <CustomListItem class="medInsightLi">
+                                    <VBox class="medInsightRow">
+                                        <Text text="{dash>cat}" class="medInsightCat"/>
+                                        <HBox class="medInsightLine" justifyContent="SpaceBetween" alignItems="Center">
+                                            <Text text="HIGH" class="medInsightTag medTagHigh"/>
+                                            <Text text="{dash>high/label}" wrapping="false" class="medInsightName">
+                                                <layoutData><FlexItemData growFactor="1" baseSize="0%"/></layoutData>
+                                            </Text>
+                                            <Text text="{dash>high/value}" class="medInsightVal"/>
+                                        </HBox>
+                                        <HBox class="medInsightLine" justifyContent="SpaceBetween" alignItems="Center">
+                                            <Text text="LOW" class="medInsightTag medTagLow"/>
+                                            <Text text="{dash>low/label}" wrapping="false" class="medInsightName">
+                                                <layoutData><FlexItemData growFactor="1" baseSize="0%"/></layoutData>
+                                            </Text>
+                                            <Text text="{dash>low/value}" class="medInsightVal"/>
+                                        </HBox>
+                                        <HBox class="medInsightLine" justifyContent="SpaceBetween" alignItems="Center">
+                                            <Text text="AVG" class="medInsightTag medTagAvg"/>
+                                            <Text text="" wrapping="false" class="medInsightName">
+                                                <layoutData><FlexItemData growFactor="1" baseSize="0%"/></layoutData>
+                                            </Text>
+                                            <Text text="{dash>avg/value}" class="medInsightVal"/>
+                                        </HBox>
+                                    </VBox>
+                                </CustomListItem>
+                            </List>
+                        </f:content>
+                    </f:Card>
+
                     <!-- ══ Task 3 · Association Analysis ════════════════════════ -->
                     <Title text="Association Analysis" level="H3" class="medSectionTitle">
-                        <layoutData><f:GridContainerItemLayoutData columns="12" rows="1"/></layoutData>
+                        <layoutData><grid:GridItemLayoutData gridColumn="span 12"/></layoutData>
                     </Title>
 
                     <!-- Risk ↔ Payment by Specialty (bubble) -->
                     <f:Card class="medChartCard">
-                        <f:layoutData><f:GridContainerItemLayoutData columns="6" rows="9"/></f:layoutData>
+                        <f:layoutData><grid:GridItemLayoutData gridColumn="span 5"/></f:layoutData>
                         <f:header>
                             <card:Header title="Patient Risk vs Payment" subtitle="Paid/Bene vs Avg HCC risk · bubble = beneficiaries · Top 15 specialties · 2023"/>
                         </f:header>
@@ -306,7 +376,7 @@
 
                     <!-- Charge Gap by Credential (bar) -->
                     <f:Card class="medChartCard">
-                        <f:layoutData><f:GridContainerItemLayoutData columns="6" rows="9"/></f:layoutData>
+                        <f:layoutData><grid:GridItemLayoutData gridColumn="span 4"/></f:layoutData>
                         <f:header>
                             <card:Header title="Charge Gap by Credential" subtitle="Paid-to-charge &amp; allowed-to-charge ratio · Top 8 by providers · 2023"/>
                         </f:header>
@@ -332,9 +402,48 @@
                         </f:content>
                     </f:Card>
 
+                    <!-- Association insights: highest / lowest / average per category -->
+                    <f:Card class="medChartCard medInsightCard">
+                        <f:layoutData><grid:GridItemLayoutData gridColumn="span 3"/></f:layoutData>
+                        <f:header>
+                            <card:Header title="Association Highlights" subtitle="Highest · Lowest · Average · 2023"/>
+                        </f:header>
+                        <f:content>
+                            <List items="{dash>/insights/assoc}" showSeparators="None"
+                                backgroundDesign="Transparent" class="medInsightList">
+                                <CustomListItem class="medInsightLi">
+                                    <VBox class="medInsightRow">
+                                        <Text text="{dash>cat}" class="medInsightCat"/>
+                                        <HBox class="medInsightLine" justifyContent="SpaceBetween" alignItems="Center">
+                                            <Text text="HIGH" class="medInsightTag medTagHigh"/>
+                                            <Text text="{dash>high/label}" wrapping="false" class="medInsightName">
+                                                <layoutData><FlexItemData growFactor="1" baseSize="0%"/></layoutData>
+                                            </Text>
+                                            <Text text="{dash>high/value}" class="medInsightVal"/>
+                                        </HBox>
+                                        <HBox class="medInsightLine" justifyContent="SpaceBetween" alignItems="Center">
+                                            <Text text="LOW" class="medInsightTag medTagLow"/>
+                                            <Text text="{dash>low/label}" wrapping="false" class="medInsightName">
+                                                <layoutData><FlexItemData growFactor="1" baseSize="0%"/></layoutData>
+                                            </Text>
+                                            <Text text="{dash>low/value}" class="medInsightVal"/>
+                                        </HBox>
+                                        <HBox class="medInsightLine" justifyContent="SpaceBetween" alignItems="Center">
+                                            <Text text="AVG" class="medInsightTag medTagAvg"/>
+                                            <Text text="" wrapping="false" class="medInsightName">
+                                                <layoutData><FlexItemData growFactor="1" baseSize="0%"/></layoutData>
+                                            </Text>
+                                            <Text text="{dash>avg/value}" class="medInsightVal"/>
+                                        </HBox>
+                                    </VBox>
+                                </CustomListItem>
+                            </List>
+                        </f:content>
+                    </f:Card>
+
                     <!-- Facility vs Office charges (column) -->
                     <f:Card class="medChartCard">
-                        <f:layoutData><f:GridContainerItemLayoutData columns="7" rows="8"/></f:layoutData>
+                        <f:layoutData><grid:GridItemLayoutData gridColumn="span 7"/></f:layoutData>
                         <f:header>
                             <card:Header title="Facility vs Office Charges" subtitle="Volume-weighted avg per service line · 2023"/>
                         </f:header>
@@ -363,7 +472,7 @@
 
                     <!-- Where care is delivered (service volume split) -->
                     <f:Card class="medChartCard">
-                        <f:layoutData><f:GridContainerItemLayoutData columns="5" rows="8"/></f:layoutData>
+                        <f:layoutData><grid:GridItemLayoutData gridColumn="span 5"/></f:layoutData>
                         <f:header>
                             <card:Header title="Where Care Is Delivered" subtitle="Total services by place of service · 2023"/>
                         </f:header>
@@ -388,7 +497,7 @@
                         </f:content>
                     </f:Card>
 
-                </f:GridContainer>
+                </grid:CSSGrid>
             </ScrollContainer>
         </tnt:mainContents>
     </tnt:ToolPage>
