@@ -397,3 +397,130 @@ view OrganizationClassification as
       when p.Rndrng_Prvdr_Ent_Cd = 'O' then 'Organization'
       else                                  'Unknown'
     end;
+
+// ─── Task 3 Views: Association Analysis ───────────────────────────────────────
+// These views quantify the relationships between patient complexity (risk),
+// service volume and financial outcomes (charges vs allowed vs paid), and the
+// structural drivers behind them (place of service, provider credential).
+// All normalized measures are RATIOS OF SUMS (e.g. SUM(paid)/SUM(benes)) so they
+// stay exact at each view's grain instead of averaging per-provider ratios.
+
+// (A) Risk ↔ Volume ↔ Payment association at the specialty grain.
+// One row per Year + Specialty turns the dataset into a compact scatter where
+// each point is a specialty: X = mean patient risk, Y = paid per beneficiary,
+// bubble size = beneficiaries. This is the core "do higher-complexity
+// specialties actually cost more?" association, and lets us judge whether the
+// pattern matches expected healthcare cost dynamics (risk should track payment).
+view RiskPaymentAssociation as
+  select from ProviderSummary as p {
+    key p.Year,
+    key p.Rndrng_Prvdr_Type                  as ProviderType        : String,
+
+    count(p.Rndrng_NPI)                      as ProviderCount       : Integer,
+    sum(p.Tot_Benes)                         as TotalBeneficiaries   : Integer,
+    sum(p.Tot_Srvcs)                         as TotalServices        : Decimal,
+    sum(p.Tot_Mdcr_Pymt_Amt)                 as TotalPaid            : Decimal,
+
+    avg(p.Bene_Avg_Risk_Scre)                as AvgRiskScore         : Decimal,
+    cast(sum(p.Tot_Srvcs) as Decimal)        / nullif(sum(p.Tot_Benes), 0)
+                                             as ServicesPerBene      : Decimal,
+    cast(sum(p.Tot_Mdcr_Pymt_Amt) as Decimal) / nullif(sum(p.Tot_Benes), 0)
+                                             as PaidPerBene          : Decimal,
+    cast(sum(p.Tot_Sbmtd_Chrg) as Decimal)   / nullif(sum(p.Tot_Benes), 0)
+                                             as SubmittedPerBene     : Decimal,
+
+    // Patient-complexity tier (same risk cut-points used across Task 2) so the
+    // association view can be coloured / filtered by complexity.
+    case
+      when avg(p.Bene_Avg_Risk_Scre) < 1.0 then 'Low Complexity'
+      when avg(p.Bene_Avg_Risk_Scre) < 1.5 then 'Moderate Complexity'
+      when avg(p.Bene_Avg_Risk_Scre) < 2.0 then 'High Complexity'
+      else                                      'Very High Complexity'
+    end                                      as ComplexityTier       : String
+  }
+  group by
+    p.Year,
+    p.Rndrng_Prvdr_Type;
+
+// (B) Place of service (Facility vs Office) ↔ Medicare payment levels.
+// Built on the granular ServiceDetails fact table. The same procedure is
+// reimbursed differently depending on where it is performed, so this view
+// compares weighted average submitted / allowed / paid amounts per service line
+// across Facility vs Office, plus the payment-to-charge realization ratio.
+// Weighted averages use SUM(per-service avg × service count) / SUM(service count).
+//
+// NOTE: the ServiceDetails Avg_* money columns are stored as "$"-prefixed
+// strings in the source CSV (e.g. "$22.64"), so we strip "$" and thousands
+// separators and cast to Decimal before doing any arithmetic.
+view ServicePlaceAnalysis as
+  select from ServiceDetails as s {
+    key s.Year,
+    key s.Rndrng_Prvdr_State_Abrvtn          as State               : String,
+    key case
+          when s.Place_Of_Srvc = 'F' then 'Facility'
+          when s.Place_Of_Srvc = 'O' then 'Office'
+          else                            'Other'
+        end                                  as PlaceOfService       : String,
+
+    count(s.ID)                              as ServiceLineCount     : Integer,
+    sum(s.Tot_Srvcs)                         as TotalServices        : Decimal,
+    sum(s.Tot_Benes)                         as TotalBeneficiaries   : Integer,
+
+    cast(sum(cast(replace(replace(s.Avg_Sbmtd_Chrg, '$', ''), ',', '') as Decimal) * s.Tot_Srvcs) as Decimal)
+        / nullif(sum(s.Tot_Srvcs), 0)        as AvgSubmittedChrg     : Decimal,
+    cast(sum(cast(replace(replace(s.Avg_Mdcr_Alowd_Amt, '$', ''), ',', '') as Decimal) * s.Tot_Srvcs) as Decimal)
+        / nullif(sum(s.Tot_Srvcs), 0)        as AvgAllowedAmt        : Decimal,
+    cast(sum(cast(replace(replace(s.Avg_Mdcr_Pymt_Amt, '$', ''), ',', '') as Decimal) * s.Tot_Srvcs) as Decimal)
+        / nullif(sum(s.Tot_Srvcs), 0)        as AvgPaidAmt           : Decimal,
+
+    // % of billed charges actually paid by Medicare (paid ÷ submitted).
+    100 * cast(sum(cast(replace(replace(s.Avg_Mdcr_Pymt_Amt, '$', ''), ',', '') as Decimal) * s.Tot_Srvcs) as Decimal)
+        / nullif(sum(cast(replace(replace(s.Avg_Sbmtd_Chrg, '$', ''), ',', '') as Decimal) * s.Tot_Srvcs), 0)
+                                             as PaymentToChargePct   : Decimal
+  }
+  group by
+    s.Year,
+    s.Rndrng_Prvdr_State_Abrvtn,
+    case
+      when s.Place_Of_Srvc = 'F' then 'Facility'
+      when s.Place_Of_Srvc = 'O' then 'Office'
+      else                            'Other'
+    end;
+
+// (C) Submitted-vs-paid discrepancy compared across provider credentials.
+// Aggregates ProviderSummary by Year + Credential and exposes the charge-to-
+// payment gap (paid ÷ submitted and allowed ÷ submitted), alongside patient
+// risk, to discuss structural / policy explanations for why some credential
+// groups realize a higher share of their billed charges than others.
+view CredentialChargeGap as
+  select from ProviderSummary as p {
+    key p.Year,
+    key case
+          when p.Rndrng_Prvdr_Crdntls is null or p.Rndrng_Prvdr_Crdntls = ''
+            then 'Unspecified'
+          else p.Rndrng_Prvdr_Crdntls
+        end                                  as Credential          : String,
+
+    count(p.Rndrng_NPI)                      as ProviderCount       : Integer,
+    sum(p.Tot_Benes)                         as TotalBeneficiaries   : Integer,
+    sum(p.Tot_Srvcs)                         as TotalServices        : Decimal,
+    sum(p.Tot_Sbmtd_Chrg)                    as TotalSubmitted       : Decimal,
+    sum(p.Tot_Mdcr_Alowd_Amt)                as TotalAllowed         : Decimal,
+    sum(p.Tot_Mdcr_Pymt_Amt)                 as TotalPaid            : Decimal,
+
+    avg(p.Bene_Avg_Risk_Scre)                as AvgRiskScore         : Decimal,
+    cast(sum(p.Tot_Mdcr_Pymt_Amt) as Decimal) / nullif(sum(p.Tot_Benes), 0)
+                                             as PaidPerBene          : Decimal,
+
+    100 * cast(sum(p.Tot_Mdcr_Pymt_Amt) as Decimal) / nullif(sum(p.Tot_Sbmtd_Chrg), 0)
+                                             as PaymentToChargePct   : Decimal,
+    100 * cast(sum(p.Tot_Mdcr_Alowd_Amt) as Decimal) / nullif(sum(p.Tot_Sbmtd_Chrg), 0)
+                                             as AllowedToChargePct   : Decimal
+  }
+  group by
+    p.Year,
+    case
+      when p.Rndrng_Prvdr_Crdntls is null or p.Rndrng_Prvdr_Crdntls = ''
+        then 'Unspecified'
+      else p.Rndrng_Prvdr_Crdntls
+    end;

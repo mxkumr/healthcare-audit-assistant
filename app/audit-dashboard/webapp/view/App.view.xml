@@ -1,0 +1,241 @@
+<mvc:View
+    controllerName="com.medicare.auditdashboard.controller.App"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:tnt="sap.tnt"
+    xmlns:f="sap.f"
+    xmlns:card="sap.f.cards"
+    xmlns:core="sap.ui.core"
+    xmlns:viz="sap.viz.ui5.controls"
+    xmlns:vizData="sap.viz.ui5.data"
+    xmlns:vizFeeds="sap.viz.ui5.controls.common.feeds"
+    displayBlock="true"
+    height="100%">
+
+    <tnt:ToolPage id="toolPage" class="medDashPage">
+
+        <!-- ── Top header ──────────────────────────────────────────────── -->
+        <tnt:header>
+            <tnt:ToolHeader class="medDashHeader">
+                <Button icon="sap-icon://menu2" type="Transparent" press=".onMenuToggle" tooltip="Toggle navigation"/>
+                <Title text="SAP" class="medDashLogo"/>
+                <ToolbarSpacer width="1rem"/>
+                <Title text="Medicare Analytics Overview" level="H4" class="medDashTitle"/>
+                <ToolbarSpacer/>
+                <SearchField width="16rem" placeholder="Search providers, states…" class="medDashSearch"/>
+                <Button icon="sap-icon://filter" type="Transparent" tooltip="Filters"/>
+                <Button icon="sap-icon://bell" type="Transparent" tooltip="Notifications"/>
+                <Avatar initials="JD" displaySize="XS" backgroundColor="Accent6" class="sapUiTinyMarginBegin"/>
+            </tnt:ToolHeader>
+        </tnt:header>
+
+        <!-- ── Left navigation rail ────────────────────────────────────── -->
+        <tnt:sideContent>
+            <tnt:SideNavigation id="sideNav" expanded="true" selectedKey="overview">
+                <tnt:NavigationList>
+                    <tnt:NavigationListItem text="Overview"          key="overview"   icon="sap-icon://home"/>
+                    <tnt:NavigationListItem text="Cost Analysis"     key="cost"       icon="sap-icon://money-bills"/>
+                    <tnt:NavigationListItem text="Provider Analysis" key="provider"   icon="sap-icon://person-placeholder"/>
+                    <tnt:NavigationListItem text="Utilization"       key="util"       icon="sap-icon://bar-chart"/>
+                    <tnt:NavigationListItem text="Geography"         key="geo"        icon="sap-icon://map-3"/>
+                    <tnt:NavigationListItem text="Benchmarks"        key="bench"      icon="sap-icon://measure"/>
+                    <tnt:NavigationListItem text="Alerts"            key="alerts"     icon="sap-icon://alert"/>
+                    <tnt:NavigationListItem text="Reports"           key="reports"    icon="sap-icon://document-text"/>
+                </tnt:NavigationList>
+                <tnt:fixedItem>
+                    <tnt:NavigationList>
+                        <tnt:NavigationListItem text="Settings" key="settings" icon="sap-icon://action-settings"/>
+                    </tnt:NavigationList>
+                </tnt:fixedItem>
+            </tnt:SideNavigation>
+        </tnt:sideContent>
+
+        <!-- ── Main dashboard content ──────────────────────────────────── -->
+        <tnt:mainContents>
+            <ScrollContainer height="100%" width="100%" vertical="true" horizontal="false" class="medDashScroll">
+                <f:GridContainer class="medDashGrid">
+                    <f:layout>
+                        <f:GridContainerSettings rowSize="5rem" columnSize="5.5rem" gap="1rem" columns="12"/>
+                    </f:layout>
+
+                    <!-- KPI 1: Total Medicare Spend -->
+                    <f:Card class="medKpiCard">
+                        <f:layoutData><f:GridContainerItemLayoutData columns="3" rows="3"/></f:layoutData>
+                        <f:header>
+                            <card:NumericHeader
+                                title="Total Medicare Spend"
+                                number="{dash>/kpi/spendNum}"
+                                scale="{dash>/kpi/spendScale}"
+                                trend="{dash>/kpi/spendDir}"
+                                state="{dash>/kpi/spendState}"
+                                details="{dash>/kpi/spendTrend} vs PY"/>
+                        </f:header>
+                    </f:Card>
+
+                    <!-- KPI 2: Total Providers -->
+                    <f:Card class="medKpiCard">
+                        <f:layoutData><f:GridContainerItemLayoutData columns="3" rows="3"/></f:layoutData>
+                        <f:header>
+                            <card:NumericHeader
+                                title="Total Providers"
+                                number="{dash>/kpi/provNum}"
+                                scale="{dash>/kpi/provScale}"
+                                trend="{dash>/kpi/provDir}"
+                                state="{dash>/kpi/provState}"
+                                details="{dash>/kpi/provTrend} vs PY"/>
+                        </f:header>
+                    </f:Card>
+
+                    <!-- KPI 3: Avg HCC Risk Score -->
+                    <f:Card class="medKpiCard">
+                        <f:layoutData><f:GridContainerItemLayoutData columns="3" rows="3"/></f:layoutData>
+                        <f:header>
+                            <card:NumericHeader
+                                title="Avg HCC Risk Score"
+                                number="{dash>/kpi/riskNum}"
+                                trend="{dash>/kpi/riskDir}"
+                                state="{dash>/kpi/riskState}"
+                                details="{dash>/kpi/riskTrend} vs PY"/>
+                        </f:header>
+                    </f:Card>
+
+                    <!-- KPI 4: Beneficiaries -->
+                    <f:Card class="medKpiCard">
+                        <f:layoutData><f:GridContainerItemLayoutData columns="3" rows="3"/></f:layoutData>
+                        <f:header>
+                            <card:NumericHeader
+                                title="Beneficiaries"
+                                number="{dash>/kpi/beneNum}"
+                                scale="{dash>/kpi/beneScale}"
+                                trend="{dash>/kpi/beneDir}"
+                                state="{dash>/kpi/beneState}"
+                                details="{dash>/kpi/beneTrend} vs PY"/>
+                        </f:header>
+                    </f:Card>
+
+                    <!-- Cost by State (choropleth) -->
+                    <f:Card class="medChartCard">
+                        <f:layoutData><f:GridContainerItemLayoutData columns="7" rows="9"/></f:layoutData>
+                        <f:header>
+                            <card:Header title="Cost by State" subtitle="Total Medicare Paid · 2023"/>
+                        </f:header>
+                        <f:content>
+                            <VBox height="100%" class="medMapBox">
+                                <core:HTML id="mapHtml" content="&lt;div&gt;&lt;/div&gt;"/>
+                            </VBox>
+                        </f:content>
+                    </f:Card>
+
+                    <!-- Cost by Provider Type (Top 10) -->
+                    <f:Card class="medChartCard">
+                        <f:layoutData><f:GridContainerItemLayoutData columns="5" rows="9"/></f:layoutData>
+                        <f:header>
+                            <card:Header title="Cost by Provider Type" subtitle="Top 10 specialties by Total Paid · 2023"/>
+                        </f:header>
+                        <f:content>
+                            <viz:VizFrame id="vizProviderType" vizType="bar" height="100%" width="100%"
+                                uiConfig="{applicationSet:'fiori'}">
+                                <viz:dataset>
+                                    <vizData:FlattenedDataset data="{dash>/providerType}">
+                                        <vizData:dimensions>
+                                            <vizData:DimensionDefinition name="Specialty" value="{dash>name}"/>
+                                        </vizData:dimensions>
+                                        <vizData:measures>
+                                            <vizData:MeasureDefinition name="Total Paid" value="{dash>value}"/>
+                                        </vizData:measures>
+                                    </vizData:FlattenedDataset>
+                                </viz:dataset>
+                                <viz:feeds>
+                                    <vizFeeds:FeedItem uid="valueAxis" type="Measure" values="Total Paid"/>
+                                    <vizFeeds:FeedItem uid="categoryAxis" type="Dimension" values="Specialty"/>
+                                </viz:feeds>
+                            </viz:VizFrame>
+                        </f:content>
+                    </f:Card>
+
+                    <!-- Rural vs Urban Distribution -->
+                    <f:Card class="medChartCard">
+                        <f:layoutData><f:GridContainerItemLayoutData columns="4" rows="8"/></f:layoutData>
+                        <f:header>
+                            <card:Header title="Rural vs Urban Distribution" subtitle="Beneficiaries · 2023"/>
+                        </f:header>
+                        <f:content>
+                            <viz:VizFrame id="vizRuralUrban" vizType="donut" height="100%" width="100%"
+                                uiConfig="{applicationSet:'fiori'}">
+                                <viz:dataset>
+                                    <vizData:FlattenedDataset data="{dash>/ruralUrban}">
+                                        <vizData:dimensions>
+                                            <vizData:DimensionDefinition name="Segment" value="{dash>name}"/>
+                                        </vizData:dimensions>
+                                        <vizData:measures>
+                                            <vizData:MeasureDefinition name="Beneficiaries" value="{dash>value}"/>
+                                        </vizData:measures>
+                                    </vizData:FlattenedDataset>
+                                </viz:dataset>
+                                <viz:feeds>
+                                    <vizFeeds:FeedItem uid="size" type="Measure" values="Beneficiaries"/>
+                                    <vizFeeds:FeedItem uid="color" type="Dimension" values="Segment"/>
+                                </viz:feeds>
+                            </viz:VizFrame>
+                        </f:content>
+                    </f:Card>
+
+                    <!-- Risk Score Distribution -->
+                    <f:Card class="medChartCard">
+                        <f:layoutData><f:GridContainerItemLayoutData columns="4" rows="8"/></f:layoutData>
+                        <f:header>
+                            <card:Header title="Risk Score Distribution" subtitle="Providers by risk band · 2023"/>
+                        </f:header>
+                        <f:content>
+                            <viz:VizFrame id="vizRiskDist" vizType="column" height="100%" width="100%"
+                                uiConfig="{applicationSet:'fiori'}">
+                                <viz:dataset>
+                                    <vizData:FlattenedDataset data="{dash>/riskDist}">
+                                        <vizData:dimensions>
+                                            <vizData:DimensionDefinition name="Risk Band" value="{dash>name}"/>
+                                        </vizData:dimensions>
+                                        <vizData:measures>
+                                            <vizData:MeasureDefinition name="Providers" value="{dash>value}"/>
+                                        </vizData:measures>
+                                    </vizData:FlattenedDataset>
+                                </viz:dataset>
+                                <viz:feeds>
+                                    <vizFeeds:FeedItem uid="valueAxis" type="Measure" values="Providers"/>
+                                    <vizFeeds:FeedItem uid="categoryAxis" type="Dimension" values="Risk Band"/>
+                                </viz:feeds>
+                            </viz:VizFrame>
+                        </f:content>
+                    </f:Card>
+
+                    <!-- Top Cost Outliers -->
+                    <f:Card class="medChartCard">
+                        <f:layoutData><f:GridContainerItemLayoutData columns="4" rows="8"/></f:layoutData>
+                        <f:header>
+                            <card:Header title="Top Cost Outliers" subtitle="By cost intensity · 2023"/>
+                        </f:header>
+                        <f:content>
+                            <Table id="outlierTable" items="{dash>/outliers}" class="medOutlierTable"
+                                fixedLayout="false" showSeparators="Inner">
+                                <columns>
+                                    <Column><Text text="Provider"/></Column>
+                                    <Column><Text text="Specialty"/></Column>
+                                    <Column hAlign="End"><Text text="Cost/Bene"/></Column>
+                                </columns>
+                                <items>
+                                    <ColumnListItem>
+                                        <cells>
+                                            <Text text="{dash>provider}"/>
+                                            <Text text="{dash>specialty}"/>
+                                            <ObjectNumber number="{dash>cost}" unit="$" state="Error"/>
+                                        </cells>
+                                    </ColumnListItem>
+                                </items>
+                            </Table>
+                        </f:content>
+                    </f:Card>
+
+                </f:GridContainer>
+            </ScrollContainer>
+        </tnt:mainContents>
+    </tnt:ToolPage>
+</mvc:View>

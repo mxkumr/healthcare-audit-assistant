@@ -1,0 +1,158 @@
+{
+  "_version": "1.85.0",
+  "sap.app": {
+    "id": "com.medicare.task3overview",
+    "type": "application",
+    "i18n": "i18n/i18n.properties",
+    "applicationVersion": {
+      "version": "0.0.1"
+    },
+    "title": "{{appTitle}}",
+    "description": "{{appDescription}}",
+    "resources": "resources.json",
+    "sourceTemplate": {
+      "id": "@sap/generator-fiori:ovp",
+      "version": "1.25.0"
+    },
+    "dataSources": {
+      "mainService": {
+        "uri": "/medicare/",
+        "type": "OData",
+        "settings": {
+          "annotations": [],
+          "odataVersion": "4.0"
+        }
+      }
+    }
+  },
+  "sap.ui": {
+    "technology": "UI5",
+    "icons": {
+      "icon": "",
+      "favIcon": "",
+      "phone": "",
+      "phone@2": "",
+      "tablet": "",
+      "tablet@2": ""
+    },
+    "deviceTypes": {
+      "desktop": true,
+      "tablet": true,
+      "phone": true
+    }
+  },
+  "sap.ui5": {
+    "flexEnabled": true,
+    "dependencies": {
+      "minUI5Version": "1.148.1",
+      "libs": {
+        "sap.m": {},
+        "sap.ui.core": {},
+        "sap.fe.templates": {},
+        "sap.ovp": {},
+        "sap.ui.rta": {},
+        "sap.ui.layout": {}
+      }
+    },
+    "contentDensities": {
+      "compact": true,
+      "cozy": true
+    },
+    "models": {
+      "i18n": {
+        "type": "sap.ui.model.resource.ResourceModel",
+        "settings": {
+          "bundleName": "com.medicare.task3overview.i18n.i18n"
+        }
+      },
+      "mainModel": {
+        "dataSource": "mainService",
+        "preload": true,
+        "settings": {
+          "operationMode": "Server",
+          "autoExpandSelect": true,
+          "earlyRequests": true
+        }
+      },
+      "@i18n": {
+        "type": "sap.ui.model.resource.ResourceModel",
+        "uri": "i18n/i18n.properties"
+      }
+    },
+    "resources": {
+      "css": []
+    },
+    "routing": {
+      "config": {},
+      "routes": [],
+      "targets": {}
+    }
+  },
+  "sap.ovp": {
+    "globalFilterModel": "mainModel",
+    "globalFilterEntitySet": "RiskPaymentAssociation",
+    "containerLayout": "resizable",
+    "enableLiveFilter": true,
+    "considerAnalyticalParameters": false,
+    "cards": {
+      "card00_association": {
+        "model": "mainModel",
+        "template": "sap.ovp.cards.v4.charts.analytical",
+        "dashboardLayout": {
+          "rowSpan": 20,
+          "colSpan": 2
+        },
+        "settings": {
+          "title": "Paid per Beneficiary by Complexity Tier",
+          "subTitle": "Does higher patient complexity track higher payment?",
+          "entitySet": "RiskPaymentAssociation",
+          "addODataSelect": true,
+          "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart#AssocOVP",
+          "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#AssocOVP"
+        }
+      },
+      "card01_place": {
+        "model": "mainModel",
+        "template": "sap.ovp.cards.v4.charts.analytical",
+        "dashboardLayout": {
+          "rowSpan": 20,
+          "colSpan": 2
+        },
+        "settings": {
+          "title": "Submitted vs Allowed vs Paid by Place of Service",
+          "subTitle": "Facility vs Office reimbursement",
+          "entitySet": "ServicePlaceAnalysis",
+          "addODataSelect": true,
+          "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart",
+          "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant"
+        }
+      },
+      "card02_credential": {
+        "model": "mainModel",
+        "template": "sap.ovp.cards.v4.charts.analytical",
+        "dashboardLayout": {
+          "rowSpan": 20,
+          "colSpan": 2
+        },
+        "settings": {
+          "title": "Paid-to-Submitted Ratio by Credential",
+          "subTitle": "Charge realization across provider credentials",
+          "entitySet": "CredentialChargeGap",
+          "addODataSelect": true,
+          "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart",
+          "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant"
+        }
+      }
+    },
+    "globalFilterControlType": "MacroFilterBar"
+  },
+  "sap.fiori": {
+    "registrationIds": [],
+    "archeType": "analytical"
+  },
+  "sap.fe": {
+    "app": {
+      "enableLazyLoading": true
+    }
+  }
+}

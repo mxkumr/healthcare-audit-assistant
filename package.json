@@ -25,7 +25,13 @@
     "watch-task1-overview": "cds watch --open com.medicare.task1overview/index.html?sap-ui-xx-viewCache=false --livereload false",
     "watch-rural-analysis": "cds watch --open com.medicare.ruralanalysis/index.html?sap-ui-xx-viewCache=false --livereload false",
     "watch-risk-analysis": "cds watch --open com.medicare.riskanalysis/index.html?sap-ui-xx-viewCache=false --livereload false",
-    "watch-task2-overview": "cds watch --open com.medicare.task2overview/index.html?sap-ui-xx-viewCache=false --livereload false"
+    "watch-task2-overview": "cds watch --open com.medicare.task2overview/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-geo-analysis": "cds watch --open com.medicare.geoanalysis/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-audit-dashboard": "cds watch --open com.medicare.auditdashboard/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-association-analysis": "cds watch --open com.medicare.associationanalysis/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-place-of-service": "cds watch --open com.medicare.placeofservice/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-charge-gap": "cds watch --open com.medicare.chargegap/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-task3-overview": "cds watch --open com.medicare.task3overview/index.html?sap-ui-xx-viewCache=false --livereload false"
   },
   "private": true,
   "cds": {
@@ -46,6 +52,12 @@
     "app/task1-overview",
     "app/rural-analysis",
     "app/risk-analysis",
-    "app/task2-overview"
+    "app/task2-overview",
+    "app/geo-analysis",
+    "app/audit-dashboard",
+    "app/association-analysis",
+    "app/place-of-service",
+    "app/charge-gap",
+    "app/task3-overview"
   ]
 }

@@ -492,3 +492,251 @@ annotate service.OrganizationClassification with @(
     Visualizations: ['@UI.LineItem', '@UI.Chart']
   }
 );
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Task 3 — Association Analysis
+// ══════════════════════════════════════════════════════════════════════════════
+
+// ── (A) RiskPaymentAssociation: risk ↔ volume ↔ payment ───────────────────────
+annotate service.RiskPaymentAssociation with @(
+
+  UI.SelectionFields: [Year, ProviderType, ComplexityTier],
+
+  UI.HeaderInfo: {
+    $Type         : 'UI.HeaderInfoType',
+    TypeName      : 'Specialty Association',
+    TypeNamePlural: 'Specialty Associations',
+    Title         : { $Type: 'UI.DataField', Value: ProviderType },
+    Description   : { $Type: 'UI.DataField', Value: ComplexityTier }
+  },
+
+  UI.LineItem: [
+    { Value: Year,               Label: 'Year' },
+    { Value: ProviderType,       Label: 'Specialty' },
+    { Value: ComplexityTier,     Label: 'Complexity Tier' },
+    { Value: ProviderCount,      Label: 'Providers' },
+    { Value: TotalBeneficiaries, Label: 'Beneficiaries' },
+    { Value: AvgRiskScore,       Label: 'Avg Risk Score' },
+    { Value: ServicesPerBene,    Label: 'Services / Bene' },
+    { Value: SubmittedPerBene,   Label: 'Submitted / Bene ($)' },
+    { Value: PaidPerBene,        Label: 'Paid / Bene ($)' },
+    { Value: TotalPaid,          Label: 'Total Paid ($)' }
+  ],
+
+  UI.FieldGroup #AssocDetails: {
+    $Type: 'UI.FieldGroupType',
+    Data : [
+      { $Type: 'UI.DataField', Value: Year,               Label: 'Year' },
+      { $Type: 'UI.DataField', Value: ProviderType,       Label: 'Specialty' },
+      { $Type: 'UI.DataField', Value: ComplexityTier,     Label: 'Complexity Tier' },
+      { $Type: 'UI.DataField', Value: ProviderCount,      Label: 'Providers' },
+      { $Type: 'UI.DataField', Value: TotalBeneficiaries, Label: 'Total Beneficiaries' },
+      { $Type: 'UI.DataField', Value: AvgRiskScore,       Label: 'Avg Risk Score' },
+      { $Type: 'UI.DataField', Value: ServicesPerBene,    Label: 'Services / Beneficiary' },
+      { $Type: 'UI.DataField', Value: SubmittedPerBene,   Label: 'Submitted / Beneficiary ($)' },
+      { $Type: 'UI.DataField', Value: PaidPerBene,        Label: 'Paid / Beneficiary ($)' },
+      { $Type: 'UI.DataField', Value: TotalPaid,          Label: 'Total Paid ($)' }
+    ]
+  },
+
+  UI.Facets: [
+    {
+      $Type : 'UI.ReferenceFacet',
+      ID    : 'AssocDetailsFacet',
+      Label : 'Association Details',
+      Target: '@UI.FieldGroup#AssocDetails'
+    }
+  ],
+
+  // Core association as a bubble scatter: each bubble is a specialty.
+  // X = patient complexity (risk), Y = paid per beneficiary, size = beneficiaries.
+  UI.Chart: {
+    $Type     : 'UI.ChartDefinitionType',
+    Title     : 'Patient Risk vs Paid per Beneficiary (by Specialty)',
+    ChartType : #Bubble,
+    Dimensions: [ProviderType],
+    DimensionAttributes: [
+      { $Type: 'UI.ChartDimensionAttributeType', Dimension: ProviderType, Role: #Category }
+    ],
+    Measures  : [AvgRiskScore, PaidPerBene, TotalBeneficiaries],
+    MeasureAttributes: [
+      { $Type: 'UI.ChartMeasureAttributeType', Measure: AvgRiskScore,       Role: #Axis1 },
+      { $Type: 'UI.ChartMeasureAttributeType', Measure: PaidPerBene,        Role: #Axis2 },
+      { $Type: 'UI.ChartMeasureAttributeType', Measure: TotalBeneficiaries, Role: #Axis3 }
+    ]
+  },
+
+  // Overview-friendly aggregate chart: avg paid/bene per complexity tier.
+  UI.Chart #AssocOVP: {
+    $Type     : 'UI.ChartDefinitionType',
+    Title     : 'Paid per Beneficiary by Complexity Tier',
+    ChartType : #Column,
+    Dimensions: [ComplexityTier],
+    DimensionAttributes: [
+      { $Type: 'UI.ChartDimensionAttributeType', Dimension: ComplexityTier, Role: #Category }
+    ],
+    Measures  : [PaidPerBene],
+    MeasureAttributes: [
+      { $Type: 'UI.ChartMeasureAttributeType', Measure: PaidPerBene, Role: #Axis1 }
+    ]
+  },
+
+  UI.PresentationVariant: {
+    SortOrder     : [{ Property: PaidPerBene, Descending: true }],
+    Visualizations: ['@UI.LineItem', '@UI.Chart']
+  },
+
+  UI.PresentationVariant #AssocOVP: {
+    GroupBy       : [ComplexityTier],
+    Visualizations: ['@UI.Chart#AssocOVP']
+  }
+);
+
+// ── (B) ServicePlaceAnalysis: Facility vs Office ──────────────────────────────
+annotate service.ServicePlaceAnalysis with @(
+
+  UI.SelectionFields: [Year, State, PlaceOfService],
+
+  UI.HeaderInfo: {
+    $Type         : 'UI.HeaderInfoType',
+    TypeName      : 'Place-of-Service Record',
+    TypeNamePlural: 'Place-of-Service Records',
+    Title         : { $Type: 'UI.DataField', Value: PlaceOfService },
+    Description   : { $Type: 'UI.DataField', Value: State }
+  },
+
+  UI.LineItem: [
+    { Value: Year,               Label: 'Year' },
+    { Value: State,              Label: 'State' },
+    { Value: PlaceOfService,     Label: 'Place of Service' },
+    { Value: ServiceLineCount,   Label: 'Service Lines' },
+    { Value: TotalServices,      Label: 'Total Services' },
+    { Value: TotalBeneficiaries, Label: 'Beneficiaries' },
+    { Value: AvgSubmittedChrg,   Label: 'Avg Submitted ($)' },
+    { Value: AvgAllowedAmt,      Label: 'Avg Allowed ($)' },
+    { Value: AvgPaidAmt,         Label: 'Avg Paid ($)' },
+    { Value: PaymentToChargePct, Label: 'Paid / Submitted (%)' }
+  ],
+
+  UI.FieldGroup #PlaceDetails: {
+    $Type: 'UI.FieldGroupType',
+    Data : [
+      { $Type: 'UI.DataField', Value: Year,               Label: 'Year' },
+      { $Type: 'UI.DataField', Value: State,              Label: 'State' },
+      { $Type: 'UI.DataField', Value: PlaceOfService,     Label: 'Place of Service' },
+      { $Type: 'UI.DataField', Value: ServiceLineCount,   Label: 'Service Lines' },
+      { $Type: 'UI.DataField', Value: TotalServices,      Label: 'Total Services' },
+      { $Type: 'UI.DataField', Value: TotalBeneficiaries, Label: 'Total Beneficiaries' },
+      { $Type: 'UI.DataField', Value: AvgSubmittedChrg,   Label: 'Avg Submitted Charge ($)' },
+      { $Type: 'UI.DataField', Value: AvgAllowedAmt,      Label: 'Avg Allowed Amount ($)' },
+      { $Type: 'UI.DataField', Value: AvgPaidAmt,         Label: 'Avg Paid Amount ($)' },
+      { $Type: 'UI.DataField', Value: PaymentToChargePct, Label: 'Paid / Submitted (%)' }
+    ]
+  },
+
+  UI.Facets: [
+    {
+      $Type : 'UI.ReferenceFacet',
+      ID    : 'PlaceDetailsFacet',
+      Label : 'Place-of-Service Details',
+      Target: '@UI.FieldGroup#PlaceDetails'
+    }
+  ],
+
+  // Charge-to-payment gap by place of service: submitted vs allowed vs paid.
+  UI.Chart: {
+    $Type     : 'UI.ChartDefinitionType',
+    Title     : 'Submitted vs Allowed vs Paid by Place of Service',
+    ChartType : #Column,
+    Dimensions: [PlaceOfService],
+    DimensionAttributes: [
+      { $Type: 'UI.ChartDimensionAttributeType', Dimension: PlaceOfService, Role: #Category }
+    ],
+    Measures  : [AvgSubmittedChrg, AvgAllowedAmt, AvgPaidAmt],
+    MeasureAttributes: [
+      { $Type: 'UI.ChartMeasureAttributeType', Measure: AvgSubmittedChrg, Role: #Axis1 },
+      { $Type: 'UI.ChartMeasureAttributeType', Measure: AvgAllowedAmt,    Role: #Axis1 },
+      { $Type: 'UI.ChartMeasureAttributeType', Measure: AvgPaidAmt,       Role: #Axis1 }
+    ]
+  },
+
+  UI.PresentationVariant: {
+    GroupBy       : [PlaceOfService],
+    SortOrder     : [{ Property: AvgPaidAmt, Descending: true }],
+    Visualizations: ['@UI.LineItem', '@UI.Chart']
+  }
+);
+
+// ── (C) CredentialChargeGap: submitted vs paid by credential ──────────────────
+annotate service.CredentialChargeGap with @(
+
+  UI.SelectionFields: [Year, Credential],
+
+  UI.HeaderInfo: {
+    $Type         : 'UI.HeaderInfoType',
+    TypeName      : 'Credential Group',
+    TypeNamePlural: 'Credential Groups',
+    Title         : { $Type: 'UI.DataField', Value: Credential },
+    Description   : { $Type: 'UI.DataField', Value: Year }
+  },
+
+  UI.LineItem: [
+    { Value: Year,               Label: 'Year' },
+    { Value: Credential,         Label: 'Credential' },
+    { Value: ProviderCount,      Label: 'Providers' },
+    { Value: TotalBeneficiaries, Label: 'Beneficiaries' },
+    { Value: AvgRiskScore,       Label: 'Avg Risk Score' },
+    { Value: AllowedToChargePct, Label: 'Allowed / Submitted (%)' },
+    { Value: PaymentToChargePct, Label: 'Paid / Submitted (%)' },
+    { Value: PaidPerBene,        Label: 'Paid / Bene ($)' },
+    { Value: TotalSubmitted,     Label: 'Total Submitted ($)' },
+    { Value: TotalPaid,          Label: 'Total Paid ($)' }
+  ],
+
+  UI.FieldGroup #CredDetails: {
+    $Type: 'UI.FieldGroupType',
+    Data : [
+      { $Type: 'UI.DataField', Value: Year,               Label: 'Year' },
+      { $Type: 'UI.DataField', Value: Credential,         Label: 'Credential' },
+      { $Type: 'UI.DataField', Value: ProviderCount,      Label: 'Providers' },
+      { $Type: 'UI.DataField', Value: TotalBeneficiaries, Label: 'Total Beneficiaries' },
+      { $Type: 'UI.DataField', Value: AvgRiskScore,       Label: 'Avg Risk Score' },
+      { $Type: 'UI.DataField', Value: AllowedToChargePct, Label: 'Allowed / Submitted (%)' },
+      { $Type: 'UI.DataField', Value: PaymentToChargePct, Label: 'Paid / Submitted (%)' },
+      { $Type: 'UI.DataField', Value: PaidPerBene,        Label: 'Paid / Beneficiary ($)' },
+      { $Type: 'UI.DataField', Value: TotalSubmitted,     Label: 'Total Submitted ($)' },
+      { $Type: 'UI.DataField', Value: TotalAllowed,       Label: 'Total Allowed ($)' },
+      { $Type: 'UI.DataField', Value: TotalPaid,          Label: 'Total Paid ($)' }
+    ]
+  },
+
+  UI.Facets: [
+    {
+      $Type : 'UI.ReferenceFacet',
+      ID    : 'CredDetailsFacet',
+      Label : 'Credential Details',
+      Target: '@UI.FieldGroup#CredDetails'
+    }
+  ],
+
+  // Share of billed charges actually paid, compared across credential groups.
+  UI.Chart: {
+    $Type     : 'UI.ChartDefinitionType',
+    Title     : 'Paid-to-Submitted Ratio by Credential',
+    ChartType : #Bar,
+    Dimensions: [Credential],
+    DimensionAttributes: [
+      { $Type: 'UI.ChartDimensionAttributeType', Dimension: Credential, Role: #Category }
+    ],
+    Measures  : [PaymentToChargePct],
+    MeasureAttributes: [
+      { $Type: 'UI.ChartMeasureAttributeType', Measure: PaymentToChargePct, Role: #Axis1 }
+    ]
+  },
+
+  UI.PresentationVariant: {
+    GroupBy       : [Credential],
+    SortOrder     : [{ Property: ProviderCount, Descending: true }],
+    Visualizations: ['@UI.LineItem', '@UI.Chart']
+  }
+);

@@ -29,6 +29,19 @@ service MedicareService @(path:'/medicare') {
   @readonly
   @cds.redirection.target: false
   entity OrganizationClassification as projection on medicare.OrganizationClassification;
+
+  // ── Task 3: Association Analysis ──
+  @readonly
+  @cds.redirection.target: false
+  entity RiskPaymentAssociation as projection on medicare.RiskPaymentAssociation;
+
+  @readonly
+  @cds.redirection.target: false
+  entity ServicePlaceAnalysis as projection on medicare.ServicePlaceAnalysis;
+
+  @readonly
+  @cds.redirection.target: false
+  entity CredentialChargeGap as projection on medicare.CredentialChargeGap;
 }
 
 // ── Aggregation (data-shaping) annotations for the analytical query ────────────
@@ -296,4 +309,133 @@ annotate MedicareService.OrganizationClassification with @(
   AvgRiskScore       @Analytics.Measure: true  @Aggregation.default: #AVG;
   CostPerBene        @Analytics.Measure: true  @Aggregation.default: #AVG;
   ServicesPerBene    @Analytics.Measure: true  @Aggregation.default: #AVG;
+};
+
+// ── Task 3: RiskPaymentAssociation (risk ↔ volume ↔ payment) ──────────────────
+annotate MedicareService.RiskPaymentAssociation with @(
+  Aggregation.ApplySupported: {
+    Transformations        : ['aggregate', 'groupby', 'filter'],
+    GroupableProperties    : [Year, ProviderType, ComplexityTier],
+    AggregatableProperties : [
+      {Property: ProviderCount},
+      {Property: TotalBeneficiaries},
+      {Property: TotalServices},
+      {Property: TotalPaid},
+      {Property: AvgRiskScore},
+      {Property: ServicesPerBene},
+      {Property: PaidPerBene},
+      {Property: SubmittedPerBene}
+    ]
+  }
+);
+
+annotate MedicareService.RiskPaymentAssociation with @(
+  Aggregation.CustomAggregate #ProviderCount      : 'Edm.Int32',
+  Aggregation.CustomAggregate #TotalBeneficiaries : 'Edm.Int32',
+  Aggregation.CustomAggregate #TotalServices      : 'Edm.Decimal',
+  Aggregation.CustomAggregate #TotalPaid          : 'Edm.Decimal',
+  Aggregation.CustomAggregate #AvgRiskScore       : 'Edm.Decimal',
+  Aggregation.CustomAggregate #ServicesPerBene    : 'Edm.Decimal',
+  Aggregation.CustomAggregate #PaidPerBene        : 'Edm.Decimal',
+  Aggregation.CustomAggregate #SubmittedPerBene   : 'Edm.Decimal'
+) {
+  Year               @Analytics.Dimension: true;
+  ProviderType       @Analytics.Dimension: true;
+  ComplexityTier     @Analytics.Dimension: true;
+  ProviderCount      @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalBeneficiaries @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalServices      @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalPaid          @Analytics.Measure: true  @Aggregation.default: #SUM;
+  // Means / ratios: AVG rollup across specialties is an approximation; exact
+  // figures are shown at the row grain (Year + Specialty).
+  AvgRiskScore       @Analytics.Measure: true  @Aggregation.default: #AVG;
+  ServicesPerBene    @Analytics.Measure: true  @Aggregation.default: #AVG;
+  PaidPerBene        @Analytics.Measure: true  @Aggregation.default: #AVG;
+  SubmittedPerBene   @Analytics.Measure: true  @Aggregation.default: #AVG;
+};
+
+// ── Task 3: ServicePlaceAnalysis (Facility vs Office) ─────────────────────────
+annotate MedicareService.ServicePlaceAnalysis with @(
+  Aggregation.ApplySupported: {
+    Transformations        : ['aggregate', 'groupby', 'filter'],
+    GroupableProperties    : [Year, State, PlaceOfService],
+    AggregatableProperties : [
+      {Property: ServiceLineCount},
+      {Property: TotalServices},
+      {Property: TotalBeneficiaries},
+      {Property: AvgSubmittedChrg},
+      {Property: AvgAllowedAmt},
+      {Property: AvgPaidAmt},
+      {Property: PaymentToChargePct}
+    ]
+  }
+);
+
+annotate MedicareService.ServicePlaceAnalysis with @(
+  Aggregation.CustomAggregate #ServiceLineCount   : 'Edm.Int32',
+  Aggregation.CustomAggregate #TotalServices      : 'Edm.Decimal',
+  Aggregation.CustomAggregate #TotalBeneficiaries : 'Edm.Int32',
+  Aggregation.CustomAggregate #AvgSubmittedChrg   : 'Edm.Decimal',
+  Aggregation.CustomAggregate #AvgAllowedAmt      : 'Edm.Decimal',
+  Aggregation.CustomAggregate #AvgPaidAmt         : 'Edm.Decimal',
+  Aggregation.CustomAggregate #PaymentToChargePct : 'Edm.Decimal'
+) {
+  Year               @Analytics.Dimension: true;
+  State              @Analytics.Dimension: true;
+  PlaceOfService     @Analytics.Dimension: true;
+  ServiceLineCount   @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalServices      @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalBeneficiaries @Analytics.Measure: true  @Aggregation.default: #SUM;
+  // Weighted averages / ratios: AVG rollup across states is an approximation;
+  // exact per-place figures are shown at the row grain.
+  AvgSubmittedChrg   @Analytics.Measure: true  @Aggregation.default: #AVG;
+  AvgAllowedAmt      @Analytics.Measure: true  @Aggregation.default: #AVG;
+  AvgPaidAmt         @Analytics.Measure: true  @Aggregation.default: #AVG;
+  PaymentToChargePct @Analytics.Measure: true  @Aggregation.default: #AVG;
+};
+
+// ── Task 3: CredentialChargeGap (submitted vs paid by credential) ─────────────
+annotate MedicareService.CredentialChargeGap with @(
+  Aggregation.ApplySupported: {
+    Transformations        : ['aggregate', 'groupby', 'filter'],
+    GroupableProperties    : [Year, Credential],
+    AggregatableProperties : [
+      {Property: ProviderCount},
+      {Property: TotalBeneficiaries},
+      {Property: TotalServices},
+      {Property: TotalSubmitted},
+      {Property: TotalAllowed},
+      {Property: TotalPaid},
+      {Property: AvgRiskScore},
+      {Property: PaidPerBene},
+      {Property: PaymentToChargePct},
+      {Property: AllowedToChargePct}
+    ]
+  }
+);
+
+annotate MedicareService.CredentialChargeGap with @(
+  Aggregation.CustomAggregate #ProviderCount      : 'Edm.Int32',
+  Aggregation.CustomAggregate #TotalBeneficiaries : 'Edm.Int32',
+  Aggregation.CustomAggregate #TotalServices      : 'Edm.Decimal',
+  Aggregation.CustomAggregate #TotalSubmitted     : 'Edm.Decimal',
+  Aggregation.CustomAggregate #TotalAllowed       : 'Edm.Decimal',
+  Aggregation.CustomAggregate #TotalPaid          : 'Edm.Decimal',
+  Aggregation.CustomAggregate #AvgRiskScore       : 'Edm.Decimal',
+  Aggregation.CustomAggregate #PaidPerBene        : 'Edm.Decimal',
+  Aggregation.CustomAggregate #PaymentToChargePct : 'Edm.Decimal',
+  Aggregation.CustomAggregate #AllowedToChargePct : 'Edm.Decimal'
+) {
+  Year               @Analytics.Dimension: true;
+  Credential         @Analytics.Dimension: true;
+  ProviderCount      @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalBeneficiaries @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalServices      @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalSubmitted     @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalAllowed       @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalPaid          @Analytics.Measure: true  @Aggregation.default: #SUM;
+  AvgRiskScore       @Analytics.Measure: true  @Aggregation.default: #AVG;
+  PaidPerBene        @Analytics.Measure: true  @Aggregation.default: #AVG;
+  PaymentToChargePct @Analytics.Measure: true  @Aggregation.default: #AVG;
+  AllowedToChargePct @Analytics.Measure: true  @Aggregation.default: #AVG;
 };
