@@ -17,6 +17,10 @@ service MedicareService @(path:'/medicare') {
 
   @readonly
   @cds.redirection.target: false
+  entity RuralAnalysisV2          as projection on medicare.RuralAnalysisV2;
+
+  @readonly
+  @cds.redirection.target: false
   entity RuralUrbanDistribution   as projection on medicare.RuralUrbanDistribution;
 
   @readonly
@@ -128,6 +132,37 @@ annotate MedicareService.CostAnalysisV2 with @(
   RejectedDrugCharges @Analytics.Measure: true  @Aggregation.default: #SUM  @Measures.ISOCurrency: 'USD';
   DrugPaid            @Analytics.Measure: true  @Aggregation.default: #SUM  @Measures.ISOCurrency: 'USD';
   TotalBeneficiaries @Analytics.Measure: true  @Aggregation.default: #SUM;
+};
+
+// ── RuralAnalysisV2 (HCPCS × RUCA structural tier — overclaiming cube) ─────────
+annotate MedicareService.RuralAnalysisV2 with @(
+  Aggregation.ApplySupported: {
+    Transformations        : ['aggregate', 'groupby', 'filter'],
+    GroupableProperties    : [HCPCS_Code, HCPCS_Desc, StructuralTier],
+    AggregatableProperties : [
+      {Property: TotalServices},
+      {Property: TotalSubmitted},
+      {Property: TotalPaid},
+      {Property: RejectedCharges}
+    ]
+  }
+);
+
+annotate MedicareService.RuralAnalysisV2 with @(
+  Aggregation.CustomAggregate #TotalServices    : 'Edm.Decimal',
+  Aggregation.CustomAggregate #TotalSubmitted   : 'Edm.Decimal',
+  Aggregation.CustomAggregate #TotalPaid        : 'Edm.Decimal',
+  Aggregation.CustomAggregate #RejectedCharges  : 'Edm.Decimal'
+) {
+  HCPCS_Code       @Analytics.Dimension: true;
+  HCPCS_Desc       @Analytics.Dimension: true;
+  StructuralTier   @Analytics.Dimension: true;
+  TotalServices    @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalSubmitted   @Analytics.Measure: true  @Aggregation.default: #SUM  @Measures.ISOCurrency: 'USD';
+  TotalPaid        @Analytics.Measure: true  @Aggregation.default: #SUM  @Measures.ISOCurrency: 'USD';
+  RejectedCharges  @Analytics.Measure: true  @Aggregation.default: #SUM  @Measures.ISOCurrency: 'USD';
+  // OverclaimRate: row-level ratio only — not aggregatable (percentages must not be summed)
+  OverclaimRate    @Measures.Unit: '%';
 };
 
 // ── RuralUrbanDistribution (geographic disparities) ───────────────────────────

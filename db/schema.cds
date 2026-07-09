@@ -224,6 +224,62 @@ annotate medicare.CostAnalysisV2 with {
   DrugPaid            @Measures.ISOCurrency: 'USD';
 };
 
+// ─── Rural Analysis V2 — HCPCS × RUCA structural tier (overclaiming & frequency) ─
+view RuralAnalysisV2 as
+  select from ServiceDetails as s {
+    key s.HCPCS_Cd   as HCPCS_Code : String,
+    key s.HCPCS_Desc as HCPCS_Desc : String,
+    key case
+          when s.Rndrng_Prvdr_RUCA is null
+            or s.Rndrng_Prvdr_RUCA = ''                    then 'Unclassified'
+          when cast(s.Rndrng_Prvdr_RUCA as Decimal) >= 1.0
+           and cast(s.Rndrng_Prvdr_RUCA as Decimal) <= 3.0  then 'Urban / Metro'
+          when cast(s.Rndrng_Prvdr_RUCA as Decimal) >= 4.0
+           and cast(s.Rndrng_Prvdr_RUCA as Decimal) <= 6.0  then 'Suburban / Micro'
+          when cast(s.Rndrng_Prvdr_RUCA as Decimal) >= 7.0
+           and cast(s.Rndrng_Prvdr_RUCA as Decimal) <= 10.3 then 'Rural / Isolated'
+          else                                                   'Unclassified'
+        end              as StructuralTier : String,
+
+    // ServiceDetails stores per-procedure averages (may include '$' prefix in CSV)
+    sum(s.Tot_Srvcs) as TotalServices : Decimal,
+    sum(cast(replace(s.Avg_Sbmtd_Chrg, '$', '') as Decimal) * s.Tot_Srvcs) as TotalSubmitted : Decimal,
+    sum(cast(replace(s.Avg_Mdcr_Pymt_Amt, '$', '') as Decimal) * s.Tot_Srvcs) as TotalPaid : Decimal,
+    sum(cast(replace(s.Avg_Sbmtd_Chrg, '$', '') as Decimal) * s.Tot_Srvcs)
+      - sum(cast(replace(s.Avg_Mdcr_Alowd_Amt, '$', '') as Decimal) * s.Tot_Srvcs) as RejectedCharges : Decimal,
+    cast(round(
+      (sum(cast(replace(s.Avg_Sbmtd_Chrg, '$', '') as Decimal) * s.Tot_Srvcs)
+       - sum(cast(replace(s.Avg_Mdcr_Alowd_Amt, '$', '') as Decimal) * s.Tot_Srvcs))
+      / nullif(sum(cast(replace(s.Avg_Sbmtd_Chrg, '$', '') as Decimal) * s.Tot_Srvcs), 0) * 100
+    , 2) as Decimal) as OverclaimRate : Decimal
+  }
+  group by
+    s.HCPCS_Cd,
+    s.HCPCS_Desc,
+    case
+      when s.Rndrng_Prvdr_RUCA is null
+        or s.Rndrng_Prvdr_RUCA = ''                    then 'Unclassified'
+      when cast(s.Rndrng_Prvdr_RUCA as Decimal) >= 1.0
+       and cast(s.Rndrng_Prvdr_RUCA as Decimal) <= 3.0  then 'Urban / Metro'
+      when cast(s.Rndrng_Prvdr_RUCA as Decimal) >= 4.0
+       and cast(s.Rndrng_Prvdr_RUCA as Decimal) <= 6.0  then 'Suburban / Micro'
+      when cast(s.Rndrng_Prvdr_RUCA as Decimal) >= 7.0
+       and cast(s.Rndrng_Prvdr_RUCA as Decimal) <= 10.3 then 'Rural / Isolated'
+      else                                                   'Unclassified'
+    end;
+
+annotate medicare.RuralAnalysisV2 with @(
+  Analytics.dataCategory   : #CUBE,
+  Aggregation.ApplyDefault : true
+);
+
+annotate medicare.RuralAnalysisV2 with {
+  TotalSubmitted  @Measures.ISOCurrency: 'USD';
+  TotalPaid       @Measures.ISOCurrency: 'USD';
+  RejectedCharges @Measures.ISOCurrency: 'USD';
+  OverclaimRate   @Measures.Unit: '%';
+};
+
 // Maps the CMS Rural Indicator (RuralInd) to readable locality buckets per the
 // official CMS Zip Code to Carrier Locality File spec (field position 15):
 //   blank = urban, R = rural, B = super rural (lowest-population-density rural).
