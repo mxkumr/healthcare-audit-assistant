@@ -1,6 +1,8 @@
 
 using from './1.1cost-analysis/annotations';
 
+using from './1.1rural-analysis/annotations';
+
 using from './provider-classification/annotations';
 
 using from './specialty-classification/annotations';
