@@ -72,6 +72,24 @@ sap.ui.define([
                 .then(function (j) { return j.value || []; });
         },
 
+        // CAP caps every response at 1000 rows, so any query whose result set can
+        // exceed that (e.g. groupby Place+Procedure has 1500+ groups) must be paged
+        // with $skip or the aggregation silently drops data.
+        _PAGE: 1000,
+        _getAll: function (sUrl, iSkip, aAcc) {
+            var that = this;
+            iSkip = iSkip || 0;
+            aAcc = aAcc || [];
+            var sSep = sUrl.indexOf("?") >= 0 ? "&" : "?";
+            return this._get(sUrl + sSep + "$skip=" + iSkip).then(function (rows) {
+                aAcc = aAcc.concat(rows);
+                if (rows.length >= that._PAGE) {
+                    return that._getAll(sUrl, iSkip + that._PAGE, aAcc);
+                }
+                return aAcc;
+            });
+        },
+
         // ── KPI tiles ─────────────────────────────────────────────────────
         _loadKpis: function () {
             var that = this;
@@ -239,7 +257,7 @@ sap.ui.define([
         // the rollup honours the procedure-level (apples-to-apples) grain.
         _loadPlaceAnalysis: function () {
             var that = this;
-            this._get("/medicare/ServicePlaceAnalysis?$apply=filter(Year eq '" + YEAR +
+            this._getAll("/medicare/ServicePlaceAnalysis?$apply=filter(Year eq '" + YEAR +
                 "')/groupby((PlaceOfService,ProcedureCode),aggregate(" +
                 "AvgSubmittedChrg,AvgAllowedAmt,AvgPaidAmt,TotalServices))")
                 .then(function (rows) {

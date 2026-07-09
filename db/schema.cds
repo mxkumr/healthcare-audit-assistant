@@ -139,6 +139,12 @@ entity GeoReference {
   Locality                              : String;
   RuralInd                              : String;
 }
+
+// US state / territory code → full name (used for chart category labels).
+entity StateReference {
+  key Code : String;
+      Name : String;
+}
 // ─── Task 1 Views ────────────────────────────────────────────────────────────
 
 //view CostByStateProviderType as
@@ -156,22 +162,41 @@ entity GeoReference {
   //group by p.Year, p.Rndrng_Prvdr_State_Abrvtn, p.Rndrng_Prvdr_Type;
 
 view CostByStateProviderType as
-  select from ProviderSummary as p {
+  select from ProviderSummary as p
+  left join StateReference as sr
+    on sr.Code = p.Rndrng_Prvdr_State_Abrvtn {
     key p.Year,
-    key p.Rndrng_Prvdr_State_Abrvtn as State        : String,
-    key p.Rndrng_Prvdr_Type         as ProviderType  : String,
+    key p.Rndrng_Prvdr_State_Abrvtn          as State        : String,
+    coalesce(sr.Name, p.Rndrng_Prvdr_State_Abrvtn) as StateName : String,
+    key p.Rndrng_Prvdr_Type                  as ProviderType  : String,
+    // Medicare participation flag is part of the grain so Card 2 can compare
+    // drug spend for participating vs non-participating providers per state.
+    key case
+          when p.Rndrng_Prvdr_Mdcr_Prtcptg_Ind = 'Y' then 'Participating'
+          when p.Rndrng_Prvdr_Mdcr_Prtcptg_Ind = 'N' then 'Non-Participating'
+          else                                              'Unknown'
+        end                         as MedicareParticipating : String,
 
-    count(p.Rndrng_NPI)          as ProviderCount      : Integer,
-    sum(p.Tot_Sbmtd_Chrg)        as TotalSubmitted     : Decimal,
-    sum(p.Tot_Mdcr_Alowd_Amt)    as TotalAllowed       : Decimal,
-    sum(p.Tot_Mdcr_Pymt_Amt)     as TotalPaid          : Decimal,
-    sum(p.Tot_Benes)             as TotalBeneficiaries : Integer,
-    avg(p.Bene_Avg_Risk_Scre)    as AvgRiskScore       : Decimal
+    count(p.Rndrng_NPI)          as ProviderCount              : Integer,
+    sum(p.Tot_Sbmtd_Chrg)        as TotalSubmitted             : Decimal,
+    sum(p.Tot_Mdcr_Alowd_Amt)    as TotalAllowed               : Decimal,
+    sum(p.Tot_Mdcr_Pymt_Amt)     as TotalPaid                  : Decimal,
+    sum(p.Tot_Benes)             as TotalBeneficiaries         : Integer,
+    sum(p.Tot_Srvcs)             as TotalServices              : Decimal,
+    sum(p.Tot_HCPCS_Cds)         as AggregatedProcedureCount   : Integer,
+    sum(p.Drug_Mdcr_Pymt_Amt)    as DrugPaid                   : Decimal,
+    avg(p.Bene_Avg_Risk_Scre)    as AvgRiskScore               : Decimal
   }
   group by
     p.Year,
     p.Rndrng_Prvdr_State_Abrvtn,
-    p.Rndrng_Prvdr_Type;
+    coalesce(sr.Name, p.Rndrng_Prvdr_State_Abrvtn),
+    p.Rndrng_Prvdr_Type,
+    case
+      when p.Rndrng_Prvdr_Mdcr_Prtcptg_Ind = 'Y' then 'Participating'
+      when p.Rndrng_Prvdr_Mdcr_Prtcptg_Ind = 'N' then 'Non-Participating'
+      else                                              'Unknown'
+    end;
 
 // Maps the CMS Rural Indicator (RuralInd) to readable locality buckets per the
 // official CMS Zip Code to Carrier Locality File spec (field position 15):

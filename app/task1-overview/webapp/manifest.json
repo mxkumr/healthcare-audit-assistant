@@ -104,8 +104,8 @@
           "subTitle": "Total Paid ($) per State",
           "entitySet": "CostByStateProviderType",
           "addODataSelect": true,
-          "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart",
-          "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant"
+          "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart#OVPTotalPaid",
+          "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#OVPCost"
         }
       },
       "card01_rural": {

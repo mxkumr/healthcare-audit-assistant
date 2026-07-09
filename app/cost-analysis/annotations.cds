@@ -2,9 +2,9 @@ using MedicareService as service from '../../srv/medicare-service';
 
 annotate service.CostByStateProviderType with @(
 
-  UI.SelectionFields: [Year, State, ProviderType],
+  // ── Filter bar: shared selection context for all visualizations ─────────────
+  UI.SelectionFields: [Year, State, ProviderType, MedicareParticipating],
 
-  // ── Object Page header ──────────────────────────────────────────────────────
   UI.HeaderInfo: {
     $Type         : 'UI.HeaderInfoType',
     TypeName      : 'Cost Record',
@@ -13,32 +13,344 @@ annotate service.CostByStateProviderType with @(
     Description   : { $Type: 'UI.DataField', Value: ProviderType }
   },
 
-  // ── List Report table (Page Content) ────────────────────────────────────────
+  // Data points for monetary measures — ISOCurrency on the field + ScaleFactor on
+  // ValueFormat drive $ + K/M/B on the Y-axis. AutoScale alone does not apply to
+  // custom-aggregate chart axes in FE ALP; ScaleFactor is required (1e6 → M).
+  UI.DataPoint #TotalPaidFmt: {
+    $Type      : 'UI.DataPointType',
+    Value      : TotalPaid,
+    Title      : 'Total Paid',
+    ValueFormat: {
+      $Type                   : 'UI.NumberFormat',
+      ScaleFactor             : 1000000,
+      NumberOfFractionalDigits: 1
+    }
+  },
+  UI.DataPoint #TotalSubmittedFmt: {
+    $Type      : 'UI.DataPointType',
+    Value      : TotalSubmitted,
+    Title      : 'Total Submitted',
+    ValueFormat: {
+      $Type                   : 'UI.NumberFormat',
+      ScaleFactor             : 1000000,
+      NumberOfFractionalDigits: 1
+    }
+  },
+  UI.DataPoint #TotalAllowedFmt: {
+    $Type      : 'UI.DataPointType',
+    Value      : TotalAllowed,
+    Title      : 'Total Allowed',
+    ValueFormat: {
+      $Type                   : 'UI.NumberFormat',
+      ScaleFactor             : 1000000,
+      NumberOfFractionalDigits: 1
+    }
+  },
+  UI.DataPoint #DrugPaidFmt: {
+    $Type      : 'UI.DataPointType',
+    Value      : DrugPaid,
+    Title      : 'Drug Paid',
+    ValueFormat: {
+      $Type                   : 'UI.NumberFormat',
+      ScaleFactor             : 1000000,
+      NumberOfFractionalDigits: 1
+    }
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // BOTTOM TABLE — full-width analytical grid, default sort TotalPaid DESC
+  // ═══════════════════════════════════════════════════════════════════════════
   UI.LineItem: [
-    { Value: Year,                 Label: 'Year' },
-    { Value: State,                Label: 'State' },
-    { Value: ProviderType,         Label: 'Provider Type' },
-    { Value: ProviderCount,        Label: 'Provider Count' },
-    { Value: TotalSubmitted,       Label: 'Total Submitted ($)' },
-    { Value: TotalAllowed,         Label: 'Total Allowed ($)' },
-    { Value: TotalPaid,            Label: 'Total Paid ($)' },
-    { Value: TotalBeneficiaries,   Label: 'Total Beneficiaries' },
-    { Value: AvgRiskScore,         Label: 'Avg Risk Score' }
+    { Value: State,                      Label: 'State' },
+    { Value: ProviderType,               Label: 'Provider Type' },
+    { Value: TotalBeneficiaries,         Label: 'Total Beneficiaries' },
+    { Value: TotalServices,              Label: 'Total Services' },
+    { Value: AggregatedProcedureCount,   Label: 'Procedure Count' },
+    { Value: AvgRiskScore,               Label: 'Avg Risk Score' },
+    { Value: TotalPaid,                  Label: 'Total Paid ($)' }
   ],
 
-  // ── Object Page form + facets (drill-down) ──────────────────────────────────
+  // Default chart = Card 1 — column: StateName on X, dollar values on Y
+  UI.Chart: {
+    $Type     : 'UI.ChartDefinitionType',
+    Title     : 'State Financial Health Overview',
+    ChartType : #Column,
+    AxisScaling: {
+      $Type             : 'UI.ChartAxisScalingType',
+      ScaleBehavior     : #AutoScale,
+      AutoScaleBehavior : {
+        $Type             : 'UI.ChartAxisAutoScaleBehaviorType',
+        DataScope         : 'DataSet',
+        ZeroAlwaysVisible : true
+      }
+    },
+    Dimensions: [StateName],
+    DimensionAttributes: [
+      { $Type: 'UI.ChartDimensionAttributeType', Dimension: StateName, Role: #Category }
+    ],
+    Measures  : [TotalSubmitted, TotalAllowed, TotalPaid],
+    MeasureAttributes: [
+      {
+        $Type    : 'UI.ChartMeasureAttributeType',
+        Measure  : TotalSubmitted,
+        Role     : #Axis1,
+        DataPoint: ![@UI.DataPoint#TotalSubmittedFmt]
+      },
+      {
+        $Type    : 'UI.ChartMeasureAttributeType',
+        Measure  : TotalAllowed,
+        Role     : #Axis1,
+        DataPoint: ![@UI.DataPoint#TotalAllowedFmt]
+      },
+      {
+        $Type    : 'UI.ChartMeasureAttributeType',
+        Measure  : TotalPaid,
+        Role     : #Axis1,
+        DataPoint: ![@UI.DataPoint#TotalPaidFmt]
+      }
+    ]
+  },
+
+  // OVP-only single-measure chart (Task 1 overview page card)
+  UI.Chart #OVPTotalPaid: {
+    $Type     : 'UI.ChartDefinitionType',
+    Title     : 'Total Paid by State',
+    ChartType : #Column,
+    AxisScaling: {
+      $Type             : 'UI.ChartAxisScalingType',
+      ScaleBehavior     : #AutoScale,
+      AutoScaleBehavior : {
+        $Type             : 'UI.ChartAxisAutoScaleBehaviorType',
+        DataScope         : 'DataSet',
+        ZeroAlwaysVisible : true
+      }
+    },
+    Dimensions: [StateName],
+    DimensionAttributes: [
+      { $Type: 'UI.ChartDimensionAttributeType', Dimension: StateName, Role: #Category }
+    ],
+    Measures  : [TotalPaid],
+    MeasureAttributes: [
+      {
+        $Type    : 'UI.ChartMeasureAttributeType',
+        Measure  : TotalPaid,
+        Role     : #Axis1,
+        DataPoint: ![@UI.DataPoint#TotalPaidFmt]
+      }
+    ]
+  },
+
+  UI.PresentationVariant #OVPCost: {
+    $Type         : 'UI.PresentationVariantType',
+    GroupBy       : [StateName],
+    SortOrder     : [{ Property: TotalSubmitted, Descending: true }],
+    Visualizations: ['@UI.Chart#OVPTotalPaid']
+  },
+
+  // Default presentation for the analytical table: inherent descending sort on
+  // TotalPaid so the highest-spend rows surface first without user interaction.
+  UI.PresentationVariant: {
+    $Type         : 'UI.PresentationVariantType',
+    SortOrder     : [{ Property: TotalPaid, Descending: true }],
+    Visualizations: ['@UI.LineItem']
+  },
+
+  // CARD 1 — column chart: full state names on X, financial measures on Y
+  UI.Chart #FinancialHealth: {
+    $Type     : 'UI.ChartDefinitionType',
+    Title     : 'State Financial Health Overview',
+    ChartType : #Column,
+    AxisScaling: {
+      $Type             : 'UI.ChartAxisScalingType',
+      ScaleBehavior     : #AutoScale,
+      AutoScaleBehavior : {
+        $Type             : 'UI.ChartAxisAutoScaleBehaviorType',
+        DataScope         : 'DataSet',
+        ZeroAlwaysVisible : true
+      }
+    },
+    Dimensions: [StateName],
+    DimensionAttributes: [
+      { $Type: 'UI.ChartDimensionAttributeType', Dimension: StateName, Role: #Category }
+    ],
+    Measures  : [TotalSubmitted, TotalAllowed, TotalPaid],
+    MeasureAttributes: [
+      {
+        $Type    : 'UI.ChartMeasureAttributeType',
+        Measure  : TotalSubmitted,
+        Role     : #Axis1,
+        DataPoint: ![@UI.DataPoint#TotalSubmittedFmt]
+      },
+      {
+        $Type    : 'UI.ChartMeasureAttributeType',
+        Measure  : TotalAllowed,
+        Role     : #Axis1,
+        DataPoint: ![@UI.DataPoint#TotalAllowedFmt]
+      },
+      {
+        $Type    : 'UI.ChartMeasureAttributeType',
+        Measure  : TotalPaid,
+        Role     : #Axis1,
+        DataPoint: ![@UI.DataPoint#TotalPaidFmt]
+      }
+    ]
+  },
+
+  // Top states first (TotalSubmitted DESC); all states loaded — horizontal scroll
+  // reveals ranks 11+ (do not set MaxItems: 10 — that caps data with no scroll).
+  UI.PresentationVariant #FinancialHealth: {
+    $Type         : 'UI.PresentationVariantType',
+    GroupBy       : [StateName],
+    SortOrder     : [{ Property: TotalSubmitted, Descending: true }],
+    Visualizations: ['@UI.Chart#FinancialHealth']
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CARD 2 (PRIMARY RIGHT) — Drug spend vs Medicare participation column chart
+  // Dimensions: State + MedicareParticipating | Measure: DrugPaid
+  // ═══════════════════════════════════════════════════════════════════════════
+  UI.Chart #DrugParticipation: {
+    $Type     : 'UI.ChartDefinitionType',
+    Title     : 'Drug Spending & Medicare Participation',
+    ChartType : #Column,
+    AxisScaling: {
+      $Type             : 'UI.ChartAxisScalingType',
+      ScaleBehavior     : #AutoScale,
+      AutoScaleBehavior : {
+        $Type             : 'UI.ChartAxisAutoScaleBehaviorType',
+        DataScope         : 'DataSet',
+        ZeroAlwaysVisible : true
+      }
+    },
+    Dimensions: [StateName, MedicareParticipating],
+    DimensionAttributes: [
+      { $Type: 'UI.ChartDimensionAttributeType', Dimension: StateName,                Role: #Category },
+      { $Type: 'UI.ChartDimensionAttributeType', Dimension: MedicareParticipating, Role: #Series  }
+    ],
+    Measures  : [DrugPaid],
+    MeasureAttributes: [
+      {
+        $Type    : 'UI.ChartMeasureAttributeType',
+        Measure  : DrugPaid,
+        Role     : #Axis1,
+        DataPoint: ![@UI.DataPoint#DrugPaidFmt]
+      }
+    ]
+  },
+
+  UI.PresentationVariant #DrugParticipation: {
+    $Type         : 'UI.PresentationVariantType',
+    GroupBy       : [StateName, MedicareParticipating],
+    SortOrder     : [{ Property: DrugPaid, Descending: true }],
+    Visualizations: ['@UI.Chart#DrugParticipation']
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // DYNAMIC BREAKDOWN CHART — refreshes when auditor selects a State
+  // Shows provider-type spend exclusively within the selected state context.
+  // ═══════════════════════════════════════════════════════════════════════════
+  UI.Chart #StateBreakdown: {
+    $Type     : 'UI.ChartDefinitionType',
+    Title     : 'Provider Type Breakdown for Selected State',
+    ChartType : #Column,
+    AxisScaling: {
+      $Type             : 'UI.ChartAxisScalingType',
+      ScaleBehavior     : #AutoScale,
+      AutoScaleBehavior : {
+        $Type             : 'UI.ChartAxisAutoScaleBehaviorType',
+        DataScope         : 'DataSet',
+        ZeroAlwaysVisible : true
+      }
+    },
+    Dimensions: [ProviderType],
+    DimensionAttributes: [
+      { $Type: 'UI.ChartDimensionAttributeType', Dimension: ProviderType, Role: #Category }
+    ],
+    Measures  : [TotalPaid],
+    MeasureAttributes: [
+      {
+        $Type    : 'UI.ChartMeasureAttributeType',
+        Measure  : TotalPaid,
+        Role     : #Axis1,
+        DataPoint: ![@UI.DataPoint#TotalPaidFmt]
+      }
+    ]
+  },
+
+  UI.PresentationVariant #StateBreakdown: {
+    $Type         : 'UI.PresentationVariantType',
+    GroupBy       : [ProviderType],
+    SortOrder     : [{ Property: TotalPaid, Descending: true }],
+    Visualizations: ['@UI.Chart#StateBreakdown']
+  },
+
+  // Selection variant bound to the State dimension — FE ALP applies this semantic
+  // filter context (State = clicked value) when the auditor clicks a chart bar
+  // or table row, which in turn refreshes the StateBreakdown chart.
+  UI.SelectionVariant #StateCrossFilter: {
+    $Type       : 'UI.SelectionVariantType',
+    Text        : 'State Cross-Filter',
+    SelectOptions: [{
+      PropertyName: State,
+      Ranges      : [{
+        Sign  : #I,
+        Option: #EQ,
+        Low   : '',   // populated at runtime by chart/table interaction
+        High  : null
+      }]
+    }]
+  },
+
+  // Links the State cross-filter selection to the dynamic breakdown chart so
+  // Card 1 / Card 2 / table clicks all propagate into the breakdown refresh.
+  UI.SelectionPresentationVariant #StateBreakdownLink: {
+    $Type              : 'UI.SelectionPresentationVariantType',
+    SelectionVariant   : ![@UI.SelectionVariant#StateCrossFilter],
+    PresentationVariant: ![@UI.PresentationVariant#StateBreakdown]
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // TOP ROW LAYOUT — Card 1 (left) + Card 2 (right) in a flexible header grid
+  // FE ALP renders multiple chart visualizations in the primary path side-by-side.
+  // ═══════════════════════════════════════════════════════════════════════════
+  UI.PresentationVariant #DashboardHeader: {
+    $Type         : 'UI.PresentationVariantType',
+    Visualizations: [
+      '@UI.Chart#FinancialHealth',
+      '@UI.Chart#DrugParticipation'
+    ]
+  },
+
+  // Master SelectionPresentationVariant: wires the default filter context to
+  // the full dashboard (header cards + breakdown + table sort order).
+  UI.SelectionVariant #ALPDashboard: {
+    $Type: 'UI.SelectionVariantType',
+    Text : 'Medicare Cost Dashboard'
+  },
+
+  UI.SelectionPresentationVariant #ALPDashboard: {
+    $Type              : 'UI.SelectionPresentationVariantType',
+    SelectionVariant   : ![@UI.SelectionVariant#ALPDashboard],
+    PresentationVariant: ![@UI.PresentationVariant#FinancialHealth]
+  },
+
+  // ── Object Page drill-down (unchanged facets) ───────────────────────────────
   UI.FieldGroup #Details: {
     $Type: 'UI.FieldGroupType',
     Data : [
-      { $Type: 'UI.DataField', Value: Year,               Label: 'Year' },
-      { $Type: 'UI.DataField', Value: State,              Label: 'State' },
-      { $Type: 'UI.DataField', Value: ProviderType,       Label: 'Provider Type' },
-      { $Type: 'UI.DataField', Value: ProviderCount,      Label: 'Provider Count' },
-      { $Type: 'UI.DataField', Value: TotalSubmitted,     Label: 'Total Submitted ($)' },
-      { $Type: 'UI.DataField', Value: TotalAllowed,       Label: 'Total Allowed ($)' },
-      { $Type: 'UI.DataField', Value: TotalPaid,          Label: 'Total Paid ($)' },
-      { $Type: 'UI.DataField', Value: TotalBeneficiaries, Label: 'Total Beneficiaries' },
-      { $Type: 'UI.DataField', Value: AvgRiskScore,       Label: 'Avg Risk Score' }
+      { $Type: 'UI.DataField', Value: Year,                     Label: 'Year' },
+      { $Type: 'UI.DataField', Value: State,                    Label: 'State' },
+      { $Type: 'UI.DataField', Value: ProviderType,             Label: 'Provider Type' },
+      { $Type: 'UI.DataField', Value: MedicareParticipating,    Label: 'Medicare Participating' },
+      { $Type: 'UI.DataField', Value: ProviderCount,            Label: 'Provider Count' },
+      { $Type: 'UI.DataField', Value: TotalSubmitted,           Label: 'Total Submitted ($)' },
+      { $Type: 'UI.DataField', Value: TotalAllowed,             Label: 'Total Allowed ($)' },
+      { $Type: 'UI.DataField', Value: TotalPaid,                Label: 'Total Paid ($)' },
+      { $Type: 'UI.DataField', Value: DrugPaid,                 Label: 'Drug Paid ($)' },
+      { $Type: 'UI.DataField', Value: TotalBeneficiaries,       Label: 'Total Beneficiaries' },
+      { $Type: 'UI.DataField', Value: TotalServices,            Label: 'Total Services' },
+      { $Type: 'UI.DataField', Value: AggregatedProcedureCount, Label: 'Procedure Count' },
+      { $Type: 'UI.DataField', Value: AvgRiskScore,             Label: 'Avg Risk Score' }
     ]
   },
 
@@ -51,44 +363,42 @@ annotate service.CostByStateProviderType with @(
     }
   ],
 
-  // ── Main hybrid-view chart ──────────────────────────────────────────────────
-  UI.Chart: {
-    $Type     : 'UI.ChartDefinitionType',
-    Title     : 'Total Paid by State',
-    ChartType : #Bar,
-    Dimensions: [State],
-    DimensionAttributes: [
-      { $Type: 'UI.ChartDimensionAttributeType', Dimension: State, Role: #Category }
-    ],
-    Measures  : [TotalPaid],
-    MeasureAttributes: [
-      { $Type: 'UI.ChartMeasureAttributeType', Measure: TotalPaid, Role: #Axis1 }
-    ]
-  },
-
-  UI.PresentationVariant: {
-    GroupBy       : [State, ProviderType],
-    Total         : [TotalPaid, TotalSubmitted, ProviderCount],
-    Visualizations: ['@UI.LineItem', '@UI.Chart']
-  },
-
-  // ── KPI 1: Total Paid (Page Title) ──────────────────────────────────────────
+  // ── KPI tiles (page title area) ─────────────────────────────────────────────
   UI.DataPoint #TotalPaidKPI: {
-    $Type: 'UI.DataPointType',
-    Value: TotalPaid,
-    Title: 'Total Paid'
+    $Type      : 'UI.DataPointType',
+    Value      : TotalPaid,
+    Title      : 'Total Paid',
+    ValueFormat: {
+      $Type                   : 'UI.NumberFormat',
+      ScaleFactor             : 1000000,
+      NumberOfFractionalDigits: 1
+    }
   },
   UI.Chart #TotalPaidKPI: {
     $Type     : 'UI.ChartDefinitionType',
     Title     : 'Total Paid by State',
-    ChartType : #Bar,
-    Dimensions: [State],
+    ChartType : #Column,
+    AxisScaling: {
+      $Type             : 'UI.ChartAxisScalingType',
+      ScaleBehavior     : #AutoScale,
+      AutoScaleBehavior : {
+        $Type             : 'UI.ChartAxisAutoScaleBehaviorType',
+        DataScope         : 'DataSet',
+        ZeroAlwaysVisible : true
+      }
+    },
+    Dimensions: [StateName],
     DimensionAttributes: [
-      { $Type: 'UI.ChartDimensionAttributeType', Dimension: State, Role: #Category }
+      { $Type: 'UI.ChartDimensionAttributeType', Dimension: StateName, Role: #Category }
     ],
     Measures  : [TotalPaid],
     MeasureAttributes: [
-      { $Type: 'UI.ChartMeasureAttributeType', Measure: TotalPaid, Role: #Axis1 }
+      {
+        $Type    : 'UI.ChartMeasureAttributeType',
+        Measure  : TotalPaid,
+        Role     : #Axis1,
+        DataPoint: ![@UI.DataPoint#TotalPaidFmt]
+      }
     ]
   },
   UI.PresentationVariant #TotalPaidKPI: {
@@ -110,7 +420,6 @@ annotate service.CostByStateProviderType with @(
     }
   },
 
-  // ── KPI 2: Total Beneficiaries (Page Title) ─────────────────────────────────
   UI.DataPoint #TotalBeneficiariesKPI: {
     $Type: 'UI.DataPointType',
     Value: TotalBeneficiaries,
@@ -119,14 +428,28 @@ annotate service.CostByStateProviderType with @(
   UI.Chart #TotalBeneficiariesKPI: {
     $Type     : 'UI.ChartDefinitionType',
     Title     : 'Total Beneficiaries by State',
-    ChartType : #Bar,
-    Dimensions: [State],
+    ChartType : #Column,
+    AxisScaling: {
+      $Type             : 'UI.ChartAxisScalingType',
+      ScaleBehavior     : #AutoScale,
+      AutoScaleBehavior : {
+        $Type             : 'UI.ChartAxisAutoScaleBehaviorType',
+        DataScope         : 'DataSet',
+        ZeroAlwaysVisible : true
+      }
+    },
+    Dimensions: [StateName],
     DimensionAttributes: [
-      { $Type: 'UI.ChartDimensionAttributeType', Dimension: State, Role: #Category }
+      { $Type: 'UI.ChartDimensionAttributeType', Dimension: StateName, Role: #Category }
     ],
     Measures  : [TotalBeneficiaries],
     MeasureAttributes: [
-      { $Type: 'UI.ChartMeasureAttributeType', Measure: TotalBeneficiaries, Role: #Axis1 }
+      {
+        $Type    : 'UI.ChartMeasureAttributeType',
+        Measure  : TotalBeneficiaries,
+        Role     : #Axis1,
+        DataPoint: ![@UI.DataPoint#TotalBeneficiariesKPI]
+      }
     ]
   },
   UI.PresentationVariant #TotalBeneficiariesKPI: {
@@ -148,19 +471,32 @@ annotate service.CostByStateProviderType with @(
     }
   },
 
-  // ── Visual filter charts (Page Header) ──────────────────────────────────────
-  // OData V4 visual filters support only bar and line charts.
+  // ── Visual filter charts (filter bar cross-filtering) ───────────────────────
   UI.Chart #VFState: {
     $Type     : 'UI.ChartDefinitionType',
     Title     : 'Total Paid by State',
-    ChartType : #Bar,
-    Dimensions: [State],
+    ChartType : #Column,
+    AxisScaling: {
+      $Type             : 'UI.ChartAxisScalingType',
+      ScaleBehavior     : #AutoScale,
+      AutoScaleBehavior : {
+        $Type             : 'UI.ChartAxisAutoScaleBehaviorType',
+        DataScope         : 'DataSet',
+        ZeroAlwaysVisible : true
+      }
+    },
+    Dimensions: [StateName],
     DimensionAttributes: [
-      { $Type: 'UI.ChartDimensionAttributeType', Dimension: State, Role: #Category }
+      { $Type: 'UI.ChartDimensionAttributeType', Dimension: StateName, Role: #Category }
     ],
     Measures  : [TotalPaid],
     MeasureAttributes: [
-      { $Type: 'UI.ChartMeasureAttributeType', Measure: TotalPaid, Role: #Axis1 }
+      {
+        $Type    : 'UI.ChartMeasureAttributeType',
+        Measure  : TotalPaid,
+        Role     : #Axis1,
+        DataPoint: ![@UI.DataPoint#TotalPaidFmt]
+      }
     ]
   },
   UI.PresentationVariant #VFState: {
@@ -172,13 +508,27 @@ annotate service.CostByStateProviderType with @(
     $Type     : 'UI.ChartDefinitionType',
     Title     : 'Total Paid by Provider Type',
     ChartType : #Bar,
+    AxisScaling: {
+      $Type             : 'UI.ChartAxisScalingType',
+      ScaleBehavior     : #AutoScale,
+      AutoScaleBehavior : {
+        $Type             : 'UI.ChartAxisAutoScaleBehaviorType',
+        DataScope         : 'DataSet',
+        ZeroAlwaysVisible : true
+      }
+    },
     Dimensions: [ProviderType],
     DimensionAttributes: [
       { $Type: 'UI.ChartDimensionAttributeType', Dimension: ProviderType, Role: #Category }
     ],
     Measures  : [TotalPaid],
     MeasureAttributes: [
-      { $Type: 'UI.ChartMeasureAttributeType', Measure: TotalPaid, Role: #Axis1 }
+      {
+        $Type    : 'UI.ChartMeasureAttributeType',
+        Measure  : TotalPaid,
+        Role     : #Axis1,
+        DataPoint: ![@UI.DataPoint#TotalPaidFmt]
+      }
     ]
   },
   UI.PresentationVariant #VFProviderType: {
@@ -187,14 +537,41 @@ annotate service.CostByStateProviderType with @(
   }
 );
 
-// ── Visual filter value lists (link filter fields to the charts above) ─────────
+// ── Value lists: wire State clicks → cross-filter → StateBreakdown refresh ─────
 annotate service.CostByStateProviderType with {
+  State @Common.Text: StateName;
+
+  // Explicit USD currency on all monetary measures — enables $ + K/M/B shorthand
+  // on chart Y-axis labels via FE NumberFormat short currency display.
+  TotalSubmitted @Common.Label: 'Total Submitted' @Measures.ISOCurrency: 'USD';
+  TotalAllowed   @Common.Label: 'Total Allowed'   @Measures.ISOCurrency: 'USD';
+  TotalPaid      @Common.Label: 'Total Paid'      @Measures.ISOCurrency: 'USD';
+  DrugPaid       @Common.Label: 'Drug Paid'       @Measures.ISOCurrency: 'USD';
+
   State @Common.ValueList #VFState: {
     $Type                       : 'Common.ValueListType',
     Label                       : 'State',
     CollectionPath              : 'CostByStateProviderType',
     SearchSupported             : false,
     PresentationVariantQualifier: 'VFState',
+    Parameters                  : [
+      {
+        $Type            : 'Common.ValueListParameterInOut',
+        LocalDataProperty: State,
+        ValueListProperty: 'State'
+      }
+    ]
+  };
+
+  // State selection from filter bar / chart / table propagates to the dynamic
+  // breakdown chart via the StateBreakdown presentation variant qualifier.
+  State @Common.ValueList #StateCrossFilter: {
+    $Type                       : 'Common.ValueListType',
+    Label                       : 'State',
+    CollectionPath              : 'CostByStateProviderType',
+    SearchSupported             : false,
+    PresentationVariantQualifier: 'StateBreakdown',
+    SelectionVariantQualifier   : 'StateCrossFilter',
     Parameters                  : [
       {
         $Type            : 'Common.ValueListParameterInOut',
@@ -215,6 +592,39 @@ annotate service.CostByStateProviderType with {
         $Type            : 'Common.ValueListParameterInOut',
         LocalDataProperty: ProviderType,
         ValueListProperty: 'ProviderType'
+      }
+    ]
+  };
+
+  MedicareParticipating @Common.ValueList #DrugParticipationVF: {
+    $Type                       : 'Common.ValueListType',
+    Label                       : 'Medicare Participating',
+    CollectionPath              : 'CostByStateProviderType',
+    SearchSupported             : false,
+    PresentationVariantQualifier: 'DrugParticipation',
+    Parameters                  : [
+      {
+        $Type            : 'Common.ValueListParameterInOut',
+        LocalDataProperty: MedicareParticipating,
+        ValueListProperty: 'MedicareParticipating'
+      },
+      {
+        $Type            : 'Common.ValueListParameterInOut',
+        LocalDataProperty: State,
+        ValueListProperty: 'State'
+      }
+    ]
+  };
+
+  MedicareParticipating @Common.ValueList: {
+    $Type         : 'Common.ValueListType',
+    Label         : 'Medicare Participating',
+    CollectionPath: 'CostByStateProviderType',
+    Parameters    : [
+      {
+        $Type            : 'Common.ValueListParameterInOut',
+        LocalDataProperty: MedicareParticipating,
+        ValueListProperty: 'MedicareParticipating'
       }
     ]
   };

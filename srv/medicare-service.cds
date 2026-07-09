@@ -53,13 +53,16 @@ service MedicareService @(path:'/medicare') {
 annotate MedicareService.CostByStateProviderType with @(
   Aggregation.ApplySupported: {
     Transformations        : ['aggregate', 'groupby', 'filter'],
-    GroupableProperties    : [Year, State, ProviderType],
+    GroupableProperties    : [Year, State, StateName, ProviderType, MedicareParticipating],
     AggregatableProperties : [
       {Property: ProviderCount},
       {Property: TotalSubmitted},
       {Property: TotalAllowed},
       {Property: TotalPaid},
       {Property: TotalBeneficiaries},
+      {Property: TotalServices},
+      {Property: AggregatedProcedureCount},
+      {Property: DrugPaid},
       {Property: AvgRiskScore}
     ]
   }
@@ -70,24 +73,32 @@ annotate MedicareService.CostByStateProviderType with @(
 // needs BOTH the result type (@Aggregation.CustomAggregate#<measure>) and the
 // aggregation function (@Aggregation.default) to resolve such a query.
 annotate MedicareService.CostByStateProviderType with @(
-  Aggregation.CustomAggregate #ProviderCount      : 'Edm.Int32',
-  Aggregation.CustomAggregate #TotalSubmitted     : 'Edm.Decimal',
-  Aggregation.CustomAggregate #TotalAllowed       : 'Edm.Decimal',
-  Aggregation.CustomAggregate #TotalPaid          : 'Edm.Decimal',
-  Aggregation.CustomAggregate #TotalBeneficiaries : 'Edm.Int32',
-  Aggregation.CustomAggregate #AvgRiskScore       : 'Edm.Decimal'
+  Aggregation.CustomAggregate #ProviderCount            : 'Edm.Int32',
+  Aggregation.CustomAggregate #TotalSubmitted             : 'Edm.Decimal',
+  Aggregation.CustomAggregate #TotalAllowed               : 'Edm.Decimal',
+  Aggregation.CustomAggregate #TotalPaid                  : 'Edm.Decimal',
+  Aggregation.CustomAggregate #TotalBeneficiaries         : 'Edm.Int32',
+  Aggregation.CustomAggregate #TotalServices              : 'Edm.Decimal',
+  Aggregation.CustomAggregate #AggregatedProcedureCount   : 'Edm.Int32',
+  Aggregation.CustomAggregate #DrugPaid                   : 'Edm.Decimal',
+  Aggregation.CustomAggregate #AvgRiskScore               : 'Edm.Decimal'
 ) {
   // @Analytics.Dimension / .Measure are required by the OVP V4 chart data
   // handler (sap.ovp.cards.v4.charts) to identify dimensions vs measures.
-  Year               @Analytics.Dimension: true;
-  State              @Analytics.Dimension: true;
-  ProviderType       @Analytics.Dimension: true;
-  ProviderCount      @Analytics.Measure: true  @Aggregation.default: #SUM;
-  TotalSubmitted     @Analytics.Measure: true  @Aggregation.default: #SUM;
-  TotalAllowed       @Analytics.Measure: true  @Aggregation.default: #SUM;
-  TotalPaid          @Analytics.Measure: true  @Aggregation.default: #SUM;
-  TotalBeneficiaries @Analytics.Measure: true  @Aggregation.default: #SUM;
-  AvgRiskScore       @Analytics.Measure: true  @Aggregation.default: #AVG;
+  Year                   @Analytics.Dimension: true;
+  State                  @Analytics.Dimension: true;
+  StateName              @Analytics.Dimension: true;
+  ProviderType           @Analytics.Dimension: true;
+  MedicareParticipating  @Analytics.Dimension: true;
+  ProviderCount            @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalSubmitted           @Analytics.Measure: true  @Aggregation.default: #SUM  @Measures.ISOCurrency: 'USD';
+  TotalAllowed             @Analytics.Measure: true  @Aggregation.default: #SUM  @Measures.ISOCurrency: 'USD';
+  TotalPaid                @Analytics.Measure: true  @Aggregation.default: #SUM  @Measures.ISOCurrency: 'USD';
+  TotalBeneficiaries       @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalServices            @Analytics.Measure: true  @Aggregation.default: #SUM;
+  AggregatedProcedureCount @Analytics.Measure: true  @Aggregation.default: #SUM;
+  DrugPaid                 @Analytics.Measure: true  @Aggregation.default: #SUM  @Measures.ISOCurrency: 'USD';
+  AvgRiskScore             @Analytics.Measure: true  @Aggregation.default: #AVG;
 };
 
 // ── RuralUrbanDistribution (geographic disparities) ───────────────────────────

@@ -103,6 +103,7 @@
             "settings": {
               "contextPath": "/CostByStateProviderType",
               "variantManagement": "Page",
+              "defaultTemplateAnnotationPath": "com.sap.vocabularies.UI.v1.SelectionPresentationVariant#ALPDashboard",
               "navigation": {
                 "CostByStateProviderType": {
                   "detail": {
@@ -124,19 +125,65 @@
                 "@com.sap.vocabularies.UI.v1.LineItem": {
                   "tableSettings": {
                     "type": "AnalyticalTable",
-                    "selectionMode": "None"
+                    "selectionMode": "None",
+                    "enableExport": true
                   }
+                },
+                "@com.sap.vocabularies.UI.v1.Chart": {
+                  "chartSettings": {
+                    "defaultChartType": "column",
+                    "vizProperties": {
+                      "plotArea": {
+                        "dataPointSize": { "min": 80, "max": 80 }
+                      },
+                      "interaction": {
+                        "zoom": { "enablement": "enabled" }
+                      }
+                    }
+                  }
+                },
+                "@com.sap.vocabularies.UI.v1.Chart#FinancialHealth": {
+                  "chartSettings": {
+                    "defaultChartType": "column",
+                    "vizProperties": {
+                      "plotArea": {
+                        "dataPointSize": { "min": 80, "max": 80 }
+                      },
+                      "interaction": {
+                        "zoom": { "enablement": "enabled" }
+                      }
+                    }
+                  }
+                },
+                "@com.sap.vocabularies.UI.v1.Chart#DrugParticipation": {
+                  "chartSettings": {
+                    "defaultChartType": "column"
+                  }
+                },
+                "@com.sap.vocabularies.UI.v1.Chart#StateBreakdown": {
+                  "chartSettings": {
+                    "defaultChartType": "column"
+                  },
+                  "requestFilterFields": ["State"]
                 },
                 "@com.sap.vocabularies.UI.v1.SelectionFields": {
                   "filterFields": {
                     "State": {
                       "visualFilter": {
                         "valueList": "@com.sap.vocabularies.Common.v1.ValueList#VFState"
+                      },
+                      "propertyInfo": {
+                        "valueList": "@com.sap.vocabularies.Common.v1.ValueList#StateCrossFilter"
                       }
                     },
                     "ProviderType": {
                       "visualFilter": {
                         "valueList": "@com.sap.vocabularies.Common.v1.ValueList#VFProviderType"
+                      }
+                    },
+                    "MedicareParticipating": {
+                      "visualFilter": {
+                        "valueList": "@com.sap.vocabularies.Common.v1.ValueList#DrugParticipationVF"
                       }
                     }
                   }
@@ -147,12 +194,12 @@
                   {
                     "primary": [
                       {
-                        "annotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant"
+                        "annotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#FinancialHealth"
                       }
                     ],
                     "secondary": [
                       {
-                        "annotationPath": "com.sap.vocabularies.UI.v1.LineItem"
+                        "annotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant"
                       }
                     ],
                     "defaultPath": "both"
