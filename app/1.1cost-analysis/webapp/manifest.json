@@ -1,7 +1,7 @@
 {
   "_version": "1.85.0",
   "sap.app": {
-    "id": "com.medicare.costanalysis",
+    "id": "com.medicare.11costanalysis",
     "type": "application",
     "i18n": "i18n/i18n.properties",
     "applicationVersion": {
@@ -9,12 +9,6 @@
     },
     "title": "{{appTitle}}",
     "description": "{{appDescription}}",
-    "resources": "resources.json",
-    "sourceTemplate": {
-      "id": "@sap/generator-fiori:alp",
-      "version": "1.25.0",
-      "toolsId": "6ed8e069-6c10-42f6-80a5-7c2307529236"
-    },
     "dataSources": {
       "mainService": {
         "uri": "/medicare/",
@@ -28,14 +22,6 @@
   },
   "sap.ui": {
     "technology": "UI5",
-    "icons": {
-      "icon": "",
-      "favIcon": "",
-      "phone": "",
-      "phone@2": "",
-      "tablet": "",
-      "tablet@2": ""
-    },
     "deviceTypes": {
       "desktop": true,
       "tablet": true,
@@ -60,7 +46,7 @@
       "i18n": {
         "type": "sap.ui.model.resource.ResourceModel",
         "settings": {
-          "bundleName": "com.medicare.costanalysis.i18n.i18n"
+          "bundleName": "com.medicare.11costanalysis.i18n.i18n"
         }
       },
       "": {
@@ -77,66 +63,74 @@
         "uri": "i18n/i18n.properties"
       }
     },
-    "resources": {
-      "css": []
-    },
     "routing": {
       "config": {},
       "routes": [
         {
           "pattern": ":?query:",
-          "name": "CostByStateProviderTypeList",
-          "target": "CostByStateProviderTypeList"
+          "name": "CostAnalysisV2List",
+          "target": "CostAnalysisV2List"
         },
         {
-          "pattern": "CostByStateProviderType({key}):?query:",
-          "name": "CostByStateProviderTypeObjectPage",
-          "target": "CostByStateProviderTypeObjectPage"
+          "pattern": "CostAnalysisV2({key}):?query:",
+          "name": "CostAnalysisV2ObjectPage",
+          "target": "CostAnalysisV2ObjectPage"
         }
       ],
       "targets": {
-        "CostByStateProviderTypeList": {
+        "CostAnalysisV2List": {
           "type": "Component",
-          "id": "CostByStateProviderTypeList",
+          "id": "CostAnalysisV2List",
           "name": "sap.fe.templates.ListReport",
           "options": {
             "settings": {
-              "contextPath": "/CostByStateProviderType",
+              "contextPath": "/CostAnalysisV2",
               "variantManagement": "Page",
-              "navigation": {
-                "CostByStateProviderType": {
-                  "detail": {
-                    "route": "CostByStateProviderTypeObjectPage"
-                  }
+              "defaultTemplateAnnotationPath": "com.sap.vocabularies.UI.v1.SelectionPresentationVariant#ALPDashboard",
+              "keyPerformanceIndicators": {
+                "RejectedChargesKPI": {
+                  "entitySet": "CostAnalysisV2",
+                  "qualifier": "RejectedChargesKPI"
+                },
+                "TopSpendingState": {
+                  "entitySet": "CostAnalysisV2",
+                  "qualifier": "TopSpendingState"
                 }
               },
-              "keyPerformanceIndicators": {
-                "TotalPaidKPI": {
-                  "entitySet": "CostByStateProviderType",
-                  "qualifier": "TotalPaidKPI"
-                },
-                "TotalBeneficiariesKPI": {
-                  "entitySet": "CostByStateProviderType",
-                  "qualifier": "TotalBeneficiariesKPI"
+              "navigation": {
+                "CostAnalysisV2": {
+                  "detail": {
+                    "route": "CostAnalysisV2ObjectPage"
+                  }
                 }
               },
               "controlConfiguration": {
                 "@com.sap.vocabularies.UI.v1.LineItem": {
                   "tableSettings": {
                     "type": "AnalyticalTable",
-                    "selectionMode": "None"
+                    "selectionMode": "None",
+                    "enableExport": true
                   }
+                },
+                "@com.sap.vocabularies.UI.v1.Chart#V2Footprint": {
+                  "chartSettings": {
+                    "defaultChartType": "column",
+                    "vizProperties": {
+                      "plotArea": {
+                        "dataPointSize": { "min": 80, "max": 80 }
+                      },
+                      "interaction": {
+                        "zoom": { "enablement": "enabled" }
+                      }
+                    }
+                  },
+                  "requestFilterFields": ["StateName"]
                 },
                 "@com.sap.vocabularies.UI.v1.SelectionFields": {
                   "filterFields": {
                     "State": {
-                      "visualFilter": {
-                        "valueList": "@com.sap.vocabularies.Common.v1.ValueList#VFState"
-                      }
-                    },
-                    "ProviderType": {
-                      "visualFilter": {
-                        "valueList": "@com.sap.vocabularies.Common.v1.ValueList#VFProviderType"
+                      "propertyInfo": {
+                        "valueList": "@com.sap.vocabularies.Common.v1.ValueList#StateCrossFilter"
                       }
                     }
                   }
@@ -147,12 +141,12 @@
                   {
                     "primary": [
                       {
-                        "annotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant"
+                        "annotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#V2Chart"
                       }
                     ],
                     "secondary": [
                       {
-                        "annotationPath": "com.sap.vocabularies.UI.v1.LineItem"
+                        "annotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#V2Table"
                       }
                     ],
                     "defaultPath": "both"
@@ -162,14 +156,14 @@
             }
           }
         },
-        "CostByStateProviderTypeObjectPage": {
+        "CostAnalysisV2ObjectPage": {
           "type": "Component",
-          "id": "CostByStateProviderTypeObjectPage",
+          "id": "CostAnalysisV2ObjectPage",
           "name": "sap.fe.templates.ObjectPage",
           "options": {
             "settings": {
               "editableHeaderContent": false,
-              "contextPath": "/CostByStateProviderType"
+              "contextPath": "/CostAnalysisV2"
             }
           }
         }

@@ -5,10 +5,15 @@ service MedicareService @(path:'/medicare') {
   entity ProviderSummary  as projection on medicare.ProviderSummary;
   entity ServiceDetails   as projection on medicare.ServiceDetails;
   entity GeoReference     as projection on medicare.GeoReference;
+  entity StateReference   as projection on medicare.StateReference;
 
   @readonly
   @cds.redirection.target: false
   entity CostByStateProviderType  as projection on medicare.CostByStateProviderType;
+
+  @readonly
+  @cds.redirection.target: false
+  entity CostAnalysisV2           as projection on medicare.CostAnalysisV2;
 
   @readonly
   @cds.redirection.target: false
@@ -33,7 +38,7 @@ service MedicareService @(path:'/medicare') {
 
 // ── Aggregation (data-shaping) annotations for the analytical query ────────────
 // NOTE: UI annotations (LineItem, Chart, PresentationVariant, KPIs, visual
-// filters, facets) live in the app layer at app/cost-analysis/annotations.cds.
+// filters, facets) live in the app layer at app/1.1cost-analysis/annotations.cds.
 // Keep this file limited to service/data concerns to avoid duplicate/conflicting
 // annotations.
 
@@ -75,6 +80,48 @@ annotate MedicareService.CostByStateProviderType with @(
   TotalPaid          @Analytics.Measure: true  @Aggregation.default: #SUM;
   TotalBeneficiaries @Analytics.Measure: true  @Aggregation.default: #SUM;
   AvgRiskScore       @Analytics.Measure: true  @Aggregation.default: #AVG;
+};
+
+// ── CostAnalysisV2 (state-grain cube — independent ALP target) ─────────────────
+annotate MedicareService.CostAnalysisV2 with @(
+  Aggregation.ApplySupported: {
+    Transformations        : ['aggregate', 'groupby', 'filter'],
+    GroupableProperties    : [Year, State, StateName, ProviderType],
+    AggregatableProperties : [
+      {Property: ProviderCount},
+      {Property: TotalSubmitted},
+      {Property: TotalAllowed},
+      {Property: TotalPaid},
+      {Property: RejectedCharges},
+      {Property: DrugSubmitted},
+      {Property: DrugPaid},
+      {Property: TotalBeneficiaries}
+    ]
+  }
+);
+
+annotate MedicareService.CostAnalysisV2 with @(
+  Aggregation.CustomAggregate #ProviderCount      : 'Edm.Int32',
+  Aggregation.CustomAggregate #TotalSubmitted     : 'Edm.Decimal',
+  Aggregation.CustomAggregate #TotalAllowed       : 'Edm.Decimal',
+  Aggregation.CustomAggregate #TotalPaid          : 'Edm.Decimal',
+  Aggregation.CustomAggregate #RejectedCharges      : 'Edm.Decimal',
+  Aggregation.CustomAggregate #DrugSubmitted      : 'Edm.Decimal',
+  Aggregation.CustomAggregate #DrugPaid           : 'Edm.Decimal',
+  Aggregation.CustomAggregate #TotalBeneficiaries : 'Edm.Int32'
+) {
+  Year               @Analytics.Dimension: true;
+  State              @Analytics.Dimension: true;
+  StateName          @Analytics.Dimension: true;
+  ProviderType       @Analytics.Dimension: true;
+  ProviderCount      @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalSubmitted     @Analytics.Measure: true  @Aggregation.default: #SUM  @Measures.ISOCurrency: 'USD';
+  TotalAllowed       @Analytics.Measure: true  @Aggregation.default: #SUM  @Measures.ISOCurrency: 'USD';
+  TotalPaid          @Analytics.Measure: true  @Aggregation.default: #SUM  @Measures.ISOCurrency: 'USD';
+  RejectedCharges    @Analytics.Measure: true  @Aggregation.default: #SUM  @Measures.ISOCurrency: 'USD';
+  DrugSubmitted      @Analytics.Measure: true  @Aggregation.default: #SUM  @Measures.ISOCurrency: 'USD';
+  DrugPaid           @Analytics.Measure: true  @Aggregation.default: #SUM  @Measures.ISOCurrency: 'USD';
+  TotalBeneficiaries @Analytics.Measure: true  @Aggregation.default: #SUM;
 };
 
 // ── RuralUrbanDistribution (geographic disparities) ───────────────────────────

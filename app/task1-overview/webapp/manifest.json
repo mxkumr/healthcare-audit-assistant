@@ -91,7 +91,7 @@
   },
   "sap.ovp": {
     "globalFilterModel": "mainModel",
-    "globalFilterEntitySet": "CostByStateProviderType",
+    "globalFilterEntitySet": "CostAnalysisV2",
     "containerLayout": "resizable",
     "enableLiveFilter": true,
     "considerAnalyticalParameters": false,
@@ -102,10 +102,10 @@
         "settings": {
           "title": "Cost by State",
           "subTitle": "Total Paid ($) per State",
-          "entitySet": "CostByStateProviderType",
+          "entitySet": "CostAnalysisV2",
           "addODataSelect": true,
-          "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart",
-          "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant"
+          "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart#V2Footprint",
+          "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#V2Chart"
         }
       },
       "card01_rural": {
