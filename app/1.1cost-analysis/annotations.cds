@@ -256,6 +256,12 @@ annotate service.CostAnalysisV2 with @(
     },
     { Value: TotalPaid,            ![@UI.Importance]: #High },
     { Value: DrugSubmitted,        ![@UI.Importance]: #Medium },
+    {
+      $Type      : 'UI.DataField',
+      Value      : RejectedDrugCharges,
+      Label      : 'Rejected Drug Over-Charges',
+      ![@UI.Importance]: #High
+    },
     { Value: DrugPaid,             ![@UI.Importance]: #Medium }
   ],
 
@@ -280,6 +286,7 @@ annotate service.CostAnalysisV2 with @(
       { $Type: 'UI.DataField', Value: RejectedCharges },
       { $Type: 'UI.DataField', Value: TotalPaid },
       { $Type: 'UI.DataField', Value: DrugSubmitted },
+      { $Type: 'UI.DataField', Value: RejectedDrugCharges },
       { $Type: 'UI.DataField', Value: DrugPaid }
     ]
   },
@@ -402,6 +409,14 @@ annotate service.CostAnalysisV2 with {
     Core.Description    : 'The total gross dollar amount billed specifically for prescription drugs.',
     Measures.ISOCurrency: 'USD',
     UI.LineItem         : [{ position: 90 }]
+  );
+
+  RejectedDrugCharges @(
+    Common.Label        : 'Rejected Drug Over-Charges',
+    Common.QuickInfo    : 'The financial variance showing how much drug charges providers claimed that Medicare rejected based on regulatory fee caps. Calculated as (Drug Charges Claimed - Drug Approved Cap).',
+    Core.Description    : 'The financial variance showing how much drug charges providers claimed that Medicare rejected based on regulatory fee caps. Calculated as (Drug Charges Claimed - Drug Approved Cap).',
+    Measures.ISOCurrency: 'USD',
+    UI.LineItem         : [{ position: 95 }]
   );
 
   DrugPaid @(

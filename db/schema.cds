@@ -197,6 +197,8 @@ view CostAnalysisV2 as
     // Over-billing delta: claimed charges minus Medicare-approved fee-schedule cap
     sum(p.Tot_Sbmtd_Chrg) - sum(p.Tot_Mdcr_Alowd_Amt) as RejectedCharges : Decimal,
     sum(p.Drug_Sbmtd_Chrg)        as DrugSubmitted      : Decimal,
+    sum(p.Drug_Mdcr_Alowd_Amt)    as DrugAllowed        : Decimal,
+    sum(p.Drug_Sbmtd_Chrg) - sum(p.Drug_Mdcr_Alowd_Amt) as RejectedDrugCharges : Decimal,
     sum(p.Drug_Mdcr_Pymt_Amt)     as DrugPaid           : Decimal,
     sum(p.Tot_Benes)              as TotalBeneficiaries : Integer
   }
@@ -216,8 +218,10 @@ annotate medicare.CostAnalysisV2 with {
   TotalAllowed    @Measures.ISOCurrency: 'USD';
   TotalPaid       @Measures.ISOCurrency: 'USD';
   RejectedCharges @Measures.ISOCurrency: 'USD';
-  DrugSubmitted   @Measures.ISOCurrency: 'USD';
-  DrugPaid        @Measures.ISOCurrency: 'USD';
+  DrugSubmitted       @Measures.ISOCurrency: 'USD';
+  DrugAllowed         @Measures.ISOCurrency: 'USD';
+  RejectedDrugCharges @Measures.ISOCurrency: 'USD';
+  DrugPaid            @Measures.ISOCurrency: 'USD';
 };
 
 // Maps the CMS Rural Indicator (RuralInd) to readable locality buckets per the

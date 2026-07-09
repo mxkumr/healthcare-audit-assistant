@@ -94,6 +94,8 @@ annotate MedicareService.CostAnalysisV2 with @(
       {Property: TotalPaid},
       {Property: RejectedCharges},
       {Property: DrugSubmitted},
+      {Property: DrugAllowed},
+      {Property: RejectedDrugCharges},
       {Property: DrugPaid},
       {Property: TotalBeneficiaries}
     ]
@@ -107,6 +109,8 @@ annotate MedicareService.CostAnalysisV2 with @(
   Aggregation.CustomAggregate #TotalPaid          : 'Edm.Decimal',
   Aggregation.CustomAggregate #RejectedCharges      : 'Edm.Decimal',
   Aggregation.CustomAggregate #DrugSubmitted      : 'Edm.Decimal',
+  Aggregation.CustomAggregate #DrugAllowed        : 'Edm.Decimal',
+  Aggregation.CustomAggregate #RejectedDrugCharges: 'Edm.Decimal',
   Aggregation.CustomAggregate #DrugPaid           : 'Edm.Decimal',
   Aggregation.CustomAggregate #TotalBeneficiaries : 'Edm.Int32'
 ) {
@@ -119,8 +123,10 @@ annotate MedicareService.CostAnalysisV2 with @(
   TotalAllowed       @Analytics.Measure: true  @Aggregation.default: #SUM  @Measures.ISOCurrency: 'USD';
   TotalPaid          @Analytics.Measure: true  @Aggregation.default: #SUM  @Measures.ISOCurrency: 'USD';
   RejectedCharges    @Analytics.Measure: true  @Aggregation.default: #SUM  @Measures.ISOCurrency: 'USD';
-  DrugSubmitted      @Analytics.Measure: true  @Aggregation.default: #SUM  @Measures.ISOCurrency: 'USD';
-  DrugPaid           @Analytics.Measure: true  @Aggregation.default: #SUM  @Measures.ISOCurrency: 'USD';
+  DrugSubmitted       @Analytics.Measure: true  @Aggregation.default: #SUM  @Measures.ISOCurrency: 'USD';
+  DrugAllowed         @Analytics.Measure: true  @Aggregation.default: #SUM  @Measures.ISOCurrency: 'USD';
+  RejectedDrugCharges @Analytics.Measure: true  @Aggregation.default: #SUM  @Measures.ISOCurrency: 'USD';
+  DrugPaid            @Analytics.Measure: true  @Aggregation.default: #SUM  @Measures.ISOCurrency: 'USD';
   TotalBeneficiaries @Analytics.Measure: true  @Aggregation.default: #SUM;
 };
 
