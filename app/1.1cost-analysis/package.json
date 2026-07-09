@@ -1,12 +1,8 @@
 {
-  "name": "cost-analysis",
+  "name": "1.1cost-analysis",
   "version": "0.0.1",
-  "description": "An SAP Fiori application.",
-  "keywords": [
-    "ui5",
-    "openui5",
-    "sapui5"
-  ],
+  "description": "State-grain Medicare cost analysis ALP",
+  "keywords": ["ui5", "openui5", "sapui5"],
   "main": "webapp/index.html",
   "dependencies": {},
   "devDependencies": {

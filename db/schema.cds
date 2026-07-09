@@ -139,6 +139,13 @@ entity GeoReference {
   Locality                              : String;
   RuralInd                              : String;
 }
+
+// US state / territory code → full name (for readable table and chart labels)
+entity StateReference {
+  key Code : String;
+      Name : String;
+}
+
 // ─── Task 1 Views ────────────────────────────────────────────────────────────
 
 //view CostByStateProviderType as
@@ -172,6 +179,46 @@ view CostByStateProviderType as
     p.Year,
     p.Rndrng_Prvdr_State_Abrvtn,
     p.Rndrng_Prvdr_Type;
+
+// ─── Cost Analysis V2 — state + provider-type grain (table); chart rolls up to State ─
+view CostAnalysisV2 as
+  select from ProviderSummary as p
+  left join StateReference as sr
+    on sr.Code = p.Rndrng_Prvdr_State_Abrvtn {
+    key p.Year,
+    key p.Rndrng_Prvdr_State_Abrvtn as State       : String,
+    key p.Rndrng_Prvdr_Type         as ProviderType : String,
+
+    max(coalesce(sr.Name, p.Rndrng_Prvdr_State_Abrvtn)) as StateName : String,
+    count(p.Rndrng_NPI)           as ProviderCount      : Integer,
+    sum(p.Tot_Sbmtd_Chrg)         as TotalSubmitted     : Decimal,
+    sum(p.Tot_Mdcr_Alowd_Amt)     as TotalAllowed       : Decimal,
+    sum(p.Tot_Mdcr_Pymt_Amt)      as TotalPaid          : Decimal,
+    // Over-billing delta: claimed charges minus Medicare-approved fee-schedule cap
+    sum(p.Tot_Sbmtd_Chrg) - sum(p.Tot_Mdcr_Alowd_Amt) as RejectedCharges : Decimal,
+    sum(p.Drug_Sbmtd_Chrg)        as DrugSubmitted      : Decimal,
+    sum(p.Drug_Mdcr_Pymt_Amt)     as DrugPaid           : Decimal,
+    sum(p.Tot_Benes)              as TotalBeneficiaries : Integer
+  }
+  group by
+    p.Year,
+    p.Rndrng_Prvdr_State_Abrvtn,
+    p.Rndrng_Prvdr_Type;
+
+// Analytical cube semantics for OData V4 aggregation + GenAI currency context
+annotate medicare.CostAnalysisV2 with @(
+  Analytics.dataCategory   : #CUBE,
+  Aggregation.ApplyDefault : true
+);
+
+annotate medicare.CostAnalysisV2 with {
+  TotalSubmitted  @Measures.ISOCurrency: 'USD';
+  TotalAllowed    @Measures.ISOCurrency: 'USD';
+  TotalPaid       @Measures.ISOCurrency: 'USD';
+  RejectedCharges @Measures.ISOCurrency: 'USD';
+  DrugSubmitted   @Measures.ISOCurrency: 'USD';
+  DrugPaid        @Measures.ISOCurrency: 'USD';
+};
 
 // Maps the CMS Rural Indicator (RuralInd) to readable locality buckets per the
 // official CMS Zip Code to Carrier Locality File spec (field position 15):
