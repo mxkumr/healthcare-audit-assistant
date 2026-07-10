@@ -546,7 +546,7 @@ JavaScript; you declare *what* to show and SAPUI5 builds the table/chart/page.
 |---|---|---|
 | `task1-overview` | Overview page across Task 1 views | 1 |
 | `cost-analysis` | Cost by state/provider type + KPIs | 1 |
-| `rural-analysis` | Urban/rural distribution | 1 |
+| `1.2rural-analysis` | HCPCS overclaiming by structural tier + tier deviation | 1.2 |
 | `risk-analysis` | Risk-score distribution | 1 |
 | `provider-classification` | Per-provider efficiency/risk/utilization | 2 |
 | `specialty-classification` | Specialty complexity profile | 2 |

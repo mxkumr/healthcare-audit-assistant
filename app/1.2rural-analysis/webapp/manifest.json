@@ -1,7 +1,7 @@
 {
   "_version": "1.85.0",
   "sap.app": {
-    "id": "com.medicare.ruralanalysis",
+    "id": "com.medicare.12ruralanalysis",
     "type": "application",
     "i18n": "i18n/i18n.properties",
     "applicationVersion": {
@@ -9,12 +9,6 @@
     },
     "title": "{{appTitle}}",
     "description": "{{appDescription}}",
-    "resources": "resources.json",
-    "sourceTemplate": {
-      "id": "@sap/generator-fiori:alp",
-      "version": "1.25.0",
-      "toolsId": "f2fa0d3f-fdf3-4c08-abad-afd74dc13d93"
-    },
     "dataSources": {
       "mainService": {
         "uri": "/medicare/",
@@ -28,14 +22,6 @@
   },
   "sap.ui": {
     "technology": "UI5",
-    "icons": {
-      "icon": "",
-      "favIcon": "",
-      "phone": "",
-      "phone@2": "",
-      "tablet": "",
-      "tablet@2": ""
-    },
     "deviceTypes": {
       "desktop": true,
       "tablet": true,
@@ -60,7 +46,7 @@
       "i18n": {
         "type": "sap.ui.model.resource.ResourceModel",
         "settings": {
-          "bundleName": "com.medicare.ruralanalysis.i18n.i18n"
+          "bundleName": "com.medicare.12ruralanalysis.i18n.i18n"
         }
       },
       "": {
@@ -77,36 +63,34 @@
         "uri": "i18n/i18n.properties"
       }
     },
-    "resources": {
-      "css": []
-    },
     "routing": {
       "config": {},
       "routes": [
         {
           "pattern": ":?query:",
-          "name": "RuralUrbanDistributionList",
-          "target": "RuralUrbanDistributionList"
+          "name": "RuralAnalysisV2List",
+          "target": "RuralAnalysisV2List"
         },
         {
-          "pattern": "RuralUrbanDistribution({key}):?query:",
-          "name": "RuralUrbanDistributionObjectPage",
-          "target": "RuralUrbanDistributionObjectPage"
+          "pattern": "RuralAnalysisChart({key}):?query:",
+          "name": "RuralAnalysisChartObjectPage",
+          "target": "RuralAnalysisChartObjectPage"
         }
       ],
       "targets": {
-        "RuralUrbanDistributionList": {
+        "RuralAnalysisV2List": {
           "type": "Component",
-          "id": "RuralUrbanDistributionList",
+          "id": "RuralAnalysisV2List",
           "name": "sap.fe.templates.ListReport",
           "options": {
             "settings": {
-              "contextPath": "/RuralUrbanDistribution",
+              "contextPath": "/RuralAnalysisChart",
               "variantManagement": "Page",
+              "defaultTemplateAnnotationPath": "com.sap.vocabularies.UI.v1.SelectionPresentationVariant#ALPDashboard",
               "navigation": {
-                "RuralUrbanDistribution": {
+                "RuralAnalysisChart": {
                   "detail": {
-                    "route": "RuralUrbanDistributionObjectPage"
+                    "route": "RuralAnalysisChartObjectPage"
                   }
                 }
               },
@@ -114,8 +98,23 @@
                 "@com.sap.vocabularies.UI.v1.LineItem": {
                   "tableSettings": {
                     "type": "AnalyticalTable",
-                    "selectionMode": "None"
+                    "selectionMode": "None",
+                    "enableExport": true
                   }
+                },
+                "@com.sap.vocabularies.UI.v1.Chart#V2InflationDelta": {
+                  "chartSettings": {
+                    "defaultChartType": "column",
+                    "vizProperties": {
+                      "plotArea": {
+                        "dataPointSize": { "min": 48, "max": 48 }
+                      },
+                      "interaction": {
+                        "zoom": { "enablement": "enabled" }
+                      }
+                    }
+                  },
+                  "requestFilterFields": ["HCPCS_Code", "StructuralTier"]
                 }
               },
               "views": {
@@ -123,12 +122,12 @@
                   {
                     "primary": [
                       {
-                        "annotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant"
+                        "annotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#ChartTopProcedures"
                       }
                     ],
                     "secondary": [
                       {
-                        "annotationPath": "com.sap.vocabularies.UI.v1.LineItem"
+                        "annotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#V2Table"
                       }
                     ],
                     "defaultPath": "both"
@@ -138,14 +137,14 @@
             }
           }
         },
-        "RuralUrbanDistributionObjectPage": {
+        "RuralAnalysisChartObjectPage": {
           "type": "Component",
-          "id": "RuralUrbanDistributionObjectPage",
+          "id": "RuralAnalysisChartObjectPage",
           "name": "sap.fe.templates.ObjectPage",
           "options": {
             "settings": {
               "editableHeaderContent": false,
-              "contextPath": "/RuralUrbanDistribution"
+              "contextPath": "/RuralAnalysisChart"
             }
           }
         }
