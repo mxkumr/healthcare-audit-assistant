@@ -1,12 +1,12 @@
 using MedicareService as service from '../../srv/medicare-service';
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// RuralAnalysisV2 — HCPCS × RUCA structural tier ALP
-// Chart (top): grouped column — TotalPaid vs RejectedCharges by StructuralTier
+// RuralAnalysisChart — HCPCS × structural tier (chart-safe grain)
+// Chart (top): horizontal grouped bar — procedure (Y) × tier (series) × inflation % (X)
 // Table (bottom): collapsible groups by procedure code → expand into structural tiers
 // ═══════════════════════════════════════════════════════════════════════════════
 
-annotate service.RuralAnalysisV2 with @(
+annotate service.RuralAnalysisChart with @(
 
   UI.SelectionFields: [HCPCS_Code, StructuralTier],
 
@@ -18,70 +18,72 @@ annotate service.RuralAnalysisV2 with @(
     Description   : { $Type: 'UI.DataField', Value: StructuralTier }
   },
 
-  // ── Chart Y-axis currency shorthand ($M) ───────────────────────────────────
-  UI.DataPoint #TotalPaidFmt: {
-    $Type      : 'UI.DataPointType',
-    Value      : TotalPaid,
-    Title      : 'Total Paid',
-    ValueFormat: {
+  // ═══════════════════════════════════════════════════════════════════════════
+  // TOP LAYER — horizontal grouped bar (deduplicated RuralAnalysisChart grain)
+  // HCPCS_Code → #Category (one Y-axis row per procedure)
+  // StructuralTier → #Series (Urban / Suburban / Rural sub-bars per slot)
+  // OverclaimRate only — no currency measures on the 0–100% axis
+  // ═══════════════════════════════════════════════════════════════════════════
+  UI.DataPoint #InflationRatePct: {
+    $Type       : 'UI.DataPointType',
+    Value       : OverclaimRate,
+    Title       : 'Inflation Rate (%)',
+    MinimumValue: 0,
+    MaximumValue: 100,
+    ValueFormat : {
       $Type                   : 'UI.NumberFormat',
-      ScaleFactor             : 1000000,
-      NumberOfFractionalDigits: 1
-    }
-  },
-  UI.DataPoint #RejectedChargesFmt: {
-    $Type      : 'UI.DataPointType',
-    Value      : RejectedCharges,
-    Title      : 'Rejected Over-Charges',
-    ValueFormat: {
-      $Type                   : 'UI.NumberFormat',
-      ScaleFactor             : 1000000,
-      NumberOfFractionalDigits: 1
+      NumberOfFractionalDigits: 2
+    },
+    CriticalityCalculation: {
+      $Type                  : 'UI.CriticalityCalculationType',
+      ImprovementDirection   : #Minimize,
+      ToleranceRangeHighValue: 15,
+      DeviationRangeHighValue: 40
     }
   },
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // TOP LAYER — Grouped column chart (StructuralTier on X, $ measures on Y)
-  // ═══════════════════════════════════════════════════════════════════════════
-  UI.Chart #V2TierFootprint: {
+  UI.Chart #V2InflationDelta: {
     $Type     : 'UI.ChartDefinitionType',
-    Title     : 'Financial Footprint by Structural Tier',
-    ChartType : #Column,
-    AxisScaling: {
-      $Type             : 'UI.ChartAxisScalingType',
-      ScaleBehavior     : #AutoScale,
-      AutoScaleBehavior : {
-        $Type             : 'UI.ChartAxisAutoScaleBehaviorType',
-        DataScope         : 'DataSet',
-        ZeroAlwaysVisible : true
-      }
-    },
-    Dimensions: [StructuralTier],
+    Title     : 'Procedural Inflation Rate (%) by Structural Tier',
+    ChartType : #Bar,
+    Dimensions: [HCPCS_Code, StructuralTier],
     DimensionAttributes: [
-      { $Type: 'UI.ChartDimensionAttributeType', Dimension: StructuralTier, Role: #Category }
+      {
+        $Type    : 'UI.ChartDimensionAttributeType',
+        Dimension: HCPCS_Code,
+        Role     : #Category
+      },
+      {
+        $Type    : 'UI.ChartDimensionAttributeType',
+        Dimension: StructuralTier,
+        Role     : #Series
+      }
     ],
-    Measures  : [TotalPaid, RejectedCharges],
+    Measures  : [OverclaimRate],
     MeasureAttributes: [
       {
         $Type    : 'UI.ChartMeasureAttributeType',
-        Measure  : TotalPaid,
+        Measure  : OverclaimRate,
         Role     : #Axis1,
-        DataPoint: ![@UI.DataPoint#TotalPaidFmt]
-      },
-      {
-        $Type    : 'UI.ChartMeasureAttributeType',
-        Measure  : RejectedCharges,
-        Role     : #Axis1,
-        DataPoint: ![@UI.DataPoint#RejectedChargesFmt]
+        DataPoint: ![@UI.DataPoint#InflationRatePct]
       }
     ]
   },
 
-  UI.PresentationVariant #V2Chart: {
+  // Chart-only PV: multi-tier procedures only (≥2 tiers); top rows by inflation rate.
+  // Single-tier codes (e.g. 31623 Urban-only) are excluded at the view layer.
+  UI.PresentationVariant #ChartTopProcedures: {
     $Type         : 'UI.PresentationVariantType',
-    GroupBy       : [StructuralTier],
-    SortOrder     : [{ Property: TotalPaid, Descending: true }],
-    Visualizations: ['@UI.Chart#V2TierFootprint']
+    GroupBy       : [HCPCS_Code, StructuralTier],
+    SortOrder     : [{ Property: OverclaimRate, Descending: true }],
+    MaxItems      : 30,
+    Visualizations: ['@UI.Chart#V2InflationDelta']
+  },
+
+  UI.SelectionPresentationVariant #ALPDashboard: {
+    $Type              : 'UI.SelectionPresentationVariantType',
+    Text               : 'Rural Analysis V2 Dashboard',
+    PresentationVariant: ![@UI.PresentationVariant#ChartTopProcedures]
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -118,13 +120,12 @@ annotate service.RuralAnalysisV2 with @(
       },
       ![@UI.CriticalityRepresentation]: #WithIcon
     },
+    { $Type: 'UI.DataField', Value: UrbanBaselineRate, Label: 'Urban Baseline (%)', ![@UI.Importance]: #Medium },
     { $Type: 'UI.DataField', Value: TotalPaid,      Label: 'Total Paid',              ![@UI.Importance]: #High }
   ],
 
   // GroupBy HCPCS_Code: collapsed rows show procedure code + rolled-up totals;
   // expand reveals Urban / Metro, Suburban / Micro, Rural / Isolated tier rows.
-  // Sort: code ASC, then OverclaimRate DESC within each group.
-  // Total: only additive measures — OverclaimRate excluded (ratios must not roll up).
   UI.PresentationVariant #V2Table: {
     $Type         : 'UI.PresentationVariantType',
     GroupBy       : [HCPCS_Code],
@@ -134,17 +135,11 @@ annotate service.RuralAnalysisV2 with @(
     ],
     Total         : [TotalServices, TotalSubmitted, RejectedCharges, TotalPaid],
     Visualizations: ['@UI.LineItem']
-  },
-
-  UI.SelectionPresentationVariant #ALPDashboard: {
-    $Type              : 'UI.SelectionPresentationVariantType',
-    Text               : 'Rural Analysis V2 Dashboard',
-    PresentationVariant: ![@UI.PresentationVariant#V2Chart]
   }
 );
 
 // ── Element annotations: labels, tooltips, currency / unit metadata ───────────
-annotate service.RuralAnalysisV2 with {
+annotate service.RuralAnalysisChart with {
   HCPCS_Code @(
     Common.Label     : 'Procedure Code',
     Common.QuickInfo : 'Healthcare Common Procedure Coding System identifier.',
@@ -191,6 +186,13 @@ annotate service.RuralAnalysisV2 with {
     Measures.Unit       : '%',
     UI.DataPoint        : ![@UI.DataPoint#OverclaimRateFmt],
     UI.LineItem         : [{ position: 70 }]
+  );
+
+  UrbanBaselineRate @(
+    Common.Label     : 'Urban Baseline (%)',
+    Common.QuickInfo : 'Urban / Metro inflation rate for the same procedure — used as the comparative target notch on the bullet chart.',
+    Measures.Unit    : '%',
+    UI.LineItem      : [{ position: 75 }]
   );
 
   TotalPaid @(

@@ -225,7 +225,8 @@ annotate medicare.CostAnalysisV2 with {
 };
 
 // ─── Rural Analysis V2 — HCPCS × RUCA structural tier (overclaiming & frequency) ─
-view RuralAnalysisV2 as
+// Base tier grain: one row per procedure × structural tier.
+view RuralAnalysisV2Tier as
   select from ServiceDetails as s {
     key s.HCPCS_Cd   as HCPCS_Code : String,
     key s.HCPCS_Desc as HCPCS_Desc : String,
@@ -247,10 +248,19 @@ view RuralAnalysisV2 as
     sum(cast(replace(s.Avg_Mdcr_Pymt_Amt, '$', '') as Decimal) * s.Tot_Srvcs) as TotalPaid : Decimal,
     sum(cast(replace(s.Avg_Sbmtd_Chrg, '$', '') as Decimal) * s.Tot_Srvcs)
       - sum(cast(replace(s.Avg_Mdcr_Alowd_Amt, '$', '') as Decimal) * s.Tot_Srvcs) as RejectedCharges : Decimal,
+    // Clamp to 0–100%: negative rejected = no overclaim; >100% capped for chart axis stability
     cast(round(
-      (sum(cast(replace(s.Avg_Sbmtd_Chrg, '$', '') as Decimal) * s.Tot_Srvcs)
-       - sum(cast(replace(s.Avg_Mdcr_Alowd_Amt, '$', '') as Decimal) * s.Tot_Srvcs))
-      / nullif(sum(cast(replace(s.Avg_Sbmtd_Chrg, '$', '') as Decimal) * s.Tot_Srvcs), 0) * 100
+      case
+        when sum(cast(replace(s.Avg_Sbmtd_Chrg, '$', '') as Decimal) * s.Tot_Srvcs) <= 0 then null
+        when sum(cast(replace(s.Avg_Sbmtd_Chrg, '$', '') as Decimal) * s.Tot_Srvcs)
+           - sum(cast(replace(s.Avg_Mdcr_Alowd_Amt, '$', '') as Decimal) * s.Tot_Srvcs) <= 0 then 0
+        when (sum(cast(replace(s.Avg_Sbmtd_Chrg, '$', '') as Decimal) * s.Tot_Srvcs)
+           - sum(cast(replace(s.Avg_Mdcr_Alowd_Amt, '$', '') as Decimal) * s.Tot_Srvcs))
+           / sum(cast(replace(s.Avg_Sbmtd_Chrg, '$', '') as Decimal) * s.Tot_Srvcs) * 100 > 100 then 100
+        else (sum(cast(replace(s.Avg_Sbmtd_Chrg, '$', '') as Decimal) * s.Tot_Srvcs)
+           - sum(cast(replace(s.Avg_Mdcr_Alowd_Amt, '$', '') as Decimal) * s.Tot_Srvcs))
+           / sum(cast(replace(s.Avg_Sbmtd_Chrg, '$', '') as Decimal) * s.Tot_Srvcs) * 100
+      end
     , 2) as Decimal) as OverclaimRate : Decimal
   }
   group by
@@ -268,16 +278,117 @@ view RuralAnalysisV2 as
       else                                                   'Unclassified'
     end;
 
+// Enriched projection: attaches Urban / Metro inflation rate as the comparative baseline
+// for each procedure code (used as the bullet-chart target notch).
+view RuralAnalysisV2 as
+  select from RuralAnalysisV2Tier as tier
+  left join (
+    select from RuralAnalysisV2Tier as urban {
+      key urban.HCPCS_Code,
+      key urban.HCPCS_Desc,
+      urban.OverclaimRate as UrbanBaselineRate : Decimal
+    }
+    where urban.StructuralTier = 'Urban / Metro'
+  ) as baseline on  baseline.HCPCS_Code = tier.HCPCS_Code
+                and baseline.HCPCS_Desc = tier.HCPCS_Desc {
+    key tier.HCPCS_Code,
+    key tier.HCPCS_Desc,
+    key tier.StructuralTier,
+    tier.TotalServices,
+    tier.TotalSubmitted,
+    tier.TotalPaid,
+    tier.RejectedCharges,
+    tier.OverclaimRate,
+    baseline.UrbanBaselineRate
+  };
+
 annotate medicare.RuralAnalysisV2 with @(
   Analytics.dataCategory   : #CUBE,
   Aggregation.ApplyDefault : true
 );
 
 annotate medicare.RuralAnalysisV2 with {
-  TotalSubmitted  @Measures.ISOCurrency: 'USD';
-  TotalPaid       @Measures.ISOCurrency: 'USD';
-  RejectedCharges @Measures.ISOCurrency: 'USD';
-  OverclaimRate   @Measures.Unit: '%';
+  TotalSubmitted     @Measures.ISOCurrency: 'USD';
+  TotalPaid          @Measures.ISOCurrency: 'USD';
+  RejectedCharges    @Measures.ISOCurrency: 'USD';
+  OverclaimRate      @Measures.Unit: '%';
+  UrbanBaselineRate  @Measures.Unit: '%';
+};
+
+// Chart / ALP grain — one row per HCPCS_Code × StructuralTier (descriptions merged).
+// OverclaimRate is recomputed from summed charges (never sum of row-level percentages).
+view RuralAnalysisChartBase as
+  select from RuralAnalysisV2Tier as tier {
+    key tier.HCPCS_Code,
+    key tier.StructuralTier,
+    min(tier.HCPCS_Desc) as HCPCS_Desc : String,
+    sum(tier.TotalServices)  as TotalServices  : Decimal,
+    sum(tier.TotalSubmitted) as TotalSubmitted : Decimal,
+    sum(tier.TotalPaid)      as TotalPaid      : Decimal,
+    sum(tier.RejectedCharges) as RejectedCharges : Decimal,
+    cast(round(
+      case
+        when sum(tier.TotalSubmitted) <= 0 then null
+        when sum(tier.RejectedCharges) <= 0 then 0
+        when sum(tier.RejectedCharges) / sum(tier.TotalSubmitted) * 100 > 100 then 100
+        else sum(tier.RejectedCharges) / sum(tier.TotalSubmitted) * 100
+      end
+    , 2) as Decimal) as OverclaimRate : Decimal
+  }
+  group by
+    tier.HCPCS_Code,
+    tier.StructuralTier;
+
+// Procedure codes present in 2+ structural tiers (comparative chart grain).
+view RuralAnalysisChartMultiTier as
+  select from RuralAnalysisChartBase {
+    key HCPCS_Code,
+    count(distinct StructuralTier) as TierCoverageCount : Integer
+  }
+  where StructuralTier in (
+    'Urban / Metro', 'Suburban / Micro', 'Rural / Isolated'
+  )
+  group by HCPCS_Code
+  having count(distinct StructuralTier) >= 2;
+
+view RuralAnalysisChart as
+  select from RuralAnalysisChartBase as tier
+  inner join RuralAnalysisChartMultiTier as coverage
+    on coverage.HCPCS_Code = tier.HCPCS_Code
+  left join (
+    select from RuralAnalysisChartBase as urban {
+      key urban.HCPCS_Code,
+      urban.OverclaimRate as UrbanBaselineRate : Decimal
+    }
+    where urban.StructuralTier = 'Urban / Metro'
+  ) as baseline on baseline.HCPCS_Code = tier.HCPCS_Code {
+    key tier.HCPCS_Code,
+    key tier.StructuralTier,
+    tier.HCPCS_Desc,
+    tier.TotalServices,
+    tier.TotalSubmitted,
+    tier.TotalPaid,
+    tier.RejectedCharges,
+    tier.OverclaimRate,
+    baseline.UrbanBaselineRate,
+    coverage.TierCoverageCount
+  }
+  where tier.StructuralTier in (
+    'Urban / Metro', 'Suburban / Micro', 'Rural / Isolated'
+  );
+
+annotate medicare.RuralAnalysisChart with @(
+  Analytics.dataCategory   : #CUBE,
+  Aggregation.ApplyDefault : true
+);
+
+annotate medicare.RuralAnalysisChart with {
+  TotalSubmitted     @Measures.ISOCurrency: 'USD';
+  TotalPaid          @Measures.ISOCurrency: 'USD';
+  RejectedCharges    @Measures.ISOCurrency: 'USD';
+  OverclaimRate      @Measures.Unit: '%';
+  UrbanBaselineRate  @Measures.Unit: '%';
+  TierCoverageCount  @Measures.Unit: #ONE;
 };
 
 // Maps the CMS Rural Indicator (RuralInd) to readable locality buckets per the
