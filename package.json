@@ -16,7 +16,7 @@
   "scripts": {
     "start": "cds-serve",
     "watch-1.1cost-analysis": "cds watch --open com.medicare.11costanalysis/index.html?sap-ui-xx-viewCache=false --livereload false",
-    "watch-1.1rural-analysis": "cds watch --open com.medicare.11ruralanalysis/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-1.2rural-analysis": "cds watch --open com.medicare.12ruralanalysis/index.html?sap-ui-xx-viewCache=false --livereload false",
     "undeploy": "cf undeploy healthcare-audit-assistant --delete-services --delete-service-keys --delete-service-brokers",
     "build": "rimraf resources mta_archives && mbt build --mtar archive",
     "deploy": "cf deploy mta_archives/archive.mtar --retries 1",
@@ -24,7 +24,6 @@
     "watch-specialty-classification": "cds watch --open com.medicare.specialtyclassification/index.html?sap-ui-xx-viewCache=false --livereload false",
     "watch-organization-classification": "cds watch --open com.medicare.organizationclassification/index.html?sap-ui-xx-viewCache=false --livereload false",
     "watch-task1-overview": "cds watch --open com.medicare.task1overview/index.html?sap-ui-xx-viewCache=false --livereload false",
-    "watch-rural-analysis": "cds watch --open com.medicare.ruralanalysis/index.html?sap-ui-xx-viewCache=false --livereload false",
     "watch-risk-analysis": "cds watch --open com.medicare.riskanalysis/index.html?sap-ui-xx-viewCache=false --livereload false",
     "watch-task2-overview": "cds watch --open com.medicare.task2overview/index.html?sap-ui-xx-viewCache=false --livereload false"
   },
@@ -41,12 +40,11 @@
   ],
   "sapux": [
     "app/1.1cost-analysis",
-    "app/1.1rural-analysis",
+    "app/1.2rural-analysis",
     "app/provider-classification",
     "app/specialty-classification",
     "app/organization-classification",
     "app/task1-overview",
-    "app/rural-analysis",
     "app/risk-analysis",
     "app/task2-overview"
   ]
