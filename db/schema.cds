@@ -242,24 +242,24 @@ view RuralAnalysisV2Tier as
           else                                                   'Unclassified'
         end              as StructuralTier : String,
 
-    // ServiceDetails stores per-procedure averages (may include '$' prefix in CSV)
-    sum(s.Tot_Srvcs) as TotalServices : Decimal,
-    sum(cast(replace(s.Avg_Sbmtd_Chrg, '$', '') as Decimal) * s.Tot_Srvcs) as TotalSubmitted : Decimal,
-    sum(cast(replace(s.Avg_Mdcr_Pymt_Amt, '$', '') as Decimal) * s.Tot_Srvcs) as TotalPaid : Decimal,
-    sum(cast(replace(s.Avg_Sbmtd_Chrg, '$', '') as Decimal) * s.Tot_Srvcs)
-      - sum(cast(replace(s.Avg_Mdcr_Alowd_Amt, '$', '') as Decimal) * s.Tot_Srvcs) as RejectedCharges : Decimal,
+    // CMS CSV may include thousands separators in Tot_Srvcs (e.g. "1,200") and in currency strings
+    sum(cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal)) as TotalServices : Decimal,
+    sum(cast(replace(replace(s.Avg_Sbmtd_Chrg, '$', ''), ',', '') as Decimal) * cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal)) as TotalSubmitted : Decimal,
+    sum(cast(replace(replace(s.Avg_Mdcr_Pymt_Amt, '$', ''), ',', '') as Decimal) * cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal)) as TotalPaid : Decimal,
+    sum(cast(replace(replace(s.Avg_Sbmtd_Chrg, '$', ''), ',', '') as Decimal) * cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal))
+      - sum(cast(replace(replace(s.Avg_Mdcr_Alowd_Amt, '$', ''), ',', '') as Decimal) * cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal)) as RejectedCharges : Decimal,
     // Clamp to 0–100%: negative rejected = no overclaim; >100% capped for chart axis stability
     cast(round(
       case
-        when sum(cast(replace(s.Avg_Sbmtd_Chrg, '$', '') as Decimal) * s.Tot_Srvcs) <= 0 then null
-        when sum(cast(replace(s.Avg_Sbmtd_Chrg, '$', '') as Decimal) * s.Tot_Srvcs)
-           - sum(cast(replace(s.Avg_Mdcr_Alowd_Amt, '$', '') as Decimal) * s.Tot_Srvcs) <= 0 then 0
-        when (sum(cast(replace(s.Avg_Sbmtd_Chrg, '$', '') as Decimal) * s.Tot_Srvcs)
-           - sum(cast(replace(s.Avg_Mdcr_Alowd_Amt, '$', '') as Decimal) * s.Tot_Srvcs))
-           / sum(cast(replace(s.Avg_Sbmtd_Chrg, '$', '') as Decimal) * s.Tot_Srvcs) * 100 > 100 then 100
-        else (sum(cast(replace(s.Avg_Sbmtd_Chrg, '$', '') as Decimal) * s.Tot_Srvcs)
-           - sum(cast(replace(s.Avg_Mdcr_Alowd_Amt, '$', '') as Decimal) * s.Tot_Srvcs))
-           / sum(cast(replace(s.Avg_Sbmtd_Chrg, '$', '') as Decimal) * s.Tot_Srvcs) * 100
+        when sum(cast(replace(replace(s.Avg_Sbmtd_Chrg, '$', ''), ',', '') as Decimal) * cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal)) <= 0 then null
+        when sum(cast(replace(replace(s.Avg_Sbmtd_Chrg, '$', ''), ',', '') as Decimal) * cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal))
+           - sum(cast(replace(replace(s.Avg_Mdcr_Alowd_Amt, '$', ''), ',', '') as Decimal) * cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal)) <= 0 then 0
+        when cast((cast(sum(cast(replace(replace(s.Avg_Sbmtd_Chrg, '$', ''), ',', '') as Decimal) * cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal)) as Decimal)
+           - cast(sum(cast(replace(replace(s.Avg_Mdcr_Alowd_Amt, '$', ''), ',', '') as Decimal) * cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal)) as Decimal)) as Double)
+           / cast(sum(cast(replace(replace(s.Avg_Sbmtd_Chrg, '$', ''), ',', '') as Decimal) * cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal)) as Double) * 100 > 100 then 100
+        else cast((cast(sum(cast(replace(replace(s.Avg_Sbmtd_Chrg, '$', ''), ',', '') as Decimal) * cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal)) as Decimal)
+           - cast(sum(cast(replace(replace(s.Avg_Mdcr_Alowd_Amt, '$', ''), ',', '') as Decimal) * cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal)) as Decimal)) as Double)
+           / cast(sum(cast(replace(replace(s.Avg_Sbmtd_Chrg, '$', ''), ',', '') as Decimal) * cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal)) as Double) * 100
       end
     , 2) as Decimal) as OverclaimRate : Decimal
   }
@@ -330,8 +330,8 @@ view RuralAnalysisChartBase as
       case
         when sum(tier.TotalSubmitted) <= 0 then null
         when sum(tier.RejectedCharges) <= 0 then 0
-        when sum(tier.RejectedCharges) / sum(tier.TotalSubmitted) * 100 > 100 then 100
-        else sum(tier.RejectedCharges) / sum(tier.TotalSubmitted) * 100
+        when cast(sum(tier.RejectedCharges) as Double) / cast(sum(tier.TotalSubmitted) as Double) * 100 > 100 then 100
+        else cast(sum(tier.RejectedCharges) as Double) / cast(sum(tier.TotalSubmitted) as Double) * 100
       end
     , 2) as Decimal) as OverclaimRate : Decimal
   }
@@ -351,17 +351,29 @@ view RuralAnalysisChartMultiTier as
   group by HCPCS_Code
   having count(distinct StructuralTier) >= 2;
 
+// Volume-weighted rejection rate per procedure across all structural tiers (comparative baseline).
+view RuralAnalysisChartProcedureBaseline as
+  select from RuralAnalysisChartBase {
+    key HCPCS_Code,
+    cast(round(
+      case
+        when sum(TotalSubmitted) <= 0 then null
+        when sum(RejectedCharges) <= 0 then 0
+        else cast(sum(RejectedCharges) as Double) / cast(sum(TotalSubmitted) as Double) * 100
+      end
+    , 2) as Decimal) as ProcedureBaselineRate : Decimal
+  }
+  where StructuralTier in (
+    'Urban / Metro', 'Suburban / Micro', 'Rural / Isolated'
+  )
+  group by HCPCS_Code;
+
 view RuralAnalysisChart as
   select from RuralAnalysisChartBase as tier
   inner join RuralAnalysisChartMultiTier as coverage
     on coverage.HCPCS_Code = tier.HCPCS_Code
-  left join (
-    select from RuralAnalysisChartBase as urban {
-      key urban.HCPCS_Code,
-      urban.OverclaimRate as UrbanBaselineRate : Decimal
-    }
-    where urban.StructuralTier = 'Urban / Metro'
-  ) as baseline on baseline.HCPCS_Code = tier.HCPCS_Code {
+  left join RuralAnalysisChartProcedureBaseline as baseline
+    on baseline.HCPCS_Code = tier.HCPCS_Code {
     key tier.HCPCS_Code,
     key tier.StructuralTier,
     tier.HCPCS_Desc,
@@ -370,7 +382,14 @@ view RuralAnalysisChart as
     tier.TotalPaid,
     tier.RejectedCharges,
     tier.OverclaimRate,
-    baseline.UrbanBaselineRate,
+    baseline.ProcedureBaselineRate,
+    // Tier deviation = tier rejection rate minus procedure-weighted average baseline
+    cast(round(
+      case
+        when baseline.ProcedureBaselineRate is null then tier.OverclaimRate
+        else tier.OverclaimRate - baseline.ProcedureBaselineRate
+      end
+    , 2) as Decimal) as TierDeviation : Decimal,
     coverage.TierCoverageCount
   }
   where tier.StructuralTier in (
@@ -386,9 +405,10 @@ annotate medicare.RuralAnalysisChart with {
   TotalSubmitted     @Measures.ISOCurrency: 'USD';
   TotalPaid          @Measures.ISOCurrency: 'USD';
   RejectedCharges    @Measures.ISOCurrency: 'USD';
-  OverclaimRate      @Measures.Unit: '%';
-  UrbanBaselineRate  @Measures.Unit: '%';
-  TierCoverageCount  @Measures.Unit: #ONE;
+  OverclaimRate           @Measures.Unit: '%';
+  ProcedureBaselineRate   @Measures.Unit: '%';
+  TierDeviation           @Measures.Unit: '%';
+  TierCoverageCount       @Measures.Unit: #ONE;
 };
 
 // Maps the CMS Rural Indicator (RuralInd) to readable locality buckets per the
