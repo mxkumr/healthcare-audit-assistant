@@ -2,7 +2,7 @@ using MedicareService as service from '../../srv/medicare-service';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // RuralAnalysisChart — HCPCS × structural tier (chart-safe grain)
-// Chart (top): horizontal grouped bar — procedure (Y) × tier (series) × inflation % (X)
+// Chart (top): grouped column — procedure (X) × tier (series) × tier deviation (Y)
 // Table (bottom): collapsible groups by procedure code → expand into structural tiers
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -19,17 +19,13 @@ annotate service.RuralAnalysisChart with @(
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // TOP LAYER — horizontal grouped bar (deduplicated RuralAnalysisChart grain)
-  // HCPCS_Code → #Category (one Y-axis row per procedure)
-  // StructuralTier → #Series (Urban / Suburban / Rural sub-bars per slot)
-  // OverclaimRate only — no currency measures on the 0–100% axis
+  // TOP LAYER — vertical grouped column chart
+  // HCPCS_Code → #Category | StructuralTier → #Series | TierDeviation → measure
   // ═══════════════════════════════════════════════════════════════════════════
-  UI.DataPoint #InflationRatePct: {
+  UI.DataPoint #TierDeviationPct: {
     $Type       : 'UI.DataPointType',
-    Value       : OverclaimRate,
-    Title       : 'Inflation Rate (%)',
-    MinimumValue: 0,
-    MaximumValue: 100,
+    Value       : TierDeviation,
+    Title       : 'Tier Deviation (%)',
     ValueFormat : {
       $Type                   : 'UI.NumberFormat',
       NumberOfFractionalDigits: 2
@@ -37,15 +33,15 @@ annotate service.RuralAnalysisChart with @(
     CriticalityCalculation: {
       $Type                  : 'UI.CriticalityCalculationType',
       ImprovementDirection   : #Minimize,
-      ToleranceRangeHighValue: 15,
-      DeviationRangeHighValue: 40
+      ToleranceRangeHighValue: 5,
+      DeviationRangeHighValue: 15
     }
   },
 
   UI.Chart #V2InflationDelta: {
     $Type     : 'UI.ChartDefinitionType',
-    Title     : 'Procedural Inflation Rate (%) by Structural Tier',
-    ChartType : #Bar,
+    Title     : 'Tier Deviation (%) by Structural Tier',
+    ChartType : #Column,
     Dimensions: [HCPCS_Code, StructuralTier],
     DimensionAttributes: [
       {
@@ -59,24 +55,23 @@ annotate service.RuralAnalysisChart with @(
         Role     : #Series
       }
     ],
-    Measures  : [OverclaimRate],
+    Measures  : [TierDeviation],
     MeasureAttributes: [
       {
         $Type    : 'UI.ChartMeasureAttributeType',
-        Measure  : OverclaimRate,
+        Measure  : TierDeviation,
         Role     : #Axis1,
-        DataPoint: ![@UI.DataPoint#InflationRatePct]
+        DataPoint: ![@UI.DataPoint#TierDeviationPct]
       }
     ]
   },
 
-  // Chart-only PV: multi-tier procedures only (≥2 tiers); top rows by inflation rate.
-  // Single-tier codes (e.g. 31623 Urban-only) are excluded at the view layer.
+  // Top N procedures by max tier deviation; GroupBy HCPCS_Code loads all tiers per procedure.
   UI.PresentationVariant #ChartTopProcedures: {
     $Type         : 'UI.PresentationVariantType',
-    GroupBy       : [HCPCS_Code, StructuralTier],
-    SortOrder     : [{ Property: OverclaimRate, Descending: true }],
-    MaxItems      : 30,
+    GroupBy       : [HCPCS_Code],
+    SortOrder     : [{ Property: TierDeviation, Descending: true }],
+    MaxItems      : 10,
     Visualizations: ['@UI.Chart#V2InflationDelta']
   },
 
@@ -92,7 +87,16 @@ annotate service.RuralAnalysisChart with @(
   UI.DataPoint #OverclaimRateFmt: {
     $Type      : 'UI.DataPointType',
     Value      : OverclaimRate,
-    Title      : 'Inflation Rate (%)',
+    Title      : 'Rejection Rate (%)',
+    ValueFormat: {
+      $Type                   : 'UI.NumberFormat',
+      NumberOfFractionalDigits: 2
+    }
+  },
+  UI.DataPoint #TierDeviationFmt: {
+    $Type      : 'UI.DataPointType',
+    Value      : TierDeviation,
+    Title      : 'Tier Deviation (%)',
     ValueFormat: {
       $Type                   : 'UI.NumberFormat',
       NumberOfFractionalDigits: 2
@@ -106,32 +110,31 @@ annotate service.RuralAnalysisChart with @(
     { $Type: 'UI.DataField', Value: TotalServices,  Label: 'Frequency (Total Services)', ![@UI.Importance]: #Medium },
     { $Type: 'UI.DataField', Value: TotalSubmitted, Label: 'Total Billed Charges',    ![@UI.Importance]: #High },
     { $Type: 'UI.DataField', Value: RejectedCharges, Label: 'Rejected Over-Charges',  ![@UI.Importance]: #High },
+    { $Type: 'UI.DataField', Value: OverclaimRate,  Label: 'Rejection Rate (%)',      ![@UI.Importance]: #Medium, ![@UI.DataPoint]: ![@UI.DataPoint#OverclaimRateFmt] },
+    { $Type: 'UI.DataField', Value: ProcedureBaselineRate, Label: 'Procedure Baseline (%)', ![@UI.Importance]: #Medium },
     {
       $Type      : 'UI.DataField',
-      Value      : OverclaimRate,
-      Label      : 'Inflation Rate (%)',
+      Value      : TierDeviation,
+      Label      : 'Tier Deviation (%)',
       ![@UI.Importance]: #High,
-      ![@UI.DataPoint]: ![@UI.DataPoint#OverclaimRateFmt],
+      ![@UI.DataPoint]: ![@UI.DataPoint#TierDeviationFmt],
       CriticalityCalculation: {
         $Type                  : 'UI.CriticalityCalculationType',
         ImprovementDirection   : #Minimize,
-        ToleranceRangeHighValue: 15,
-        DeviationRangeHighValue: 40
+        ToleranceRangeHighValue: 5,
+        DeviationRangeHighValue: 15
       },
       ![@UI.CriticalityRepresentation]: #WithIcon
     },
-    { $Type: 'UI.DataField', Value: UrbanBaselineRate, Label: 'Urban Baseline (%)', ![@UI.Importance]: #Medium },
-    { $Type: 'UI.DataField', Value: TotalPaid,      Label: 'Total Paid',              ![@UI.Importance]: #High }
+    { $Type: 'UI.DataField', Value: TotalPaid,      Label: 'Total Medicare Paid',   ![@UI.Importance]: #High }
   ],
 
-  // GroupBy HCPCS_Code: collapsed rows show procedure code + rolled-up totals;
-  // expand reveals Urban / Metro, Suburban / Micro, Rural / Isolated tier rows.
   UI.PresentationVariant #V2Table: {
     $Type         : 'UI.PresentationVariantType',
     GroupBy       : [HCPCS_Code],
     SortOrder     : [
       { Property: HCPCS_Code,    Descending: false },
-      { Property: OverclaimRate, Descending: true }
+      { Property: TierDeviation, Descending: true }
     ],
     Total         : [TotalServices, TotalSubmitted, RejectedCharges, TotalPaid],
     Visualizations: ['@UI.LineItem']
@@ -173,31 +176,42 @@ annotate service.RuralAnalysisChart with {
 
   RejectedCharges @(
     Common.Label        : 'Rejected Over-Charges',
-    Common.QuickInfo    : 'The raw financial variance between what providers claimed vs. what Medicare allowed. High variance indicates that providers in this area are overcharging for the procedure.',
-    Core.Description    : 'The raw financial variance between what providers claimed vs. what Medicare allowed. High variance indicates that providers in this area are overcharging for the procedure.',
+    Common.QuickInfo    : 'The raw financial variance between what providers claimed vs. what Medicare allowed.',
+    Core.Description    : 'The raw financial variance between what providers claimed vs. what Medicare allowed.',
     Measures.ISOCurrency: 'USD',
     UI.LineItem         : [{ position: 60 }]
   );
 
   OverclaimRate @(
-    Common.Label        : 'Inflation Rate (%)',
-    Common.QuickInfo    : 'A high variance indicates that providers in this structural tier are systematically overcharging or upcoding for this specific procedure relative to regulatory fee caps.',
-    Core.Description    : 'The percentage of billed charges immediately rejected by Medicare. High values in a tier reveal systematic overclaiming and upcoding for that specific procedure.',
+    Common.Label        : 'Rejection Rate (%)',
+    Common.QuickInfo    : 'Share of billed charges rejected by Medicare fee caps: (Rejected Over-Charges ÷ Total Billed Charges) × 100.',
+    Core.Description    : 'Share of billed charges rejected by Medicare fee caps: (Rejected Over-Charges ÷ Total Billed Charges) × 100.',
     Measures.Unit       : '%',
     UI.DataPoint        : ![@UI.DataPoint#OverclaimRateFmt],
+    UI.LineItem         : [{ position: 65 }]
+  );
+
+  ProcedureBaselineRate @(
+    Common.Label     : 'Procedure Baseline (%)',
+    Common.QuickInfo : 'Volume-weighted average rejection rate for this procedure across all structural tiers.',
+    Core.Description : 'Volume-weighted average rejection rate for this procedure across all structural tiers.',
+    Measures.Unit    : '%',
+    UI.LineItem      : [{ position: 68 }]
+  );
+
+  TierDeviation @(
+    Common.Label        : 'Tier Deviation (%)',
+    Common.QuickInfo    : 'How far this tier deviates from the procedure baseline: Rejection Rate (%) − Procedure Baseline (%). Positive = worse than average; negative = more compliant than average.',
+    Core.Description    : 'How far this tier deviates from the procedure baseline: Rejection Rate (%) − Procedure Baseline (%). Positive = worse than average; negative = more compliant than average.',
+    Measures.Unit       : '%',
+    UI.DataPoint        : ![@UI.DataPoint#TierDeviationFmt],
     UI.LineItem         : [{ position: 70 }]
   );
 
-  UrbanBaselineRate @(
-    Common.Label     : 'Urban Baseline (%)',
-    Common.QuickInfo : 'Urban / Metro inflation rate for the same procedure — used as the comparative target notch on the bullet chart.',
-    Measures.Unit    : '%',
-    UI.LineItem      : [{ position: 75 }]
-  );
-
   TotalPaid @(
-    Common.Label        : 'Total Paid',
-    Common.QuickInfo    : 'Total Medicare disbursement for this procedure within the structural tier.',
+    Common.Label        : 'Total Medicare Paid',
+    Common.QuickInfo    : 'Actual cash disbursed by Medicare (sum of Avg Medicare Payment Amount × services).',
+    Core.Description    : 'Actual cash disbursed by Medicare (sum of Avg Medicare Payment Amount × services).',
     Measures.ISOCurrency: 'USD',
     UI.LineItem         : [{ position: 80 }]
   );
