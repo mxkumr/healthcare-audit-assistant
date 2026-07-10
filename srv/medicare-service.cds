@@ -21,6 +21,10 @@ service MedicareService @(path:'/medicare') {
 
   @readonly
   @cds.redirection.target: false
+  entity RuralAnalysisChart       as projection on medicare.RuralAnalysisChart;
+
+  @readonly
+  @cds.redirection.target: false
   entity RuralUrbanDistribution   as projection on medicare.RuralUrbanDistribution;
 
   @readonly
@@ -143,16 +147,20 @@ annotate MedicareService.RuralAnalysisV2 with @(
       {Property: TotalServices},
       {Property: TotalSubmitted},
       {Property: TotalPaid},
-      {Property: RejectedCharges}
+      {Property: RejectedCharges},
+      {Property: OverclaimRate,     SupportedAggregationMethods: ['max']},
+      {Property: UrbanBaselineRate, SupportedAggregationMethods: ['max']}
     ]
   }
 );
 
 annotate MedicareService.RuralAnalysisV2 with @(
-  Aggregation.CustomAggregate #TotalServices    : 'Edm.Decimal',
-  Aggregation.CustomAggregate #TotalSubmitted   : 'Edm.Decimal',
-  Aggregation.CustomAggregate #TotalPaid        : 'Edm.Decimal',
-  Aggregation.CustomAggregate #RejectedCharges  : 'Edm.Decimal'
+  Aggregation.CustomAggregate #TotalServices      : 'Edm.Decimal',
+  Aggregation.CustomAggregate #TotalSubmitted     : 'Edm.Decimal',
+  Aggregation.CustomAggregate #TotalPaid          : 'Edm.Decimal',
+  Aggregation.CustomAggregate #RejectedCharges    : 'Edm.Decimal',
+  Aggregation.CustomAggregate #OverclaimRate      : 'Edm.Decimal',
+  Aggregation.CustomAggregate #UrbanBaselineRate  : 'Edm.Decimal'
 ) {
   HCPCS_Code       @Analytics.Dimension: true;
   HCPCS_Desc       @Analytics.Dimension: true;
@@ -161,8 +169,45 @@ annotate MedicareService.RuralAnalysisV2 with @(
   TotalSubmitted   @Analytics.Measure: true  @Aggregation.default: #SUM  @Measures.ISOCurrency: 'USD';
   TotalPaid        @Analytics.Measure: true  @Aggregation.default: #SUM  @Measures.ISOCurrency: 'USD';
   RejectedCharges  @Analytics.Measure: true  @Aggregation.default: #SUM  @Measures.ISOCurrency: 'USD';
-  // OverclaimRate: row-level ratio only — not aggregatable (percentages must not be summed)
-  OverclaimRate    @Measures.Unit: '%';
+  // MAX only for chart leaf reads — table footer still excludes these from Total PV
+  OverclaimRate      @Analytics.Measure: true  @Aggregation.default: #MAX  @Measures.Unit: '%';
+  UrbanBaselineRate  @Analytics.Measure: true  @Aggregation.default: #MAX  @Measures.Unit: '%';
+};
+
+// ── RuralAnalysisChart (HCPCS × tier — chart-safe grain, 1 row per code × tier) ─
+annotate MedicareService.RuralAnalysisChart with @(
+  Aggregation.ApplySupported: {
+    Transformations        : ['aggregate', 'groupby', 'filter', 'topcount', 'orderby', 'skip', 'top'],
+    GroupableProperties    : [HCPCS_Code, HCPCS_Desc, StructuralTier, TierCoverageCount],
+    AggregatableProperties : [
+      {Property: TotalServices},
+      {Property: TotalSubmitted},
+      {Property: TotalPaid},
+      {Property: RejectedCharges},
+      {Property: OverclaimRate,     SupportedAggregationMethods: ['max']},
+      {Property: UrbanBaselineRate, SupportedAggregationMethods: ['max']}
+    ]
+  }
+);
+
+annotate MedicareService.RuralAnalysisChart with @(
+  Aggregation.CustomAggregate #TotalServices      : 'Edm.Decimal',
+  Aggregation.CustomAggregate #TotalSubmitted     : 'Edm.Decimal',
+  Aggregation.CustomAggregate #TotalPaid          : 'Edm.Decimal',
+  Aggregation.CustomAggregate #RejectedCharges    : 'Edm.Decimal',
+  Aggregation.CustomAggregate #OverclaimRate      : 'Edm.Decimal',
+  Aggregation.CustomAggregate #UrbanBaselineRate  : 'Edm.Decimal'
+) {
+  HCPCS_Code        @Analytics.Dimension: true;
+  HCPCS_Desc        @Analytics.Dimension: true;
+  StructuralTier    @Analytics.Dimension: true;
+  TierCoverageCount @Analytics.Dimension: true;
+  TotalServices    @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalSubmitted   @Analytics.Measure: true  @Aggregation.default: #SUM  @Measures.ISOCurrency: 'USD';
+  TotalPaid        @Analytics.Measure: true  @Aggregation.default: #SUM  @Measures.ISOCurrency: 'USD';
+  RejectedCharges  @Analytics.Measure: true  @Aggregation.default: #SUM  @Measures.ISOCurrency: 'USD';
+  OverclaimRate      @Analytics.Measure: true  @Aggregation.default: #MAX  @Measures.Unit: '%';
+  UrbanBaselineRate  @Analytics.Measure: true  @Aggregation.default: #MAX  @Measures.Unit: '%';
 };
 
 // ── RuralUrbanDistribution (geographic disparities) ───────────────────────────

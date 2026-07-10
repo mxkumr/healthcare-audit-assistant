@@ -72,9 +72,9 @@
           "target": "RuralAnalysisV2List"
         },
         {
-          "pattern": "RuralAnalysisV2({key}):?query:",
-          "name": "RuralAnalysisV2ObjectPage",
-          "target": "RuralAnalysisV2ObjectPage"
+          "pattern": "RuralAnalysisChart({key}):?query:",
+          "name": "RuralAnalysisChartObjectPage",
+          "target": "RuralAnalysisChartObjectPage"
         }
       ],
       "targets": {
@@ -84,13 +84,13 @@
           "name": "sap.fe.templates.ListReport",
           "options": {
             "settings": {
-              "contextPath": "/RuralAnalysisV2",
+              "contextPath": "/RuralAnalysisChart",
               "variantManagement": "Page",
               "defaultTemplateAnnotationPath": "com.sap.vocabularies.UI.v1.SelectionPresentationVariant#ALPDashboard",
               "navigation": {
-                "RuralAnalysisV2": {
+                "RuralAnalysisChart": {
                   "detail": {
-                    "route": "RuralAnalysisV2ObjectPage"
+                    "route": "RuralAnalysisChartObjectPage"
                   }
                 }
               },
@@ -102,11 +102,19 @@
                     "enableExport": true
                   }
                 },
-                "@com.sap.vocabularies.UI.v1.Chart#V2TierFootprint": {
+                "@com.sap.vocabularies.UI.v1.Chart#V2InflationDelta": {
                   "chartSettings": {
-                    "defaultChartType": "column"
+                    "defaultChartType": "bar",
+                    "vizProperties": {
+                      "plotArea": {
+                        "dataPointSize": { "min": 48, "max": 48 }
+                      },
+                      "interaction": {
+                        "zoom": { "enablement": "enabled" }
+                      }
+                    }
                   },
-                  "requestFilterFields": ["StructuralTier"]
+                  "requestFilterFields": ["HCPCS_Code", "StructuralTier"]
                 }
               },
               "views": {
@@ -114,7 +122,7 @@
                   {
                     "primary": [
                       {
-                        "annotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#V2Chart"
+                        "annotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#ChartTopProcedures"
                       }
                     ],
                     "secondary": [
@@ -129,14 +137,14 @@
             }
           }
         },
-        "RuralAnalysisV2ObjectPage": {
+        "RuralAnalysisChartObjectPage": {
           "type": "Component",
-          "id": "RuralAnalysisV2ObjectPage",
+          "id": "RuralAnalysisChartObjectPage",
           "name": "sap.fe.templates.ObjectPage",
           "options": {
             "settings": {
               "editableHeaderContent": false,
-              "contextPath": "/RuralAnalysisV2"
+              "contextPath": "/RuralAnalysisChart"
             }
           }
         }
