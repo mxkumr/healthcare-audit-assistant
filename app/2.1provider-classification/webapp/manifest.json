@@ -1,7 +1,7 @@
 {
   "_version": "1.85.0",
   "sap.app": {
-    "id": "com.medicare.providerclassification",
+    "id": "com.medicare.21providerclassification",
     "type": "application",
     "i18n": "i18n/i18n.properties",
     "applicationVersion": {
@@ -60,7 +60,7 @@
       "i18n": {
         "type": "sap.ui.model.resource.ResourceModel",
         "settings": {
-          "bundleName": "com.medicare.providerclassification.i18n.i18n"
+          "bundleName": "com.medicare.21providerclassification.i18n.i18n"
         }
       },
       "": {
@@ -103,6 +103,7 @@
             "settings": {
               "contextPath": "/ProviderCostEfficiency",
               "variantManagement": "Page",
+              "defaultTemplateAnnotationPath": "com.sap.vocabularies.UI.v1.SelectionPresentationVariant#ALPDashboard",
               "navigation": {
                 "ProviderCostEfficiency": {
                   "detail": {
@@ -114,8 +115,27 @@
                 "@com.sap.vocabularies.UI.v1.LineItem": {
                   "tableSettings": {
                     "type": "AnalyticalTable",
-                    "selectionMode": "None"
+                    "selectionMode": "None",
+                    "enableExport": true
                   }
+                },
+                "@com.sap.vocabularies.UI.v1.Chart#RiskMatrix": {
+                  "chartSettings": {
+                    "defaultChartType": "stacked_column",
+                    "enableStableColors": true,
+                    "vizProperties": {
+                      "plotArea": {
+                        "dataPointSize": { "min": 48, "max": 48 },
+                        "dataShape": {
+                          "stacking": "normal"
+                        }
+                      },
+                      "interaction": {
+                        "zoom": { "enablement": "enabled" }
+                      }
+                    }
+                  },
+                  "requestFilterFields": ["EfficiencyCategory", "UtilizationCategory", "State", "ProviderType"]
                 }
               },
               "views": {
@@ -123,12 +143,12 @@
                   {
                     "primary": [
                       {
-                        "annotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant"
+                        "annotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#RiskMatrixChart"
                       }
                     ],
                     "secondary": [
                       {
-                        "annotationPath": "com.sap.vocabularies.UI.v1.LineItem"
+                        "annotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#AuditTable"
                       }
                     ],
                     "defaultPath": "both"

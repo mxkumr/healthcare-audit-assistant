@@ -492,66 +492,49 @@ view RiskScoreDistribution as
 
 // ─── Task 2 Views ────────────────────────────────────────────────────────────
 
+// Task 2.1 — 2-Axis Risk Matrix: Cost Classification × Utilization Profile
+// One row per provider (Year + NPI). Chart aggregates ProviderCount by the
+// EfficiencyCategory (X) × UtilizationCategory (series) matrix cells.
 view ProviderCostEfficiency as
   select from ProviderSummary as p {
     key p.Year,
-    key p.Rndrng_NPI                          as NPI                : String,
-    p.Rndrng_Prvdr_Last_Org_Name              as ProviderName       : String,
-    p.Rndrng_Prvdr_First_Name                 as FirstName          : String,
-    p.Rndrng_Prvdr_Type                       as ProviderType       : String,
-    p.Rndrng_Prvdr_State_Abrvtn               as State              : String,
-    p.Rndrng_Prvdr_City                       as City               : String,
-    p.Tot_Benes                               as TotalBeneficiaries : Integer,
-    p.Tot_Mdcr_Pymt_Amt                       as TotalPaid          : Decimal,
-    p.Tot_Sbmtd_Chrg                          as TotalSubmitted     : Decimal,
-    p.Tot_Mdcr_Alowd_Amt                      as TotalAllowed       : Decimal,
-    p.Bene_Avg_Risk_Scre                      as AvgRiskScore       : Decimal,
+    key p.Rndrng_NPI                    as NPI                    : String,
+    upper(p.Rndrng_Prvdr_Last_Org_Name) as ProviderName           : String,
+    p.Rndrng_Prvdr_Type                 as ProviderType           : String,
+    p.Rndrng_Prvdr_State_Abrvtn         as State                  : String,
 
-    // Constant 1 per provider; SUM(ProviderCount) over a group = #providers,
-    // which powers the "providers per classification" distribution chart in the ALP.
-    cast(1 as Integer)                        as ProviderCount      : Integer,
+    (p.Tot_Mdcr_Pymt_Amt / nullif(p.Tot_Benes, 0)) as CostPerBeneficiary     : Decimal,
+    cast(round(p.Tot_Srvcs / nullif(p.Tot_Benes, 0)) as Integer) as ServicesPerBeneficiary : Integer,
 
-    // Cost per beneficiary (nullif guards against divide-by-zero / null beneficiaries)
-    (p.Tot_Mdcr_Pymt_Amt / nullif(p.Tot_Benes, 0)) as CostPerBeneficiary : Decimal,
-
-    // Risk classification based on Bene_Avg_Risk_Scre
     case
-      when p.Bene_Avg_Risk_Scre < 1.0 then 'Low Risk'
-      when p.Bene_Avg_Risk_Scre < 1.5 then 'Moderate Risk'
-      when p.Bene_Avg_Risk_Scre < 2.0 then 'High Risk'
-      else 'Very High Risk'
-    end                                       as RiskCategory       : String,
+      when (p.Tot_Mdcr_Pymt_Amt / nullif(p.Tot_Benes, 0)) < 150 then 'Highly Efficient'
+      when (p.Tot_Mdcr_Pymt_Amt / nullif(p.Tot_Benes, 0)) < 900 then 'Average Spend'
+      else 'High-Cost Outlier'
+    end                                              as EfficiencyCategory     : String,
 
-    // Relative cost-intensity classification, based on cost per beneficiary.
-    // Thresholds are anchored to the observed distribution of cost/beneficiary
-    // across all ~50k providers (median ≈ $172, p90 ≈ $585, p95 ≈ $893):
-    //   <150  ≈ p45   Highly Efficient   (~43%)
-    //   <300  ≈ p75   Efficient          (~30%)
-    //   <600  ≈ p90   Average            (~17%)
-    //   <900  ≈ p95   Inefficient        (~5%)
-    //   ≥900  top ~5% Outlier            (statistically unusual spend)
-    // NOTE: cost/bene varies by specialty, so this is a relative cost-intensity
-    // signal rather than a pure efficiency judgement.
     case
-      when (p.Tot_Mdcr_Pymt_Amt / p.Tot_Benes) < 150 then 'Highly Efficient'
-      when (p.Tot_Mdcr_Pymt_Amt / p.Tot_Benes) < 300 then 'Efficient'
-      when (p.Tot_Mdcr_Pymt_Amt / p.Tot_Benes) < 600 then 'Average'
-      when (p.Tot_Mdcr_Pymt_Amt / p.Tot_Benes) < 900 then 'Inefficient'
-      else 'Outlier'
-    end                                       as EfficiencyCategory : String,
-
-    // Utilization behavior
-    case
-      when p.Tot_Srvcs / p.Tot_Benes < 5  then 'Low Utilization'
-      when p.Tot_Srvcs / p.Tot_Benes < 15 then 'Moderate Utilization'
+      when (p.Tot_Srvcs / nullif(p.Tot_Benes, 0)) < 5  then 'Low Utilization'
+      when (p.Tot_Srvcs / nullif(p.Tot_Benes, 0)) < 15 then 'Moderate Utilization'
       else 'High Utilization'
-    end                                       as UtilizationCategory : String,
+    end                                              as UtilizationCategory    : String,
 
-    p.Bene_CC_PH_Diabetes_V2_Pct             as DiabetesPct        : Decimal,
-    p.Bene_CC_PH_Hypertension_V2_Pct         as HypertensionPct    : Decimal,
-    p.Bene_CC_PH_CKD_V2_Pct                  as CKDPct             : Decimal,
-    p.Bene_CC_PH_HF_NonIHD_V2_Pct            as HeartFailurePct    : Decimal
+    p.Tot_Benes                                      as TotalBeneficiaries     : Integer,
+    p.Bene_Avg_Age                                   as AvgPatientAge          : Decimal,
+    p.Bene_Avg_Risk_Scre                             as AvgRiskScore           : Decimal,
+    p.Bene_CC_PH_Diabetes_V2_Pct                     as DiabetesPct            : Decimal,
+    p.Bene_CC_PH_Hypertension_V2_Pct                 as HypertensionPct        : Decimal,
+
+    cast(1 as Integer)                               as ProviderCount          : Integer
   };
+
+annotate medicare.ProviderCostEfficiency with @(
+  Analytics.dataCategory   : #CUBE,
+  Aggregation.ApplyDefault : true
+);
+
+annotate medicare.ProviderCostEfficiency with {
+  ProviderCount @Aggregation.default: #SUM;
+};
 
 // Specialty-level classification (Task 2): collapses ~50k individual providers
 // into one row per Year + ProviderType, profiling each SPECIALTY by patient

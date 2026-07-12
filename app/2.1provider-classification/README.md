@@ -8,7 +8,7 @@
 |**Template Used**<br>Analytical List Page V4|
 |**Service Type**<br>Local CAP|
 |**Service URL**<br>http://localhost:4004/medicare/|
-|**Module Name**<br>provider-classification|
+|**Module Name**<br>2.1provider-classification|
 |**Application Title**<br>Provider Cost Efficiency|
 |**Namespace**<br>com.medicare|
 |**UI5 Theme**<br>sap_horizon|
@@ -17,7 +17,7 @@
 |**Add Eslint configuration**<br>True, see https://www.npmjs.com/package/@sap-ux/eslint-plugin-fiori-tools#rules for the eslint rules.|
 |**Main Entity**<br>ProviderCostEfficiency|
 
-## provider-classification
+## 2.1provider-classification
 
 Task 2 – Provider cost-efficiency &amp; risk classification
 
@@ -25,7 +25,7 @@ Task 2 – Provider cost-efficiency &amp; risk classification
 
 -   This app has been generated using the SAP Fiori tools - App Generator, as part of the SAP Fiori tools suite.  To launch the generated app, start your CAP project:  and navigate to the following location in your browser:
 
-http://localhost:4004/com.medicare.providerclassification/index.html
+http://localhost:4004/com.medicare.21providerclassification/index.html
 
 #### Pre-requisites:
 

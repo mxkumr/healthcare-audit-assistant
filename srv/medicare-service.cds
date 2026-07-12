@@ -44,6 +44,11 @@ service MedicareService @(path:'/medicare') {
   entity OrganizationClassification as projection on medicare.OrganizationClassification;
 }
 
+// Self-association: all year records for the same provider name (object-page history table)
+extend MedicareService.ProviderCostEfficiency with columns {
+  yearHistory : Association to many MedicareService.ProviderCostEfficiency on yearHistory.ProviderName = $self.ProviderName
+}
+
 // ── Aggregation (data-shaping) annotations for the analytical query ────────────
 // NOTE: UI annotations (LineItem, Chart, PresentationVariant, KPIs, visual
 // filters, facets) live in the app layer at app/1.1cost-analysis/annotations.cds.
@@ -287,52 +292,55 @@ annotate MedicareService.RiskScoreDistribution with @(
   AvgDiabetesPct     @Analytics.Measure: true  @Aggregation.default: #AVG;
 };
 
-// ── Task 2: ProviderCostEfficiency (classification) ───────────────────────────
-// Aggregation metadata lets the ALP chart roll providers up by their
-// classification dimensions (Efficiency / Risk / Utilization / Specialty).
+// ── Task 2.1: ProviderCostEfficiency (2-Axis Risk Matrix) ─────────────────────
 annotate MedicareService.ProviderCostEfficiency with @(
   Aggregation.ApplySupported: {
-    Transformations        : ['aggregate', 'groupby', 'filter'],
+    Transformations        : ['aggregate', 'groupby', 'filter', 'topcount', 'orderby', 'skip', 'top'],
     GroupableProperties    : [
-      Year, State, ProviderType,
-      EfficiencyCategory, RiskCategory, UtilizationCategory
+      Year, State, ProviderType, NPI, ProviderName,
+      EfficiencyCategory, UtilizationCategory
     ],
     AggregatableProperties : [
       {Property: ProviderCount},
-      {Property: TotalPaid},
-      {Property: TotalSubmitted},
-      {Property: TotalAllowed},
-      {Property: TotalBeneficiaries},
       {Property: CostPerBeneficiary},
-      {Property: AvgRiskScore}
+      {
+        Property: ServicesPerBeneficiary,
+        SupportedAggregationMethods: ['max']
+      },
+      {Property: TotalBeneficiaries, SupportedAggregationMethods: ['max']},
+      {Property: AvgPatientAge},
+      {Property: AvgRiskScore},
+      {Property: DiabetesPct},
+      {Property: HypertensionPct}
     ]
   }
 );
 
 annotate MedicareService.ProviderCostEfficiency with @(
-  Aggregation.CustomAggregate #ProviderCount      : 'Edm.Int32',
-  Aggregation.CustomAggregate #TotalPaid          : 'Edm.Decimal',
-  Aggregation.CustomAggregate #TotalSubmitted     : 'Edm.Decimal',
-  Aggregation.CustomAggregate #TotalAllowed       : 'Edm.Decimal',
-  Aggregation.CustomAggregate #TotalBeneficiaries : 'Edm.Int32',
-  Aggregation.CustomAggregate #CostPerBeneficiary : 'Edm.Decimal',
-  Aggregation.CustomAggregate #AvgRiskScore       : 'Edm.Decimal'
+  Aggregation.CustomAggregate #ProviderCount           : 'Edm.Int32',
+  Aggregation.CustomAggregate #CostPerBeneficiary      : 'Edm.Decimal',
+  Aggregation.CustomAggregate #ServicesPerBeneficiary  : 'Edm.Int32',
+  Aggregation.CustomAggregate #TotalBeneficiaries      : 'Edm.Int32',
+  Aggregation.CustomAggregate #AvgPatientAge           : 'Edm.Decimal',
+  Aggregation.CustomAggregate #AvgRiskScore            : 'Edm.Decimal',
+  Aggregation.CustomAggregate #DiabetesPct             : 'Edm.Decimal',
+  Aggregation.CustomAggregate #HypertensionPct           : 'Edm.Decimal'
 ) {
-  Year                @Analytics.Dimension: true;
-  State               @Analytics.Dimension: true;
-  ProviderType        @Analytics.Dimension: true;
-  EfficiencyCategory  @Analytics.Dimension: true;
-  RiskCategory        @Analytics.Dimension: true;
-  UtilizationCategory @Analytics.Dimension: true;
-  ProviderCount       @Analytics.Measure: true  @Aggregation.default: #SUM;
-  TotalPaid           @Analytics.Measure: true  @Aggregation.default: #SUM;
-  TotalSubmitted      @Analytics.Measure: true  @Aggregation.default: #SUM;
-  TotalAllowed        @Analytics.Measure: true  @Aggregation.default: #SUM;
-  TotalBeneficiaries  @Analytics.Measure: true  @Aggregation.default: #SUM;
-  // CostPerBeneficiary is a ratio -> AVG across a group is unweighted; the exact
-  // per-provider value is visible in the (non-aggregated) table rows.
-  CostPerBeneficiary  @Analytics.Measure: true  @Aggregation.default: #AVG;
-  AvgRiskScore        @Analytics.Measure: true  @Aggregation.default: #AVG;
+  Year                  @Analytics.Dimension: true;
+  NPI                   @Analytics.Dimension: true;
+  ProviderName          @Analytics.Dimension: true;
+  State                 @Analytics.Dimension: true;
+  ProviderType          @Analytics.Dimension: true;
+  EfficiencyCategory    @Analytics.Dimension: true;
+  UtilizationCategory   @Analytics.Dimension: true;
+  ProviderCount         @Analytics.Measure: true  @Aggregation.default: #SUM;
+  CostPerBeneficiary    @Analytics.Measure: true  @Aggregation.default: #AVG;
+  ServicesPerBeneficiary @Analytics.Measure: true @Aggregation.default: #MAX;
+  TotalBeneficiaries    @Analytics.Measure: true  @Aggregation.default: #MAX;
+  AvgPatientAge         @Analytics.Measure: true  @Aggregation.default: #AVG;
+  AvgRiskScore          @Analytics.Measure: true  @Aggregation.default: #AVG;
+  DiabetesPct           @Analytics.Measure: true  @Aggregation.default: #AVG  @Measures.Unit: '%';
+  HypertensionPct       @Analytics.Measure: true  @Aggregation.default: #AVG  @Measures.Unit: '%';
 };
 
 // ── Task 2: SpecialtyRiskProfile (specialty-level classification) ──────────────

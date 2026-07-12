@@ -548,7 +548,7 @@ JavaScript; you declare *what* to show and SAPUI5 builds the table/chart/page.
 | `cost-analysis` | Cost by state/provider type + KPIs | 1 |
 | `1.2rural-analysis` | HCPCS overclaiming by structural tier + tier deviation | 1.2 |
 | `risk-analysis` | Risk-score distribution | 1 |
-| `provider-classification` | Per-provider efficiency/risk/utilization | 2 |
+| `2.1provider-classification` | Per-provider 2-Axis Risk Matrix (cost × utilization) | 2.1 |
 | `specialty-classification` | Specialty complexity profile | 2 |
 | `organization-classification` | Individual vs Organization | 2 |
 
@@ -563,7 +563,7 @@ There are **two kinds** of annotations and they are kept in different files on p
 
 ```1:8:app/services.cds
 using from './cost-analysis/annotations';
-using from './provider-classification/annotations';
+using from './2.1provider-classification/annotations';
 using from './specialty-classification/annotations';
 using from './organization-classification/annotations';
 ```
