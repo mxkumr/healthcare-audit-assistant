@@ -20,6 +20,9 @@ service MedicareService @(path:'/medicare') {
 
   @readonly
   @cds.redirection.target: false
+  entity BehavioralHealthRiskProfile as projection on medicare.BehavioralHealthRiskProfile;
+  @readonly
+  @cds.redirection.target: false
   entity ProviderCostEfficiency as projection on medicare.ProviderCostEfficiency;
 }
 
@@ -69,6 +72,50 @@ annotate MedicareService.CostByStateProviderType with @(
   UI.PresentationVariant: {
     GroupBy       : [State, ProviderType],
     Total         : [TotalPaid, TotalSubmitted, ProviderCount],
+    Visualizations: ['@UI.LineItem', '@UI.Chart']
+  }
+);
+
+// ── BehavioralHealthRiskProfile (BH burden vs. risk score) ────────────────────
+annotate MedicareService.BehavioralHealthRiskProfile with @(
+  Common.Label: 'Behavioral Health Risk Profile',
+  Aggregation.ApplySupported: {
+    Transformations        : ['aggregate', 'groupby', 'filter'],
+    GroupableProperties    : [
+      {Property: State},
+      {Property: ProviderType},
+      {Property: BHBurdenGroup}
+    ],
+    AggregatableProperties : [
+      {Property: ProviderCount},
+      {Property: AvgRiskScore},
+      {Property: TotalPaid},
+      {Property: TotalBeneficiaries},
+      {Property: PaidPerBeneficiary}
+    ]
+  },
+  Analytics.AggregatedProperties: [
+    { Name: 'AvgRiskScoreAvg',   AggregationMethod: 'avg', AggregatableProperty: AvgRiskScore },
+    { Name: 'ProviderCountSum',  AggregationMethod: 'sum', AggregatableProperty: ProviderCount }
+  ],
+  UI.SelectionFields: [State, ProviderType, BHBurdenGroup],
+  UI.LineItem: [
+    {Value: State},
+    {Value: ProviderType},
+    {Value: BHBurdenGroup},
+    {Value: ProviderCount},
+    {Value: AvgRiskScore},
+    {Value: PaidPerBeneficiary}
+  ],
+  UI.Chart: {
+    ChartType : #HeatMap,
+    Dimensions: [{Dimension: State}, {Dimension: BHBurdenGroup}],
+    Measures  : [{Measure: AvgRiskScore}]
+  },
+  UI.PresentationVariant: {
+    GroupBy   : [State, ProviderType, BHBurdenGroup],
+    SortOrder : [{Property: State, Descending: false}],
+    Total     : [ProviderCount, TotalPaid],
     Visualizations: ['@UI.LineItem', '@UI.Chart']
   }
 );

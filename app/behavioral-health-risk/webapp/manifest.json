@@ -1,7 +1,7 @@
 {
-  "_version": "1.85.0",
+  "_version": "1.86.0",
   "sap.app": {
-    "id": "com.medicare.costanalysis",
+    "id": "behavioralhealthrisk.behavioralhealthrisk",
     "type": "application",
     "i18n": "i18n/i18n.properties",
     "applicationVersion": {
@@ -12,8 +12,8 @@
     "resources": "resources.json",
     "sourceTemplate": {
       "id": "@sap/generator-fiori:alp",
-      "version": "1.25.0",
-      "toolsId": "6ed8e069-6c10-42f6-80a5-7c2307529236"
+      "version": "1.28.0",
+      "toolsId": "8d8ed1f6-6c4d-40d0-a28c-0d938aae6811"
     },
     "dataSources": {
       "mainService": {
@@ -45,7 +45,7 @@
   "sap.ui5": {
     "flexEnabled": true,
     "dependencies": {
-      "minUI5Version": "1.148.1",
+      "minUI5Version": "1.150.0",
       "libs": {
         "sap.m": {},
         "sap.ui.core": {},
@@ -60,7 +60,7 @@
       "i18n": {
         "type": "sap.ui.model.resource.ResourceModel",
         "settings": {
-          "bundleName": "com.medicare.costanalysis.i18n.i18n"
+          "bundleName": "behavioralhealthrisk.behavioralhealthrisk.i18n.i18n"
         }
       },
       "": {
@@ -85,36 +85,36 @@
       "routes": [
         {
           "pattern": ":?query:",
-          "name": "CostByStateProviderTypeList",
-          "target": "CostByStateProviderTypeList"
+          "name": "BehavioralHealthRiskProfileList",
+          "target": "BehavioralHealthRiskProfileList"
         },
         {
-          "pattern": "CostByStateProviderType({key}):?query:",
-          "name": "CostByStateProviderTypeObjectPage",
-          "target": "CostByStateProviderTypeObjectPage"
+          "pattern": "BehavioralHealthRiskProfile({key}):?query:",
+          "name": "BehavioralHealthRiskProfileObjectPage",
+          "target": "BehavioralHealthRiskProfileObjectPage"
         }
       ],
       "targets": {
-        "CostByStateProviderTypeList": {
+        "BehavioralHealthRiskProfileList": {
           "type": "Component",
-          "id": "CostByStateProviderTypeList",
+          "id": "BehavioralHealthRiskProfileList",
           "name": "sap.fe.templates.ListReport",
           "options": {
             "settings": {
-              "contextPath": "/CostByStateProviderType",
+              "contextPath": "/BehavioralHealthRiskProfile",
               "variantManagement": "Page",
               "navigation": {
-                "CostByStateProviderType": {
+                "BehavioralHealthRiskProfile": {
                   "detail": {
-                    "route": "CostByStateProviderTypeObjectPage"
+                    "route": "BehavioralHealthRiskProfileObjectPage"
                   }
                 }
               },
               "controlConfiguration": {
                 "@com.sap.vocabularies.UI.v1.LineItem": {
                   "tableSettings": {
-                    "type": "GridTable",
-                    "selectionMode": "None"
+                    "type": "AnalyticalTable",
+                    "selectionMode": "Auto"
                   }
                 }
               },
@@ -138,14 +138,14 @@
             }
           }
         },
-        "CostByStateProviderTypeObjectPage": {
+        "BehavioralHealthRiskProfileObjectPage": {
           "type": "Component",
-          "id": "CostByStateProviderTypeObjectPage",
+          "id": "BehavioralHealthRiskProfileObjectPage",
           "name": "sap.fe.templates.ObjectPage",
           "options": {
             "settings": {
               "editableHeaderContent": false,
-              "contextPath": "/CostByStateProviderType"
+              "contextPath": "/BehavioralHealthRiskProfile"
             }
           }
         }

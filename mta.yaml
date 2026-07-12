@@ -65,9 +65,65 @@ modules:
       - commedicarecostanalysis.zip
       name: commedicarecostanalysis
       target-path: resources/
+    - artifacts:
+      - project1.zip
+      name: project1
+      target-path: resources/
+    - artifacts:
+      - project2.zip
+      name: project2
+      target-path: resources/
+    - artifacts:
+      - commedicarebehavioralhealthrisk.zip
+      name: commedicarebehavioralhealthrisk
+      target-path: resources/
+    - artifacts:
+      - behavioralhealthriskbehavioralhealthrisk.zip
+      name: behavioralhealthriskbehavioralhealthrisk
+      target-path: resources/
 - name: commedicarecostanalysis
   type: html5
   path: app/cost-analysis
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+- name: project1
+  type: html5
+  path: app/project1
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+- name: project2
+  type: html5
+  path: app/project2
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+- name: commedicarebehavioralhealthrisk
+  type: html5
+  path: app/behavioral-health-risk
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+- name: behavioralhealthriskbehavioralhealthrisk
+  type: html5
+  path: app/behavioral-health-risk
   build-parameters:
     build-result: dist
     builder: custom

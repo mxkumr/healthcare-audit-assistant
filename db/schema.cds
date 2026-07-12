@@ -261,6 +261,80 @@ view RiskScoreDistribution as
     p.Tot_Mdcr_Pymt_Amt as TotalPaid,
     g.RuralInd
   };
+  // Pass 1: median BH burden per (Year, State, ProviderType) group
+view BHBurdenMedianByGroup as
+  select from ProviderSummary as p {
+    key p.Year,
+    key p.Rndrng_Prvdr_State_Abrvtn as State        : String,
+    key p.Rndrng_Prvdr_Type         as ProviderType : String,
+
+    count(p.Rndrng_NPI) as ProviderCount : Integer,
+
+    median(
+      ( p.Bene_CC_BH_ADHD_OthCD_V1_Pct
+      + p.Bene_CC_BH_Alcohol_Drug_V1_Pct
+      + p.Bene_CC_BH_Tobacco_V1_Pct
+      + p.Bene_CC_BH_Alz_NonAlzdem_V2_Pct
+      + p.Bene_CC_BH_Anxiety_V1_Pct
+      + p.Bene_CC_BH_Bipolar_V1_Pct
+      + p.Bene_CC_BH_Mood_V2_Pct
+      + p.Bene_CC_BH_Depress_V1_Pct
+      + p.Bene_CC_BH_PD_V1_Pct
+      + p.Bene_CC_BH_PTSD_V1_Pct
+      + p.Bene_CC_BH_Schizo_OthPsy_V1_Pct ) / 11
+    ) as MedianBHBurden : Decimal
+  }
+  group by
+    p.Year, p.Rndrng_Prvdr_State_Abrvtn, p.Rndrng_Prvdr_Type
+  having count(p.Rndrng_NPI) >= 10;
+
+// Pass 2: classify each provider vs their peer group's median, then aggregate
+view BehavioralHealthRiskProfile as
+  select from ProviderSummary as p
+  inner join BHBurdenMedianByGroup as m
+    on  m.Year        = p.Year
+    and m.State        = p.Rndrng_Prvdr_State_Abrvtn
+    and m.ProviderType = p.Rndrng_Prvdr_Type {
+
+    key p.Year,
+    key p.Rndrng_Prvdr_State_Abrvtn as State        : String,
+    key p.Rndrng_Prvdr_Type         as ProviderType : String,
+    key case
+          when ( ( p.Bene_CC_BH_ADHD_OthCD_V1_Pct + p.Bene_CC_BH_Alcohol_Drug_V1_Pct
+                 + p.Bene_CC_BH_Tobacco_V1_Pct + p.Bene_CC_BH_Alz_NonAlzdem_V2_Pct
+                 + p.Bene_CC_BH_Anxiety_V1_Pct + p.Bene_CC_BH_Bipolar_V1_Pct
+                 + p.Bene_CC_BH_Mood_V2_Pct + p.Bene_CC_BH_Depress_V1_Pct
+                 + p.Bene_CC_BH_PD_V1_Pct + p.Bene_CC_BH_PTSD_V1_Pct
+                 + p.Bene_CC_BH_Schizo_OthPsy_V1_Pct ) / 11 ) >= m.MedianBHBurden
+            then 'B - High BH Burden'
+            else 'A - Low BH Burden'
+        end                          as BHBurdenGroup : String,
+
+    count(p.Rndrng_NPI)                        as ProviderCount       : Integer,
+    cast(round(avg(p.Bene_Avg_Risk_Scre), 3) as Decimal(10,3)) as AvgRiskScore : Decimal(10,3),
+    sum(p.Tot_Sbmtd_Chrg)                      as TotalSubmitted      : Decimal,
+    sum(p.Tot_Mdcr_Alowd_Amt)                  as TotalAllowed        : Decimal,
+    sum(p.Tot_Mdcr_Pymt_Amt)                   as TotalPaid           : Decimal,
+    sum(p.Tot_Benes)                           as TotalBeneficiaries  : Integer,
+    cast(round(cast(sum(p.Tot_Mdcr_Pymt_Amt) as Decimal) / nullif(sum(p.Tot_Benes), 0), 3) as Decimal(10,3))
+                                            as PaidPerBeneficiary  : Decimal(10,3),
+    sum(p.Drug_Mdcr_Pymt_Amt)                  as TotalDrugPaid       : Decimal,
+    avg(p.Tot_HCPCS_Cds)                       as AvgUniqueProcedures : Decimal,
+    sum(case when p.Rndrng_Prvdr_Mdcr_Prtcptg_Ind = 'Y' then 1 else 0 end)
+                                                as MedicareAcceptCount : Integer
+  }
+  group by
+    p.Year, p.Rndrng_Prvdr_State_Abrvtn, p.Rndrng_Prvdr_Type,
+    case
+      when ( ( p.Bene_CC_BH_ADHD_OthCD_V1_Pct + p.Bene_CC_BH_Alcohol_Drug_V1_Pct
+             + p.Bene_CC_BH_Tobacco_V1_Pct + p.Bene_CC_BH_Alz_NonAlzdem_V2_Pct
+             + p.Bene_CC_BH_Anxiety_V1_Pct + p.Bene_CC_BH_Bipolar_V1_Pct
+             + p.Bene_CC_BH_Mood_V2_Pct + p.Bene_CC_BH_Depress_V1_Pct
+             + p.Bene_CC_BH_PD_V1_Pct + p.Bene_CC_BH_PTSD_V1_Pct
+             + p.Bene_CC_BH_Schizo_OthPsy_V1_Pct ) / 11 ) >= m.MedianBHBurden
+      then 'B - High BH Burden'
+      else 'A - Low BH Burden'
+    end;
 // ─── Task 2 Views ────────────────────────────────────────────────────────────
 
 view ProviderCostEfficiency as
