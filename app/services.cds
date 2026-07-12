@@ -3,7 +3,7 @@ using from './1.1cost-analysis/annotations';
 
 using from './1.2rural-analysis/annotations';
 
-using from './provider-classification/annotations';
+using from './2.1provider-classification/annotations';
 
 using from './specialty-classification/annotations';
 

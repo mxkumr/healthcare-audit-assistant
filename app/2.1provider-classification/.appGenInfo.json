@@ -5,7 +5,7 @@
     "serviceType": "Local CAP",
     "metadataFilename": "",
     "serviceUrl": "http://localhost:4004/medicare/",
-    "appName": "provider-classification",
+    "appName": "2.1provider-classification",
     "appTitle": "Provider Cost Efficiency",
     "appDescription": "Task 2 – Provider cost-efficiency & risk classification",
     "appNamespace": "com.medicare",
@@ -23,6 +23,6 @@
         "value": "ProviderCostEfficiency"
       }
     ],
-    "launchText": "To launch the generated app, start your CAP project:  and navigate to the following location in your browser:\n\nhttp://localhost:4004/com.medicare.providerclassification/index.html"
+    "launchText": "To launch the generated app, start your CAP project:  and navigate to the following location in your browser:\n\nhttp://localhost:4004/com.medicare.21providerclassification/index.html"
   }
 }

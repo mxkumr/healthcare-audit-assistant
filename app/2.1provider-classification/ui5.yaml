@@ -2,7 +2,7 @@
 
 specVersion: "4.0"
 metadata:
-  name: com.medicare.providerclassification
+  name: com.medicare.21providerclassification
 type: application
 server:
   customMiddleware:
