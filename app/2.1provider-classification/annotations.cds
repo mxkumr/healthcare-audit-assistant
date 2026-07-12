@@ -236,13 +236,15 @@ annotate service.ProviderCostEfficiency with {
 
   EfficiencyCategory @(
     Common.Label     : 'Cost Classification',
-    Common.QuickInfo : 'Cost-intensity band: Highly Efficient (<$150), Average Spend ($150–$900), High-Cost Outlier (≥$900) per beneficiary.',
+    Common.QuickInfo : 'Cost-efficiency band for this provider-year. Highly Efficient (<$150), Average Spend ($150–$900), High-Cost Outlier (≥$900) per beneficiary.',
+    Core.Description : 'Summarizes how much Medicare pays per patient for this provider. Derived from Cost per Patient (Medicare paid amount ÷ beneficiaries) and compared to fixed dollar thresholds to flag unusually low- or high-spend outliers. Bands: Highly Efficient (<$150), Average Spend ($150–$900), High-Cost Outlier (≥$900 per beneficiary).',
     UI.LineItem      : [{ position: 80 }]
   );
 
   UtilizationCategory @(
     Common.Label     : 'Utilization Profile',
-    Common.QuickInfo : 'Service-volume band: Low (<5), Moderate (5–15), High (≥15) services per beneficiary.',
+    Common.QuickInfo : 'Service-volume band for this provider-year. Low Utilization (<5), Moderate Utilization (5–15), High Utilization (≥15) services per patient.',
+    Core.Description : 'Summarizes how many services a provider delivers relative to panel size. Derived from Services per Patient (total services ÷ beneficiaries, rounded) to identify low-, typical-, or high-volume billing patterns. Bands: Low Utilization (<5), Moderate Utilization (5–15), High Utilization (≥15 services per beneficiary).',
     UI.LineItem      : [{ position: 90 }]
   );
 
