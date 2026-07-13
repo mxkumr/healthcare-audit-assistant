@@ -502,6 +502,12 @@ view ProviderCostEfficiency as
     upper(p.Rndrng_Prvdr_Last_Org_Name) as ProviderName           : String,
     p.Rndrng_Prvdr_Type                 as ProviderType           : String,
     p.Rndrng_Prvdr_State_Abrvtn         as State                  : String,
+    p.Rndrng_Prvdr_Ent_Cd                 as EntityTypeCode         : String,
+    case
+      when p.Rndrng_Prvdr_Ent_Cd = 'O' then 'Organization / Corporate Network'
+      when p.Rndrng_Prvdr_Ent_Cd = 'I' then 'Individual Clinician'
+      else                                   'Unknown Entity Type'
+    end                                              as EntityType             : String(40),
 
     (p.Tot_Mdcr_Pymt_Amt / nullif(p.Tot_Benes, 0)) as CostPerBeneficiary     : Decimal,
     cast(round(p.Tot_Srvcs / nullif(p.Tot_Benes, 0)) as Integer) as ServicesPerBeneficiary : Integer,
@@ -579,42 +585,148 @@ view SpecialtyRiskProfile as
     p.Year,
     p.Rndrng_Prvdr_Type;
 
-// Organization classification (Task 2): segments providers by their CMS entity
-// type (Rndrng_Prvdr_Ent_Cd: I = Individual clinician, O = Organization) and
-// compares the two segments on risk, cost and utilization per Year + State.
-// This answers "do organizations bill differently from individual clinicians?"
-// — a structural audit lens distinct from specialty or per-provider views.
-//
-// CostPerBene and ServicesPerBene are ratios of sums (kept exact at this grain),
-// not averages of per-provider ratios.
-view OrganizationClassification as
-  select from ProviderSummary as p {
-    key p.Year,
-    key p.Rndrng_Prvdr_State_Abrvtn          as State              : String,
-    key case
-          when p.Rndrng_Prvdr_Ent_Cd = 'I' then 'Individual'
-          when p.Rndrng_Prvdr_Ent_Cd = 'O' then 'Organization'
-          else                                  'Unknown'
-        end                                  as EntityType         : String,
+// ─── Task 2.2 — Specialty Peer Profiling ─────────────────────────────────────
 
-    count(p.Rndrng_NPI)                      as ProviderCount      : Integer,
-    sum(p.Tot_Benes)                         as TotalBeneficiaries : Integer,
-    sum(p.Tot_Srvcs)                         as TotalServices      : Decimal,
-    sum(p.Tot_Sbmtd_Chrg)                    as TotalSubmitted     : Decimal,
-    sum(p.Tot_Mdcr_Alowd_Amt)                as TotalAllowed       : Decimal,
-    sum(p.Tot_Mdcr_Pymt_Amt)                 as TotalPaid          : Decimal,
-
-    avg(p.Bene_Avg_Risk_Scre)                as AvgRiskScore       : Decimal,
-    cast(sum(p.Tot_Mdcr_Pymt_Amt) as Decimal) / nullif(sum(p.Tot_Benes), 0)
-                                             as CostPerBene        : Decimal,
-    cast(sum(p.Tot_Srvcs) as Decimal)        / nullif(sum(p.Tot_Benes), 0)
-                                             as ServicesPerBene    : Decimal
+// National peer baseline averages per year and specialty.
+view SpecialtyPeerBaselines as
+  select from ProviderCostEfficiency {
+    key Year,
+    key ProviderType                         as Specialty            : String,
+    avg(CostPerBeneficiary)                  as NationalAvgCost      : Decimal(15, 2),
+    avg(ServicesPerBeneficiary)              as NationalAvgServices  : Decimal(15, 2)
   }
   group by
-    p.Year,
-    p.Rndrng_Prvdr_State_Abrvtn,
+    Year,
+    ProviderType;
+
+// Baseline join: authentic variance percentages vs specialty-year peer averages.
+view SpecialtyPeerDeviations as
+  select from ProviderCostEfficiency as Provider
+  inner join SpecialtyPeerBaselines as Baseline on (
+    Provider.Year = Baseline.Year
+    and Provider.ProviderType = Baseline.Specialty
+  ) {
+    key Provider.Year,
+    key Provider.NPI,
+    Provider.ProviderName,
+    Provider.ProviderType                      as Specialty            : String,
+    Provider.State,
+    Provider.CostPerBeneficiary                as CostPerPatient       : Decimal,
+    Baseline.NationalAvgCost,
     case
-      when p.Rndrng_Prvdr_Ent_Cd = 'I' then 'Individual'
-      when p.Rndrng_Prvdr_Ent_Cd = 'O' then 'Organization'
-      else                                  'Unknown'
-    end;
+      when nullif(Baseline.NationalAvgCost, 0) is not null
+        then round(((Provider.CostPerBeneficiary - Baseline.NationalAvgCost) / Baseline.NationalAvgCost) * 100)
+      else 0
+    end                                        as CostTierDeviation    : Decimal(15, 2),
+    Provider.ServicesPerBeneficiary            as ServicesPerPatient   : Integer,
+    Baseline.NationalAvgServices,
+    case
+      when nullif(Baseline.NationalAvgServices, 0) is not null
+        then round(((Provider.ServicesPerBeneficiary - Baseline.NationalAvgServices) / Baseline.NationalAvgServices) * 100)
+      else 0
+    end                                        as ServiceTierDeviation : Decimal(15, 2)
+  };
+
+annotate medicare.SpecialtyPeerDeviations with @(
+  Analytics.dataCategory   : #CUBE,
+  Aggregation.ApplyDefault : true
+);
+
+// ─── Task 2.3 — Entity Type Macro Comparison (Individual vs Organization) ─────
+
+// Compares Individual clinicians vs Corporate organizations using CMS entity code.
+view EntityTypeComparisons as
+  select from ProviderCostEfficiency {
+    key Year,
+    key case
+      when EntityTypeCode = 'O' then 'Organization / Corporate Network'
+      when EntityTypeCode = 'I' then 'Individual Clinician'
+      else                           'Unknown Entity Type'
+    end                                      as EntityType                 : String(40),
+    count(distinct NPI)                      as TotalUniqueProviders       : Integer,
+    sum(TotalBeneficiaries)                  as TotalPatientsServed        : Integer,
+    avg(CostPerBeneficiary)                  as MacroAvgCostPerPatient     : Decimal(15, 2),
+    avg(ServicesPerBeneficiary)              as MacroAvgServicesPerPatient : Decimal(15, 2),
+    sum(case
+          when EfficiencyCategory = 'High-Cost Outlier' then 1
+          else 0
+        end)                                 as HighCostOutlierCount       : Integer,
+    sum(case
+          when UtilizationCategory = 'High Utilization' then 1
+          else 0
+        end)                                 as HighVolumeOutlierCount     : Integer
+  }
+  group by
+    Year,
+    EntityTypeCode;
+
+annotate medicare.EntityTypeComparisons with @(
+  Analytics.dataCategory   : #CUBE,
+  Aggregation.ApplyDefault : true
+);
+
+// ─── Task 2.2B — Provider-level entity type profiling (specialty drill-down) ───
+
+view EntityTypeProviderProfiles as
+  select from ProviderCostEfficiency {
+    key Year,
+    key NPI,
+    ProviderName,
+    ProviderType,
+    State,
+    EntityTypeCode,
+    EntityType,
+    CostPerBeneficiary,
+    ServicesPerBeneficiary,
+    EfficiencyCategory,
+    UtilizationCategory,
+    TotalBeneficiaries,
+    AvgPatientAge,
+    AvgRiskScore,
+    DiabetesPct,
+    HypertensionPct,
+    ProviderCount
+  };
+
+annotate medicare.EntityTypeProviderProfiles with @(
+  Analytics.dataCategory   : #CUBE,
+  Aggregation.ApplyDefault : true
+);
+
+// ─── Task 2.2B — Yearly insight: which entity class charges more ───────────────
+
+view EntityTypeCostInsight as
+  select from EntityTypeComparisons as org
+  inner join EntityTypeComparisons as ind
+    on  org.Year = ind.Year
+    and org.EntityType = 'Organization / Corporate Network'
+    and ind.EntityType = 'Individual Clinician' {
+    key org.Year,
+    case
+      when org.MacroAvgCostPerPatient >= ind.MacroAvgCostPerPatient
+        then org.EntityType
+      else ind.EntityType
+    end                                      as HigherChargingEntity   : String(40),
+    case
+      when org.MacroAvgCostPerPatient >= ind.MacroAvgCostPerPatient
+        then org.MacroAvgCostPerPatient
+      else ind.MacroAvgCostPerPatient
+    end                                      as HigherEntityAvgCost    : Decimal(15, 2),
+    case
+      when org.MacroAvgCostPerPatient >= ind.MacroAvgCostPerPatient
+        then ind.MacroAvgCostPerPatient
+      else org.MacroAvgCostPerPatient
+    end                                      as LowerEntityAvgCost     : Decimal(15, 2),
+    round(
+      abs(org.MacroAvgCostPerPatient - ind.MacroAvgCostPerPatient)
+      / nullif(
+          case
+            when org.MacroAvgCostPerPatient < ind.MacroAvgCostPerPatient
+              then org.MacroAvgCostPerPatient
+            else ind.MacroAvgCostPerPatient
+          end,
+          0
+        ) * 100,
+      1
+    )                                        as CostPremiumPct         : Decimal(15, 1)
+  };

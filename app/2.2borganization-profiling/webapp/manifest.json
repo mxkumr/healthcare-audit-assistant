@@ -1,7 +1,7 @@
 {
   "_version": "1.85.0",
   "sap.app": {
-    "id": "com.medicare.specialtyclassification",
+    "id": "com.medicare.22borganizationprofiling",
     "type": "application",
     "i18n": "i18n/i18n.properties",
     "applicationVersion": {
@@ -9,12 +9,6 @@
     },
     "title": "{{appTitle}}",
     "description": "{{appDescription}}",
-    "resources": "resources.json",
-    "sourceTemplate": {
-      "id": "@sap/generator-fiori:alp",
-      "version": "1.25.0",
-      "toolsId": "a1b2c3d4-e5f6-47a8-9b0c-1d2e3f4a5b6c"
-    },
     "dataSources": {
       "mainService": {
         "uri": "/medicare/",
@@ -28,14 +22,6 @@
   },
   "sap.ui": {
     "technology": "UI5",
-    "icons": {
-      "icon": "",
-      "favIcon": "",
-      "phone": "",
-      "phone@2": "",
-      "tablet": "",
-      "tablet@2": ""
-    },
     "deviceTypes": {
       "desktop": true,
       "tablet": true,
@@ -60,7 +46,7 @@
       "i18n": {
         "type": "sap.ui.model.resource.ResourceModel",
         "settings": {
-          "bundleName": "com.medicare.specialtyclassification.i18n.i18n"
+          "bundleName": "com.medicare.22borganizationprofiling.i18n.i18n"
         }
       },
       "": {
@@ -77,45 +63,53 @@
         "uri": "i18n/i18n.properties"
       }
     },
-    "resources": {
-      "css": []
-    },
     "routing": {
       "config": {},
       "routes": [
         {
           "pattern": ":?query:",
-          "name": "SpecialtyRiskProfileList",
-          "target": "SpecialtyRiskProfileList"
-        },
-        {
-          "pattern": "SpecialtyRiskProfile({key}):?query:",
-          "name": "SpecialtyRiskProfileObjectPage",
-          "target": "SpecialtyRiskProfileObjectPage"
+          "name": "EntityTypeComparisonsList",
+          "target": "EntityTypeComparisonsList"
         }
       ],
       "targets": {
-        "SpecialtyRiskProfileList": {
+        "EntityTypeComparisonsList": {
           "type": "Component",
-          "id": "SpecialtyRiskProfileList",
+          "id": "EntityTypeComparisonsList",
           "name": "sap.fe.templates.ListReport",
           "options": {
             "settings": {
-              "contextPath": "/SpecialtyRiskProfile",
+              "contextPath": "/EntityTypeProviderProfiles",
               "variantManagement": "Page",
-              "navigation": {
-                "SpecialtyRiskProfile": {
-                  "detail": {
-                    "route": "SpecialtyRiskProfileObjectPage"
-                  }
+              "defaultTemplateAnnotationPath": "com.sap.vocabularies.UI.v1.SelectionPresentationVariant#ALPDashboard",
+              "keyPerformanceIndicators": {
+                "HigherChargingEntity": {
+                  "entitySet": "EntityTypeCostInsight",
+                  "qualifier": "HigherChargingEntity"
+                },
+                "EntityCostPremium": {
+                  "entitySet": "EntityTypeCostInsight",
+                  "qualifier": "EntityCostPremium"
                 }
               },
               "controlConfiguration": {
                 "@com.sap.vocabularies.UI.v1.LineItem": {
                   "tableSettings": {
                     "type": "AnalyticalTable",
-                    "selectionMode": "None"
+                    "selectionMode": "None",
+                    "enableExport": true
                   }
+                },
+                "@com.sap.vocabularies.UI.v1.Chart#MacroCostIntensity": {
+                  "chartSettings": {
+                    "defaultChartType": "column",
+                    "enableStableColors": true
+                  },
+                  "requestFilterFields": [
+                    "Year",
+                    "EntityType",
+                    "ProviderType"
+                  ]
                 }
               },
               "views": {
@@ -123,29 +117,18 @@
                   {
                     "primary": [
                       {
-                        "annotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant"
+                        "annotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#EntityCostChart"
                       }
                     ],
                     "secondary": [
                       {
-                        "annotationPath": "com.sap.vocabularies.UI.v1.LineItem"
+                        "annotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#EntityComparisonTable"
                       }
                     ],
                     "defaultPath": "both"
                   }
                 ]
               }
-            }
-          }
-        },
-        "SpecialtyRiskProfileObjectPage": {
-          "type": "Component",
-          "id": "SpecialtyRiskProfileObjectPage",
-          "name": "sap.fe.templates.ObjectPage",
-          "options": {
-            "settings": {
-              "editableHeaderContent": false,
-              "contextPath": "/SpecialtyRiskProfile"
             }
           }
         }

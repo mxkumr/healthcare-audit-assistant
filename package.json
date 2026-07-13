@@ -21,8 +21,8 @@
     "build": "rimraf resources mta_archives && mbt build --mtar archive",
     "deploy": "cf deploy mta_archives/archive.mtar --retries 1",
     "watch-2.1provider-classification": "cds watch --open com.medicare.21providerclassification/index.html?sap-ui-xx-viewCache=false --livereload false",
-    "watch-specialty-classification": "cds watch --open com.medicare.specialtyclassification/index.html?sap-ui-xx-viewCache=false --livereload false",
-    "watch-organization-classification": "cds watch --open com.medicare.organizationclassification/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-2.2aspecialty-profiling": "cds watch --open com.medicare.22aspecialtyprofiling/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-2.2borganization-profiling": "cds watch --open com.medicare.22borganizationprofiling/index.html?sap-ui-xx-viewCache=false --livereload false",
     "watch-task1-overview": "cds watch --open com.medicare.task1overview/index.html?sap-ui-xx-viewCache=false --livereload false",
     "watch-risk-analysis": "cds watch --open com.medicare.riskanalysis/index.html?sap-ui-xx-viewCache=false --livereload false",
     "watch-task2-overview": "cds watch --open com.medicare.task2overview/index.html?sap-ui-xx-viewCache=false --livereload false"
@@ -42,8 +42,8 @@
     "app/1.1cost-analysis",
     "app/1.2rural-analysis",
     "app/2.1provider-classification",
-    "app/specialty-classification",
-    "app/organization-classification",
+    "app/2.2aspecialty-profiling",
+    "app/2.2borganization-profiling",
     "app/task1-overview",
     "app/risk-analysis",
     "app/task2-overview"

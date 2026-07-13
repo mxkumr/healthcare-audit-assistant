@@ -3,7 +3,7 @@ sap.ui.define(
     function (Component) {
         "use strict";
 
-        return Component.extend("com.medicare.specialtyclassification.Component", {
+        return Component.extend("com.medicare.22aspecialtyprofiling.Component", {
             metadata: {
                 manifest: "json"
             }
