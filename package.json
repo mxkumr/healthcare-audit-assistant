@@ -15,13 +15,18 @@
   },
   "scripts": {
     "start": "cds-serve",
-    "watch-cost-analysis": "cds watch --open com.medicare.costanalysis/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-1.1cost-analysis": "cds watch --open com.medicare.11costanalysis/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-1.2rural-analysis": "cds watch --open com.medicare.12ruralanalysis/index.html?sap-ui-xx-viewCache=false --livereload false",
     "undeploy": "cf undeploy healthcare-audit-assistant --delete-services --delete-service-keys --delete-service-brokers",
     "build": "rimraf resources mta_archives && mbt build --mtar archive",
     "deploy": "cf deploy mta_archives/archive.mtar --retries 1",
-    "watch-project1": "cds watch --open project1/index.html?sap-ui-xx-viewCache=false --livereload false",
-    "watch-project2": "cds watch --open project2/index.html?sap-ui-xx-viewCache=false --livereload false",
-    "watch-behavioral-health-risk": "cds watch --open behavioralhealthrisk.behavioralhealthrisk/index.html?sap-ui-xx-viewCache=false --livereload false"
+    "watch-behavioral-health-risk": "cds watch --open behavioralhealthrisk.behavioralhealthrisk/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-2.1provider-classification": "cds watch --open com.medicare.21providerclassification/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-specialty-classification": "cds watch --open com.medicare.specialtyclassification/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-organization-classification": "cds watch --open com.medicare.organizationclassification/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-task1-overview": "cds watch --open com.medicare.task1overview/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-risk-analysis": "cds watch --open com.medicare.riskanalysis/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-task2-overview": "cds watch --open com.medicare.task2overview/index.html?sap-ui-xx-viewCache=false --livereload false"
   },
   "private": true,
   "cds": {
@@ -35,11 +40,14 @@
     "app/*"
   ],
   "sapux": [
-    "app/cost-analysis",
-    "app/project1",
-    "app/project2",
-    "app/behavioral-health-risk",
-    "app/behavioral-health-risk",
+    "app/1.1cost-analysis",
+    "app/1.2rural-analysis",
+    "app/2.1provider-classification",
+    "app/specialty-classification",
+    "app/organization-classification",
+    "app/task1-overview",
+    "app/risk-analysis",
+    "app/task2-overview",
     "app/behavioral-health-risk"
   ]
 }

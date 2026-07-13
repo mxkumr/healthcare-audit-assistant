@@ -139,6 +139,13 @@ entity GeoReference {
   Locality                              : String;
   RuralInd                              : String;
 }
+
+// US state / territory code → full name (for readable table and chart labels)
+entity StateReference {
+  key Code : String;
+      Name : String;
+}
+
 // ─── Task 1 Views ────────────────────────────────────────────────────────────
 
 //view CostByStateProviderType as
@@ -173,24 +180,243 @@ view CostByStateProviderType as
     p.Rndrng_Prvdr_State_Abrvtn,
     p.Rndrng_Prvdr_Type;
 
-//view RuralUrbanDistribution as
-  //select
-    //p.Year,
-    //p.Rndrng_Prvdr_State_Abrvtn  as State             : String,
-    //g.RuralInd,
-    //g.Locality,
-    //count(p.Rndrng_NPI)          as ProviderCount      : Integer,
-    //sum(p.Tot_Sbmtd_Chrg)        as TotalSubmitted     : Decimal,
-    //sum(p.Tot_Mdcr_Alowd_Amt)    as TotalAllowed       : Decimal,
-    //sum(p.Tot_Mdcr_Pymt_Amt)     as TotalPaid          : Decimal,
-    //sum(p.Tot_Benes)             as TotalBeneficiaries : Integer,
-    //avg(p.Bene_Avg_Risk_Scre)    as AvgRiskScore       : Decimal
-  //from ProviderSummary as p
-  //left join GeoReference as g
-    //on  g.ZipCode = p.Rndrng_Prvdr_Zip5
-    //and g.Year    = p.Year
-  //group by p.Year, p.Rndrng_Prvdr_State_Abrvtn, g.RuralInd, g.Locality;
+// ─── Cost Analysis V2 — state + provider-type grain (table); chart rolls up to State ─
+view CostAnalysisV2 as
+  select from ProviderSummary as p
+  left join StateReference as sr
+    on sr.Code = p.Rndrng_Prvdr_State_Abrvtn {
+    key p.Year,
+    key p.Rndrng_Prvdr_State_Abrvtn as State       : String,
+    key p.Rndrng_Prvdr_Type         as ProviderType : String,
 
+    max(coalesce(sr.Name, p.Rndrng_Prvdr_State_Abrvtn)) as StateName : String,
+    count(p.Rndrng_NPI)           as ProviderCount      : Integer,
+    sum(p.Tot_Sbmtd_Chrg)         as TotalSubmitted     : Decimal,
+    sum(p.Tot_Mdcr_Alowd_Amt)     as TotalAllowed       : Decimal,
+    sum(p.Tot_Mdcr_Pymt_Amt)      as TotalPaid          : Decimal,
+    // Over-billing delta: claimed charges minus Medicare-approved fee-schedule cap
+    sum(p.Tot_Sbmtd_Chrg) - sum(p.Tot_Mdcr_Alowd_Amt) as RejectedCharges : Decimal,
+    sum(p.Drug_Sbmtd_Chrg)        as DrugSubmitted      : Decimal,
+    sum(p.Drug_Mdcr_Alowd_Amt)    as DrugAllowed        : Decimal,
+    sum(p.Drug_Sbmtd_Chrg) - sum(p.Drug_Mdcr_Alowd_Amt) as RejectedDrugCharges : Decimal,
+    sum(p.Drug_Mdcr_Pymt_Amt)     as DrugPaid           : Decimal,
+    sum(p.Tot_Benes)              as TotalBeneficiaries : Integer
+  }
+  group by
+    p.Year,
+    p.Rndrng_Prvdr_State_Abrvtn,
+    p.Rndrng_Prvdr_Type;
+
+// Analytical cube semantics for OData V4 aggregation + GenAI currency context
+annotate medicare.CostAnalysisV2 with @(
+  Analytics.dataCategory   : #CUBE,
+  Aggregation.ApplyDefault : true
+);
+
+annotate medicare.CostAnalysisV2 with {
+  TotalSubmitted  @Measures.ISOCurrency: 'USD';
+  TotalAllowed    @Measures.ISOCurrency: 'USD';
+  TotalPaid       @Measures.ISOCurrency: 'USD';
+  RejectedCharges @Measures.ISOCurrency: 'USD';
+  DrugSubmitted       @Measures.ISOCurrency: 'USD';
+  DrugAllowed         @Measures.ISOCurrency: 'USD';
+  RejectedDrugCharges @Measures.ISOCurrency: 'USD';
+  DrugPaid            @Measures.ISOCurrency: 'USD';
+};
+
+// ─── Rural Analysis V2 — HCPCS × RUCA structural tier (overclaiming & frequency) ─
+// Base tier grain: one row per procedure × structural tier.
+view RuralAnalysisV2Tier as
+  select from ServiceDetails as s {
+    key s.HCPCS_Cd   as HCPCS_Code : String,
+    key s.HCPCS_Desc as HCPCS_Desc : String,
+    key case
+          when s.Rndrng_Prvdr_RUCA is null
+            or s.Rndrng_Prvdr_RUCA = ''                    then 'Unclassified'
+          when cast(s.Rndrng_Prvdr_RUCA as Decimal) >= 1.0
+           and cast(s.Rndrng_Prvdr_RUCA as Decimal) <= 3.0  then 'Urban / Metro'
+          when cast(s.Rndrng_Prvdr_RUCA as Decimal) >= 4.0
+           and cast(s.Rndrng_Prvdr_RUCA as Decimal) <= 6.0  then 'Suburban / Micro'
+          when cast(s.Rndrng_Prvdr_RUCA as Decimal) >= 7.0
+           and cast(s.Rndrng_Prvdr_RUCA as Decimal) <= 10.3 then 'Rural / Isolated'
+          else                                                   'Unclassified'
+        end              as StructuralTier : String,
+
+    // CMS CSV may include thousands separators in Tot_Srvcs (e.g. "1,200") and in currency strings
+    sum(cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal)) as TotalServices : Decimal,
+    sum(cast(replace(replace(s.Avg_Sbmtd_Chrg, '$', ''), ',', '') as Decimal) * cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal)) as TotalSubmitted : Decimal,
+    sum(cast(replace(replace(s.Avg_Mdcr_Pymt_Amt, '$', ''), ',', '') as Decimal) * cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal)) as TotalPaid : Decimal,
+    sum(cast(replace(replace(s.Avg_Sbmtd_Chrg, '$', ''), ',', '') as Decimal) * cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal))
+      - sum(cast(replace(replace(s.Avg_Mdcr_Alowd_Amt, '$', ''), ',', '') as Decimal) * cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal)) as RejectedCharges : Decimal,
+    // Clamp to 0–100%: negative rejected = no overclaim; >100% capped for chart axis stability
+    cast(round(
+      case
+        when sum(cast(replace(replace(s.Avg_Sbmtd_Chrg, '$', ''), ',', '') as Decimal) * cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal)) <= 0 then null
+        when sum(cast(replace(replace(s.Avg_Sbmtd_Chrg, '$', ''), ',', '') as Decimal) * cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal))
+           - sum(cast(replace(replace(s.Avg_Mdcr_Alowd_Amt, '$', ''), ',', '') as Decimal) * cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal)) <= 0 then 0
+        when cast((cast(sum(cast(replace(replace(s.Avg_Sbmtd_Chrg, '$', ''), ',', '') as Decimal) * cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal)) as Decimal)
+           - cast(sum(cast(replace(replace(s.Avg_Mdcr_Alowd_Amt, '$', ''), ',', '') as Decimal) * cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal)) as Decimal)) as Double)
+           / cast(sum(cast(replace(replace(s.Avg_Sbmtd_Chrg, '$', ''), ',', '') as Decimal) * cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal)) as Double) * 100 > 100 then 100
+        else cast((cast(sum(cast(replace(replace(s.Avg_Sbmtd_Chrg, '$', ''), ',', '') as Decimal) * cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal)) as Decimal)
+           - cast(sum(cast(replace(replace(s.Avg_Mdcr_Alowd_Amt, '$', ''), ',', '') as Decimal) * cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal)) as Decimal)) as Double)
+           / cast(sum(cast(replace(replace(s.Avg_Sbmtd_Chrg, '$', ''), ',', '') as Decimal) * cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal)) as Double) * 100
+      end
+    , 2) as Decimal) as OverclaimRate : Decimal
+  }
+  group by
+    s.HCPCS_Cd,
+    s.HCPCS_Desc,
+    case
+      when s.Rndrng_Prvdr_RUCA is null
+        or s.Rndrng_Prvdr_RUCA = ''                    then 'Unclassified'
+      when cast(s.Rndrng_Prvdr_RUCA as Decimal) >= 1.0
+       and cast(s.Rndrng_Prvdr_RUCA as Decimal) <= 3.0  then 'Urban / Metro'
+      when cast(s.Rndrng_Prvdr_RUCA as Decimal) >= 4.0
+       and cast(s.Rndrng_Prvdr_RUCA as Decimal) <= 6.0  then 'Suburban / Micro'
+      when cast(s.Rndrng_Prvdr_RUCA as Decimal) >= 7.0
+       and cast(s.Rndrng_Prvdr_RUCA as Decimal) <= 10.3 then 'Rural / Isolated'
+      else                                                   'Unclassified'
+    end;
+
+// Enriched projection: attaches Urban / Metro inflation rate as the comparative baseline
+// for each procedure code (used as the bullet-chart target notch).
+view RuralAnalysisV2 as
+  select from RuralAnalysisV2Tier as tier
+  left join (
+    select from RuralAnalysisV2Tier as urban {
+      key urban.HCPCS_Code,
+      key urban.HCPCS_Desc,
+      urban.OverclaimRate as UrbanBaselineRate : Decimal
+    }
+    where urban.StructuralTier = 'Urban / Metro'
+  ) as baseline on  baseline.HCPCS_Code = tier.HCPCS_Code
+                and baseline.HCPCS_Desc = tier.HCPCS_Desc {
+    key tier.HCPCS_Code,
+    key tier.HCPCS_Desc,
+    key tier.StructuralTier,
+    tier.TotalServices,
+    tier.TotalSubmitted,
+    tier.TotalPaid,
+    tier.RejectedCharges,
+    tier.OverclaimRate,
+    baseline.UrbanBaselineRate
+  };
+
+annotate medicare.RuralAnalysisV2 with @(
+  Analytics.dataCategory   : #CUBE,
+  Aggregation.ApplyDefault : true
+);
+
+annotate medicare.RuralAnalysisV2 with {
+  TotalSubmitted     @Measures.ISOCurrency: 'USD';
+  TotalPaid          @Measures.ISOCurrency: 'USD';
+  RejectedCharges    @Measures.ISOCurrency: 'USD';
+  OverclaimRate      @Measures.Unit: '%';
+  UrbanBaselineRate  @Measures.Unit: '%';
+};
+
+// Chart / ALP grain — one row per HCPCS_Code × StructuralTier (descriptions merged).
+// OverclaimRate is recomputed from summed charges (never sum of row-level percentages).
+view RuralAnalysisChartBase as
+  select from RuralAnalysisV2Tier as tier {
+    key tier.HCPCS_Code,
+    key tier.StructuralTier,
+    min(tier.HCPCS_Desc) as HCPCS_Desc : String,
+    sum(tier.TotalServices)  as TotalServices  : Decimal,
+    sum(tier.TotalSubmitted) as TotalSubmitted : Decimal,
+    sum(tier.TotalPaid)      as TotalPaid      : Decimal,
+    sum(tier.RejectedCharges) as RejectedCharges : Decimal,
+    cast(round(
+      case
+        when sum(tier.TotalSubmitted) <= 0 then null
+        when sum(tier.RejectedCharges) <= 0 then 0
+        when cast(sum(tier.RejectedCharges) as Double) / cast(sum(tier.TotalSubmitted) as Double) * 100 > 100 then 100
+        else cast(sum(tier.RejectedCharges) as Double) / cast(sum(tier.TotalSubmitted) as Double) * 100
+      end
+    , 2) as Decimal) as OverclaimRate : Decimal
+  }
+  group by
+    tier.HCPCS_Code,
+    tier.StructuralTier;
+
+// Procedure codes present in 2+ structural tiers (comparative chart grain).
+view RuralAnalysisChartMultiTier as
+  select from RuralAnalysisChartBase {
+    key HCPCS_Code,
+    count(distinct StructuralTier) as TierCoverageCount : Integer
+  }
+  where StructuralTier in (
+    'Urban / Metro', 'Suburban / Micro', 'Rural / Isolated'
+  )
+  group by HCPCS_Code
+  having count(distinct StructuralTier) >= 2;
+
+// Volume-weighted rejection rate per procedure across all structural tiers (comparative baseline).
+view RuralAnalysisChartProcedureBaseline as
+  select from RuralAnalysisChartBase {
+    key HCPCS_Code,
+    cast(round(
+      case
+        when sum(TotalSubmitted) <= 0 then null
+        when sum(RejectedCharges) <= 0 then 0
+        else cast(sum(RejectedCharges) as Double) / cast(sum(TotalSubmitted) as Double) * 100
+      end
+    , 2) as Decimal) as ProcedureBaselineRate : Decimal
+  }
+  where StructuralTier in (
+    'Urban / Metro', 'Suburban / Micro', 'Rural / Isolated'
+  )
+  group by HCPCS_Code;
+
+view RuralAnalysisChart as
+  select from RuralAnalysisChartBase as tier
+  inner join RuralAnalysisChartMultiTier as coverage
+    on coverage.HCPCS_Code = tier.HCPCS_Code
+  left join RuralAnalysisChartProcedureBaseline as baseline
+    on baseline.HCPCS_Code = tier.HCPCS_Code {
+    key tier.HCPCS_Code,
+    key tier.StructuralTier,
+    tier.HCPCS_Desc,
+    tier.TotalServices,
+    tier.TotalSubmitted,
+    tier.TotalPaid,
+    tier.RejectedCharges,
+    tier.OverclaimRate,
+    baseline.ProcedureBaselineRate,
+    // Tier deviation = tier rejection rate minus procedure-weighted average baseline
+    cast(round(
+      case
+        when baseline.ProcedureBaselineRate is null then tier.OverclaimRate
+        else tier.OverclaimRate - baseline.ProcedureBaselineRate
+      end
+    , 2) as Decimal) as TierDeviation : Decimal,
+    coverage.TierCoverageCount
+  }
+  where tier.StructuralTier in (
+    'Urban / Metro', 'Suburban / Micro', 'Rural / Isolated'
+  );
+
+annotate medicare.RuralAnalysisChart with @(
+  Analytics.dataCategory   : #CUBE,
+  Aggregation.ApplyDefault : true
+);
+
+annotate medicare.RuralAnalysisChart with {
+  TotalSubmitted     @Measures.ISOCurrency: 'USD';
+  TotalPaid          @Measures.ISOCurrency: 'USD';
+  RejectedCharges    @Measures.ISOCurrency: 'USD';
+  OverclaimRate           @Measures.Unit: '%';
+  ProcedureBaselineRate   @Measures.Unit: '%';
+  TierDeviation           @Measures.Unit: '%';
+  TierCoverageCount       @Measures.Unit: #ONE;
+};
+
+// Maps the CMS Rural Indicator (RuralInd) to readable locality buckets per the
+// official CMS Zip Code to Carrier Locality File spec (field position 15):
+//   blank = urban, R = rural, B = super rural (lowest-population-density rural).
+// A provider whose ZIP has no GeoReference match at all (g.ZipCode is null after
+// the LEFT JOIN) is the ONLY true "Unknown"; a matched row with a blank RuralInd
+// is genuinely Urban and must not be conflated with an unmatched join.
 view RuralUrbanDistribution as
   select from ProviderSummary as p
   left join GeoReference as g
@@ -198,57 +424,71 @@ view RuralUrbanDistribution as
     and g.Year    = p.Year {
 
     key p.Year,
-    key p.Rndrng_Prvdr_State_Abrvtn as State     : String,
-    key g.RuralInd                               : String,
-    key g.Locality                               : String,
+    key p.Rndrng_Prvdr_State_Abrvtn as State : String,
+    key case
+          when g.ZipCode is null  then 'Unknown'
+          when g.RuralInd  = 'R'  then 'Rural'
+          when g.RuralInd  = 'B'  then 'Super Rural'
+          else                         'Urban'
+        end                         as RuralUrban : String,
 
     count(p.Rndrng_NPI)          as ProviderCount      : Integer,
     sum(p.Tot_Sbmtd_Chrg)        as TotalSubmitted     : Decimal,
     sum(p.Tot_Mdcr_Alowd_Amt)    as TotalAllowed       : Decimal,
     sum(p.Tot_Mdcr_Pymt_Amt)     as TotalPaid          : Decimal,
     sum(p.Tot_Benes)             as TotalBeneficiaries : Integer,
+    // Normalized cost measure: ratio of the sums (NOT an average of ratios),
+    // so it stays correct at this view grain (Year + State + Rural/Urban).
+    cast(sum(p.Tot_Mdcr_Pymt_Amt) as Decimal) / nullif(sum(p.Tot_Benes), 0)
+                                 as PaidPerBene        : Decimal,
     avg(p.Bene_Avg_Risk_Scre)    as AvgRiskScore       : Decimal
   }
   group by
     p.Year,
     p.Rndrng_Prvdr_State_Abrvtn,
-    g.RuralInd,
-    g.Locality;
+    case
+      when g.ZipCode is null  then 'Unknown'
+      when g.RuralInd  = 'R'  then 'Rural'
+      when g.RuralInd  = 'B'  then 'Super Rural'
+      else                         'Urban'
+    end;
 
-//view RiskScoreDistribution as
-  //select
-    //p.Year,
-    //p.Rndrng_NPI                      as NPI                : String,
-    //p.Rndrng_Prvdr_Last_Org_Name      as ProviderName       : String,
-    //p.Rndrng_Prvdr_Type               as ProviderType       : String,
-    //p.Rndrng_Prvdr_State_Abrvtn       as State              : String,
-    //p.Rndrng_Prvdr_City               as City               : String,
-    //p.Bene_Avg_Risk_Scre              as AvgRiskScore        : Decimal,
-    //p.Tot_Benes                       as TotalBeneficiaries  : Integer,
-    //p.Bene_CC_PH_Hypertension_V2_Pct  as HypertensionPct     : Decimal,
-    //p.Bene_CC_PH_Diabetes_V2_Pct      as DiabetesPct         : Decimal,
-    //p.Bene_CC_PH_CKD_V2_Pct          as CKDPct              : Decimal,
-    //p.Bene_CC_PH_HF_NonIHD_V2_Pct    as HeartFailurePct     : Decimal,
-    //p.Tot_Mdcr_Pymt_Amt               as TotalPaid           : Decimal,
-    //g.RuralInd
-  //from ProviderSummary as p
-  //left join GeoReference as g
-    //on  g.ZipCode = p.Rndrng_Prvdr_Zip5
-    //and g.Year    = p.Year;
-
+// Simplified: instead of 50k provider-level rows, providers are bucketed into
+// risk-score bands per Year/State/ProviderType. This turns the entity into a
+// true "distribution" (how many providers / beneficiaries fall in each band)
+// that is light-weight and directly chartable as a histogram.
 view RiskScoreDistribution as
-  select from ProviderSummary as p
-  left join GeoReference as g
-    on  g.ZipCode = p.Rndrng_Prvdr_Zip5
-    and g.Year    = p.Year {
+  select from ProviderSummary as p {
 
     key p.Year,
-    key p.Rndrng_NPI as NPI,
+    key p.Rndrng_Prvdr_State_Abrvtn as State        : String,
+    key p.Rndrng_Prvdr_Type         as ProviderType : String,
+    key case
+          when p.Bene_Avg_Risk_Scre <  0.5 then '1 - Very Low (<0.5)'
+          when p.Bene_Avg_Risk_Scre <  1.0 then '2 - Low (0.5-1.0)'
+          when p.Bene_Avg_Risk_Scre <  1.5 then '3 - Moderate (1.0-1.5)'
+          when p.Bene_Avg_Risk_Scre <  2.0 then '4 - High (1.5-2.0)'
+          else                                   '5 - Very High (>=2.0)'
+        end                         as RiskBand     : String,
 
-    p.Rndrng_Prvdr_Last_Org_Name as ProviderName,
-    p.Rndrng_Prvdr_Type as ProviderType,
-    p.Rndrng_Prvdr_State_Abrvtn as State,
-    p.Rndrng_Prvdr_City as City,
+    count(p.Rndrng_NPI)                    as ProviderCount      : Integer,
+    sum(p.Tot_Benes)                       as TotalBeneficiaries : Integer,
+    sum(p.Tot_Mdcr_Pymt_Amt)               as TotalPaid          : Decimal,
+    avg(p.Bene_Avg_Risk_Scre)              as AvgRiskScore       : Decimal,
+    avg(p.Bene_CC_PH_Hypertension_V2_Pct)  as AvgHypertensionPct : Decimal,
+    avg(p.Bene_CC_PH_Diabetes_V2_Pct)      as AvgDiabetesPct     : Decimal
+  }
+  group by
+    p.Year,
+    p.Rndrng_Prvdr_State_Abrvtn,
+    p.Rndrng_Prvdr_Type,
+    case
+      when p.Bene_Avg_Risk_Scre <  0.5 then '1 - Very Low (<0.5)'
+      when p.Bene_Avg_Risk_Scre <  1.0 then '2 - Low (0.5-1.0)'
+      when p.Bene_Avg_Risk_Scre <  1.5 then '3 - Moderate (1.0-1.5)'
+      when p.Bene_Avg_Risk_Scre <  2.0 then '4 - High (1.5-2.0)'
+      else                                   '5 - Very High (>=2.0)'
+    end;
 
     p.Bene_Avg_Risk_Scre as AvgRiskScore,
     p.Tot_Benes as TotalBeneficiaries,
@@ -337,50 +577,129 @@ view BehavioralHealthRiskProfile as
     end;
 // ─── Task 2 Views ────────────────────────────────────────────────────────────
 
+// Task 2.1 — 2-Axis Risk Matrix: Cost Classification × Utilization Profile
+// One row per provider (Year + NPI). Chart aggregates ProviderCount by the
+// EfficiencyCategory (X) × UtilizationCategory (series) matrix cells.
 view ProviderCostEfficiency as
   select from ProviderSummary as p {
     key p.Year,
-    key p.Rndrng_NPI                          as NPI                : String,
-    p.Rndrng_Prvdr_Last_Org_Name              as ProviderName       : String,
-    p.Rndrng_Prvdr_First_Name                 as FirstName          : String,
-    p.Rndrng_Prvdr_Type                       as ProviderType       : String,
-    p.Rndrng_Prvdr_State_Abrvtn               as State              : String,
-    p.Rndrng_Prvdr_City                       as City               : String,
-    p.Tot_Benes                               as TotalBeneficiaries : Integer,
-    p.Tot_Mdcr_Pymt_Amt                       as TotalPaid          : Decimal,
-    p.Tot_Sbmtd_Chrg                          as TotalSubmitted     : Decimal,
-    p.Tot_Mdcr_Alowd_Amt                      as TotalAllowed       : Decimal,
-    p.Bene_Avg_Risk_Scre                      as AvgRiskScore       : Decimal,
+    key p.Rndrng_NPI                    as NPI                    : String,
+    upper(p.Rndrng_Prvdr_Last_Org_Name) as ProviderName           : String,
+    p.Rndrng_Prvdr_Type                 as ProviderType           : String,
+    p.Rndrng_Prvdr_State_Abrvtn         as State                  : String,
 
-    // Cost per beneficiary
-    (p.Tot_Mdcr_Pymt_Amt / p.Tot_Benes)      as CostPerBeneficiary : Decimal,
+    (p.Tot_Mdcr_Pymt_Amt / nullif(p.Tot_Benes, 0)) as CostPerBeneficiary     : Decimal,
+    cast(round(p.Tot_Srvcs / nullif(p.Tot_Benes, 0)) as Integer) as ServicesPerBeneficiary : Integer,
 
-    // Risk classification based on Bene_Avg_Risk_Scre
     case
-      when p.Bene_Avg_Risk_Scre < 1.0 then 'Low Risk'
-      when p.Bene_Avg_Risk_Scre < 1.5 then 'Moderate Risk'
-      when p.Bene_Avg_Risk_Scre < 2.0 then 'High Risk'
-      else 'Very High Risk'
-    end                                       as RiskCategory       : String,
+      when (p.Tot_Mdcr_Pymt_Amt / nullif(p.Tot_Benes, 0)) < 150 then 'Highly Efficient'
+      when (p.Tot_Mdcr_Pymt_Amt / nullif(p.Tot_Benes, 0)) < 900 then 'Average Spend'
+      else 'High-Cost Outlier'
+    end                                              as EfficiencyCategory     : String,
 
-    // Efficiency classification based on cost per beneficiary
     case
-      when (p.Tot_Mdcr_Pymt_Amt / p.Tot_Benes) < 500  then 'Highly Efficient'
-      when (p.Tot_Mdcr_Pymt_Amt / p.Tot_Benes) < 1000 then 'Efficient'
-      when (p.Tot_Mdcr_Pymt_Amt / p.Tot_Benes) < 2000 then 'Average'
-      when (p.Tot_Mdcr_Pymt_Amt / p.Tot_Benes) < 5000 then 'Inefficient'
-      else 'Outlier'
-    end                                       as EfficiencyCategory : String,
-
-    // Utilization behavior
-    case
-      when p.Tot_Srvcs / p.Tot_Benes < 5  then 'Low Utilization'
-      when p.Tot_Srvcs / p.Tot_Benes < 15 then 'Moderate Utilization'
+      when (p.Tot_Srvcs / nullif(p.Tot_Benes, 0)) < 5  then 'Low Utilization'
+      when (p.Tot_Srvcs / nullif(p.Tot_Benes, 0)) < 15 then 'Moderate Utilization'
       else 'High Utilization'
-    end                                       as UtilizationCategory : String,
+    end                                              as UtilizationCategory    : String,
 
-    p.Bene_CC_PH_Diabetes_V2_Pct             as DiabetesPct        : Decimal,
-    p.Bene_CC_PH_Hypertension_V2_Pct         as HypertensionPct    : Decimal,
-    p.Bene_CC_PH_CKD_V2_Pct                  as CKDPct             : Decimal,
-    p.Bene_CC_PH_HF_NonIHD_V2_Pct            as HeartFailurePct    : Decimal
+    p.Tot_Benes                                      as TotalBeneficiaries     : Integer,
+    p.Bene_Avg_Age                                   as AvgPatientAge          : Decimal,
+    p.Bene_Avg_Risk_Scre                             as AvgRiskScore           : Decimal,
+    p.Bene_CC_PH_Diabetes_V2_Pct                     as DiabetesPct            : Decimal,
+    p.Bene_CC_PH_Hypertension_V2_Pct                 as HypertensionPct        : Decimal,
+
+    cast(1 as Integer)                               as ProviderCount          : Integer
   };
+
+annotate medicare.ProviderCostEfficiency with @(
+  Analytics.dataCategory   : #CUBE,
+  Aggregation.ApplyDefault : true
+);
+
+annotate medicare.ProviderCostEfficiency with {
+  ProviderCount @Aggregation.default: #SUM;
+};
+
+// Specialty-level classification (Task 2): collapses ~50k individual providers
+// into one row per Year + ProviderType, profiling each SPECIALTY by patient
+// complexity (avg risk score), comorbidity burden and normalized cost. The
+// derived ComplexityTier answers "is Internal Medicine a high-complexity
+// specialty?" rather than judging a single provider.
+//
+// ComplexityTier thresholds reuse the same risk-score cut points as the
+// provider-level RiskCategory (1.0 / 1.5 / 2.0) so the specialty tier and the
+// provider tier are directly comparable across the Task 2 dashboards.
+//
+// AvgCostPerBene is a ratio of sums (total paid / total beneficiaries) so it
+// stays exact at the specialty grain instead of averaging per-provider ratios.
+view SpecialtyRiskProfile as
+  select from ProviderSummary as p {
+    key p.Year,
+    key p.Rndrng_Prvdr_Type                  as ProviderType        : String,
+
+    count(p.Rndrng_NPI)                      as ProviderCount       : Integer,
+    sum(p.Tot_Benes)                         as TotalBeneficiaries  : Integer,
+    sum(p.Tot_Mdcr_Pymt_Amt)                 as TotalPaid           : Decimal,
+
+    avg(p.Bene_Avg_Risk_Scre)                as AvgRiskScore        : Decimal,
+    cast(sum(p.Tot_Mdcr_Pymt_Amt) as Decimal) / nullif(sum(p.Tot_Benes), 0)
+                                             as AvgCostPerBene      : Decimal,
+
+    avg(p.Bene_CC_PH_Hypertension_V2_Pct)    as AvgHypertensionPct  : Decimal,
+    avg(p.Bene_CC_PH_Diabetes_V2_Pct)        as AvgDiabetesPct      : Decimal,
+    avg(p.Bene_CC_PH_CKD_V2_Pct)             as AvgCKDPct           : Decimal,
+    avg(p.Bene_CC_PH_HF_NonIHD_V2_Pct)       as AvgHeartFailurePct  : Decimal,
+
+    // Specialty patient-complexity tier, derived from the specialty's mean risk
+    // score (aligned with provider-level RiskCategory thresholds).
+    case
+      when avg(p.Bene_Avg_Risk_Scre) < 1.0 then 'Low Complexity'
+      when avg(p.Bene_Avg_Risk_Scre) < 1.5 then 'Moderate Complexity'
+      when avg(p.Bene_Avg_Risk_Scre) < 2.0 then 'High Complexity'
+      else                                      'Very High Complexity'
+    end                                      as ComplexityTier      : String
+  }
+  group by
+    p.Year,
+    p.Rndrng_Prvdr_Type;
+
+// Organization classification (Task 2): segments providers by their CMS entity
+// type (Rndrng_Prvdr_Ent_Cd: I = Individual clinician, O = Organization) and
+// compares the two segments on risk, cost and utilization per Year + State.
+// This answers "do organizations bill differently from individual clinicians?"
+// — a structural audit lens distinct from specialty or per-provider views.
+//
+// CostPerBene and ServicesPerBene are ratios of sums (kept exact at this grain),
+// not averages of per-provider ratios.
+view OrganizationClassification as
+  select from ProviderSummary as p {
+    key p.Year,
+    key p.Rndrng_Prvdr_State_Abrvtn          as State              : String,
+    key case
+          when p.Rndrng_Prvdr_Ent_Cd = 'I' then 'Individual'
+          when p.Rndrng_Prvdr_Ent_Cd = 'O' then 'Organization'
+          else                                  'Unknown'
+        end                                  as EntityType         : String,
+
+    count(p.Rndrng_NPI)                      as ProviderCount      : Integer,
+    sum(p.Tot_Benes)                         as TotalBeneficiaries : Integer,
+    sum(p.Tot_Srvcs)                         as TotalServices      : Decimal,
+    sum(p.Tot_Sbmtd_Chrg)                    as TotalSubmitted     : Decimal,
+    sum(p.Tot_Mdcr_Alowd_Amt)                as TotalAllowed       : Decimal,
+    sum(p.Tot_Mdcr_Pymt_Amt)                 as TotalPaid          : Decimal,
+
+    avg(p.Bene_Avg_Risk_Scre)                as AvgRiskScore       : Decimal,
+    cast(sum(p.Tot_Mdcr_Pymt_Amt) as Decimal) / nullif(sum(p.Tot_Benes), 0)
+                                             as CostPerBene        : Decimal,
+    cast(sum(p.Tot_Srvcs) as Decimal)        / nullif(sum(p.Tot_Benes), 0)
+                                             as ServicesPerBene    : Decimal
+  }
+  group by
+    p.Year,
+    p.Rndrng_Prvdr_State_Abrvtn,
+    case
+      when p.Rndrng_Prvdr_Ent_Cd = 'I' then 'Individual'
+      when p.Rndrng_Prvdr_Ent_Cd = 'O' then 'Organization'
+      else                                  'Unknown'
+    end;
