@@ -108,14 +108,38 @@ annotate MedicareService.BehavioralHealthRiskProfile with @(
     {Value: PaidPerBeneficiary}
   ],
   UI.Chart: {
-    ChartType : #HeatMap,
-    Dimensions: [{Dimension: State}, {Dimension: BHBurdenGroup}],
-    Measures  : [{Measure: AvgRiskScore}]
+    $Type     : 'UI.ChartDefinitionType',
+    Title     : 'Average Risk Score by State',
+    ChartType : #Bar,
+    Dimensions: [State],
+    DimensionAttributes: [
+      { $Type: 'UI.ChartDimensionAttributeType', Dimension: State, Role: #Category }
+    ],
+    Measures: [AvgRiskScore],
+    MeasureAttributes: [
+      { $Type: 'UI.ChartMeasureAttributeType', Measure: AvgRiskScore, Role: #Axis1 }
+    ]
   },
   UI.PresentationVariant: {
-    GroupBy   : [State, ProviderType, BHBurdenGroup],
-    SortOrder : [{Property: State, Descending: false}],
-    Total     : [ProviderCount, TotalPaid],
-    Visualizations: ['@UI.LineItem', '@UI.Chart']
+    GroupBy       : [State],
+    SortOrder     : [{ Property: State, Descending: false }],
+    Total         : [AvgRiskScore],
+    Visualizations: ['@UI.Chart', '@UI.LineItem']
   }
 );
+annotate MedicareService.BehavioralHealthRiskProfile with @(
+  Aggregation.CustomAggregate #ProviderCount      : 'Edm.Int32',
+  Aggregation.CustomAggregate #AvgRiskScore       : 'Edm.Decimal',
+  Aggregation.CustomAggregate #TotalPaid          : 'Edm.Decimal',
+  Aggregation.CustomAggregate #TotalBeneficiaries : 'Edm.Int32',
+  Aggregation.CustomAggregate #PaidPerBeneficiary : 'Edm.Decimal'
+) {
+  State               @Analytics.Dimension: true;
+  ProviderType         @Analytics.Dimension: true;
+  BHBurdenGroup        @Analytics.Dimension: true;
+  ProviderCount        @Analytics.Measure: true @Aggregation.default: #SUM;
+  AvgRiskScore         @Analytics.Measure: true @Aggregation.default: #AVG;
+  TotalPaid            @Analytics.Measure: true @Aggregation.default: #SUM;
+  TotalBeneficiaries   @Analytics.Measure: true @Aggregation.default: #SUM;
+  PaidPerBeneficiary   @Analytics.Measure: true @Aggregation.default: #AVG;
+};
