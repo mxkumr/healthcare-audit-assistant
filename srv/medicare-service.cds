@@ -41,7 +41,19 @@ service MedicareService @(path:'/medicare') {
 
   @readonly
   @cds.redirection.target: false
-  entity OrganizationClassification as projection on medicare.OrganizationClassification;
+  entity SpecialtyPeerDeviations as projection on medicare.SpecialtyPeerDeviations;
+
+  @readonly
+  @cds.redirection.target: false
+  entity EntityTypeComparisons as projection on medicare.EntityTypeComparisons;
+
+  @readonly
+  @cds.redirection.target: false
+  entity EntityTypeProviderProfiles as projection on medicare.EntityTypeProviderProfiles;
+
+  @readonly
+  @cds.redirection.target: false
+  entity EntityTypeCostInsight as projection on medicare.EntityTypeCostInsight;
 }
 
 // Self-association: all year records for the same provider name (object-page history table)
@@ -298,6 +310,7 @@ annotate MedicareService.ProviderCostEfficiency with @(
     Transformations        : ['aggregate', 'groupby', 'filter', 'topcount', 'orderby', 'skip', 'top'],
     GroupableProperties    : [
       Year, State, ProviderType, NPI, ProviderName,
+      EntityTypeCode, EntityType,
       EfficiencyCategory, UtilizationCategory
     ],
     AggregatableProperties : [
@@ -331,6 +344,8 @@ annotate MedicareService.ProviderCostEfficiency with @(
   ProviderName          @Analytics.Dimension: true;
   State                 @Analytics.Dimension: true;
   ProviderType          @Analytics.Dimension: true;
+  EntityTypeCode        @Analytics.Dimension: true;
+  EntityType            @Analytics.Dimension: true;
   EfficiencyCategory    @Analytics.Dimension: true;
   UtilizationCategory   @Analytics.Dimension: true;
   ProviderCount         @Analytics.Measure: true  @Aggregation.default: #SUM;
@@ -392,50 +407,144 @@ annotate MedicareService.SpecialtyRiskProfile with @(
   AvgHeartFailurePct @Analytics.Measure: true  @Aggregation.default: #AVG;
 };
 
-// ── Task 2: OrganizationClassification (Individual vs Organization) ────────────
-// Aggregation metadata lets the ALP chart compare segments (e.g. cost per
-// beneficiary for Individual vs Organization) and roll up by Year / State.
-annotate MedicareService.OrganizationClassification with @(
+// ── Task 2.2: SpecialtyPeerDeviations (macro specialty peer profiling) ────────
+annotate MedicareService.SpecialtyPeerDeviations with @(
   Aggregation.ApplySupported: {
-    Transformations        : ['aggregate', 'groupby', 'filter'],
-    GroupableProperties    : [Year, State, EntityType],
+    Transformations        : ['aggregate', 'groupby', 'filter', 'topcount', 'orderby', 'skip', 'top'],
+    GroupableProperties    : [
+      Year, Specialty, State, NPI, ProviderName
+    ],
     AggregatableProperties : [
-      {Property: ProviderCount},
-      {Property: TotalBeneficiaries},
-      {Property: TotalServices},
-      {Property: TotalSubmitted},
-      {Property: TotalAllowed},
-      {Property: TotalPaid},
-      {Property: AvgRiskScore},
-      {Property: CostPerBene},
-      {Property: ServicesPerBene}
+      {
+        Property: CostPerPatient,
+        SupportedAggregationMethods: ['max']
+      },
+      {Property: NationalAvgCost},
+      {
+        Property: CostTierDeviation,
+        SupportedAggregationMethods: ['max']
+      },
+      {Property: ServicesPerPatient},
+      {Property: NationalAvgServices},
+      {Property: ServiceTierDeviation, SupportedAggregationMethods: ['max']},
     ]
   }
 );
 
-annotate MedicareService.OrganizationClassification with @(
-  Aggregation.CustomAggregate #ProviderCount      : 'Edm.Int32',
-  Aggregation.CustomAggregate #TotalBeneficiaries : 'Edm.Int32',
-  Aggregation.CustomAggregate #TotalServices      : 'Edm.Decimal',
-  Aggregation.CustomAggregate #TotalSubmitted     : 'Edm.Decimal',
-  Aggregation.CustomAggregate #TotalAllowed       : 'Edm.Decimal',
-  Aggregation.CustomAggregate #TotalPaid          : 'Edm.Decimal',
-  Aggregation.CustomAggregate #AvgRiskScore       : 'Edm.Decimal',
-  Aggregation.CustomAggregate #CostPerBene        : 'Edm.Decimal',
-  Aggregation.CustomAggregate #ServicesPerBene    : 'Edm.Decimal'
+annotate MedicareService.SpecialtyPeerDeviations with @(
+  Aggregation.CustomAggregate #CostPerPatient        : 'Edm.Decimal',
+  Aggregation.CustomAggregate #NationalAvgCost        : 'Edm.Decimal',
+  Aggregation.CustomAggregate #CostTierDeviation      : 'Edm.Decimal',
+  Aggregation.CustomAggregate #ServicesPerPatient       : 'Edm.Int32',
+  Aggregation.CustomAggregate #NationalAvgServices    : 'Edm.Decimal',
+  Aggregation.CustomAggregate #ServiceTierDeviation   : 'Edm.Decimal'
 ) {
-  Year               @Analytics.Dimension: true;
-  State              @Analytics.Dimension: true;
-  EntityType         @Analytics.Dimension: true;
-  ProviderCount      @Analytics.Measure: true  @Aggregation.default: #SUM;
-  TotalBeneficiaries @Analytics.Measure: true  @Aggregation.default: #SUM;
-  TotalServices      @Analytics.Measure: true  @Aggregation.default: #SUM;
-  TotalSubmitted     @Analytics.Measure: true  @Aggregation.default: #SUM;
-  TotalAllowed       @Analytics.Measure: true  @Aggregation.default: #SUM;
-  TotalPaid          @Analytics.Measure: true  @Aggregation.default: #SUM;
-  // Ratios + risk mean: AVG rollup across states is an approximation; exact
-  // per-segment figures are shown at the row grain (Year + State + EntityType).
-  AvgRiskScore       @Analytics.Measure: true  @Aggregation.default: #AVG;
-  CostPerBene        @Analytics.Measure: true  @Aggregation.default: #AVG;
-  ServicesPerBene    @Analytics.Measure: true  @Aggregation.default: #AVG;
+  Year                  @Analytics.Dimension: true;
+  Specialty             @Analytics.Dimension: true;
+  State                 @Analytics.Dimension: true;
+  NPI                   @Analytics.Dimension: true;
+  ProviderName          @Analytics.Dimension: true;
+  CostPerPatient        @Analytics.Measure: true  @Aggregation.default: #MAX;
+  NationalAvgCost       @Analytics.Measure: true  @Aggregation.default: #MIN;
+  CostTierDeviation     @Analytics.Measure: true  @Aggregation.default: #MAX;
+  ServicesPerPatient    @Analytics.Measure: true  @Aggregation.default: #AVG;
+  NationalAvgServices   @Analytics.Measure: true  @Aggregation.default: #AVG;
+  ServiceTierDeviation  @Analytics.Measure: true  @Aggregation.default: #MAX;
+};
+
+// ── Task 2.3: EntityTypeComparisons (Individual vs Organization macro) ─────────
+annotate MedicareService.EntityTypeComparisons with @(
+  Aggregation.ApplySupported: {
+    Transformations        : ['aggregate', 'groupby', 'filter', 'orderby', 'skip', 'top'],
+    GroupableProperties    : [Year, EntityType],
+    AggregatableProperties : [
+      {Property: TotalUniqueProviders},
+      {Property: TotalPatientsServed},
+      {Property: MacroAvgCostPerPatient},
+      {Property: MacroAvgServicesPerPatient},
+      {Property: HighCostOutlierCount},
+      {Property: HighVolumeOutlierCount}
+    ]
+  }
+);
+
+annotate MedicareService.EntityTypeComparisons with @(
+  Aggregation.CustomAggregate #TotalUniqueProviders         : 'Edm.Int32',
+  Aggregation.CustomAggregate #TotalPatientsServed          : 'Edm.Int32',
+  Aggregation.CustomAggregate #MacroAvgCostPerPatient       : 'Edm.Decimal',
+  Aggregation.CustomAggregate #MacroAvgServicesPerPatient     : 'Edm.Decimal',
+  Aggregation.CustomAggregate #HighCostOutlierCount         : 'Edm.Int32',
+  Aggregation.CustomAggregate #HighVolumeOutlierCount       : 'Edm.Int32'
+) {
+  Year                         @Analytics.Dimension: true;
+  EntityType                   @Analytics.Dimension: true;
+  TotalUniqueProviders         @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalPatientsServed          @Analytics.Measure: true  @Aggregation.default: #SUM;
+  MacroAvgCostPerPatient       @Analytics.Measure: true  @Aggregation.default: #AVG;
+  MacroAvgServicesPerPatient   @Analytics.Measure: true  @Aggregation.default: #AVG;
+  HighCostOutlierCount         @Analytics.Measure: true  @Aggregation.default: #SUM;
+  HighVolumeOutlierCount       @Analytics.Measure: true  @Aggregation.default: #SUM;
+};
+
+// ── Task 2.2B: EntityTypeProviderProfiles (specialty drill-down by entity type) ─
+annotate MedicareService.EntityTypeProviderProfiles with @(
+  Aggregation.ApplySupported: {
+    Transformations        : ['aggregate', 'groupby', 'filter', 'orderby', 'skip', 'top'],
+    GroupableProperties    : [
+      Year, State, ProviderType, NPI, ProviderName,
+      EntityTypeCode, EntityType,
+      EfficiencyCategory, UtilizationCategory
+    ],
+    AggregatableProperties : [
+      {Property: ProviderCount},
+      {Property: CostPerBeneficiary},
+      {
+        Property: ServicesPerBeneficiary,
+        SupportedAggregationMethods: ['max']
+      },
+      {Property: TotalBeneficiaries, SupportedAggregationMethods: ['max']},
+      {Property: AvgPatientAge},
+      {Property: AvgRiskScore},
+      {Property: DiabetesPct},
+      {Property: HypertensionPct}
+    ]
+  }
+);
+
+annotate MedicareService.EntityTypeProviderProfiles with @(
+  Aggregation.CustomAggregate #ProviderCount           : 'Edm.Int32',
+  Aggregation.CustomAggregate #CostPerBeneficiary      : 'Edm.Decimal',
+  Aggregation.CustomAggregate #ServicesPerBeneficiary  : 'Edm.Int32',
+  Aggregation.CustomAggregate #TotalBeneficiaries      : 'Edm.Int32',
+  Aggregation.CustomAggregate #AvgPatientAge           : 'Edm.Decimal',
+  Aggregation.CustomAggregate #AvgRiskScore            : 'Edm.Decimal',
+  Aggregation.CustomAggregate #DiabetesPct             : 'Edm.Decimal',
+  Aggregation.CustomAggregate #HypertensionPct         : 'Edm.Decimal'
+) {
+  Year                   @Analytics.Dimension: true;
+  NPI                    @Analytics.Dimension: true;
+  ProviderName           @Analytics.Dimension: true;
+  State                  @Analytics.Dimension: true;
+  ProviderType           @Analytics.Dimension: true;
+  EntityTypeCode         @Analytics.Dimension: true;
+  EntityType             @Analytics.Dimension: true;
+  EfficiencyCategory     @Analytics.Dimension: true;
+  UtilizationCategory    @Analytics.Dimension: true;
+  ProviderCount          @Analytics.Measure: true  @Aggregation.default: #SUM;
+  CostPerBeneficiary     @Analytics.Measure: true  @Aggregation.default: #AVG;
+  ServicesPerBeneficiary @Analytics.Measure: true  @Aggregation.default: #MAX;
+  TotalBeneficiaries     @Analytics.Measure: true  @Aggregation.default: #MAX;
+  AvgPatientAge          @Analytics.Measure: true  @Aggregation.default: #AVG;
+  AvgRiskScore           @Analytics.Measure: true  @Aggregation.default: #AVG;
+  DiabetesPct            @Analytics.Measure: true  @Aggregation.default: #AVG  @Measures.Unit: '%';
+  HypertensionPct        @Analytics.Measure: true  @Aggregation.default: #AVG  @Measures.Unit: '%';
+};
+
+// ── Task 2.2B: EntityTypeCostInsight (higher-charging entity KPI source) ─────────
+annotate MedicareService.EntityTypeCostInsight with {
+  Year                 @Analytics.Dimension: true;
+  HigherChargingEntity @Analytics.Dimension: true;
+  HigherEntityAvgCost  @Analytics.Measure: true;
+  LowerEntityAvgCost   @Analytics.Measure: true;
+  CostPremiumPct       @Analytics.Measure: true  @Measures.Unit: '%';
 };

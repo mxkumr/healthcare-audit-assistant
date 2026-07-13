@@ -1,7 +1,7 @@
 {
   "_version": "1.85.0",
   "sap.app": {
-    "id": "com.medicare.organizationclassification",
+    "id": "com.medicare.22aspecialtyprofiling",
     "type": "application",
     "i18n": "i18n/i18n.properties",
     "applicationVersion": {
@@ -9,12 +9,6 @@
     },
     "title": "{{appTitle}}",
     "description": "{{appDescription}}",
-    "resources": "resources.json",
-    "sourceTemplate": {
-      "id": "@sap/generator-fiori:alp",
-      "version": "1.25.0",
-      "toolsId": "b2c3d4e5-f6a7-48b9-0c1d-2e3f4a5b6c7d"
-    },
     "dataSources": {
       "mainService": {
         "uri": "/medicare/",
@@ -28,14 +22,6 @@
   },
   "sap.ui": {
     "technology": "UI5",
-    "icons": {
-      "icon": "",
-      "favIcon": "",
-      "phone": "",
-      "phone@2": "",
-      "tablet": "",
-      "tablet@2": ""
-    },
     "deviceTypes": {
       "desktop": true,
       "tablet": true,
@@ -60,7 +46,7 @@
       "i18n": {
         "type": "sap.ui.model.resource.ResourceModel",
         "settings": {
-          "bundleName": "com.medicare.organizationclassification.i18n.i18n"
+          "bundleName": "com.medicare.22aspecialtyprofiling.i18n.i18n"
         }
       },
       "": {
@@ -77,45 +63,51 @@
         "uri": "i18n/i18n.properties"
       }
     },
-    "resources": {
-      "css": []
-    },
     "routing": {
       "config": {},
       "routes": [
         {
           "pattern": ":?query:",
-          "name": "OrganizationClassificationList",
-          "target": "OrganizationClassificationList"
-        },
-        {
-          "pattern": "OrganizationClassification({key}):?query:",
-          "name": "OrganizationClassificationObjectPage",
-          "target": "OrganizationClassificationObjectPage"
+          "name": "SpecialtyPeerDeviationsList",
+          "target": "SpecialtyPeerDeviationsList"
         }
       ],
       "targets": {
-        "OrganizationClassificationList": {
+        "SpecialtyPeerDeviationsList": {
           "type": "Component",
-          "id": "OrganizationClassificationList",
+          "id": "SpecialtyPeerDeviationsList",
           "name": "sap.fe.templates.ListReport",
           "options": {
             "settings": {
-              "contextPath": "/OrganizationClassification",
+              "contextPath": "/SpecialtyPeerDeviations",
               "variantManagement": "Page",
-              "navigation": {
-                "OrganizationClassification": {
-                  "detail": {
-                    "route": "OrganizationClassificationObjectPage"
-                  }
-                }
-              },
+              "defaultTemplateAnnotationPath": "com.sap.vocabularies.UI.v1.SelectionPresentationVariant#ALPDashboard",
               "controlConfiguration": {
                 "@com.sap.vocabularies.UI.v1.LineItem": {
                   "tableSettings": {
                     "type": "AnalyticalTable",
-                    "selectionMode": "None"
+                    "selectionMode": "None",
+                    "enableExport": true
                   }
+                },
+                "@com.sap.vocabularies.UI.v1.Chart#MacroSpecialtyRisk": {
+                  "chartSettings": {
+                    "defaultChartType": "bar",
+                    "enableStableColors": true,
+                    "vizProperties": {
+                      "plotArea": {
+                        "dataPointSize": { "min": 48, "max": 48 }
+                      },
+                      "interaction": {
+                        "zoom": { "enablement": "enabled" }
+                      }
+                    }
+                  },
+                  "requestFilterFields": [
+                    "Year",
+                    "Specialty",
+                    "State"
+                  ]
                 }
               },
               "views": {
@@ -123,29 +115,18 @@
                   {
                     "primary": [
                       {
-                        "annotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant"
+                        "annotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#MacroSpecialtyChart"
                       }
                     ],
                     "secondary": [
                       {
-                        "annotationPath": "com.sap.vocabularies.UI.v1.LineItem"
+                        "annotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#SpecialtyPeerTable"
                       }
                     ],
                     "defaultPath": "both"
                   }
                 ]
               }
-            }
-          }
-        },
-        "OrganizationClassificationObjectPage": {
-          "type": "Component",
-          "id": "OrganizationClassificationObjectPage",
-          "name": "sap.fe.templates.ObjectPage",
-          "options": {
-            "settings": {
-              "editableHeaderContent": false,
-              "contextPath": "/OrganizationClassification"
             }
           }
         }

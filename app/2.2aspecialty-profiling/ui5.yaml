@@ -2,17 +2,14 @@
 
 specVersion: "4.0"
 metadata:
-  name: com.medicare.specialtyclassification
+  name: com.medicare.22aspecialtyprofiling
 type: application
 server:
   customMiddleware:
     - name: fiori-tools-proxy
       afterMiddleware: compression
       configuration:
-        ignoreCertErrors: false # If set to true, certificate errors will be ignored. E.g. self-signed certificates will be accepted
-        backend:
-          - path: /medicare
-            url: http://localhost:4004
+        ignoreCertErrors: false
         ui5:
           path:
             - /resources
@@ -21,7 +18,7 @@ server:
     - name: fiori-tools-appreload
       afterMiddleware: compression
       configuration:
-        port: 35734
+        port: 35729
         path: webapp
         delay: 300
     - name: fiori-tools-preview

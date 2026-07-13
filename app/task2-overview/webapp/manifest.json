@@ -119,12 +119,12 @@
           "colSpan": 2
         },
         "settings": {
-          "title": "Average Risk Score by Specialty",
-          "subTitle": "Patient complexity across specialties",
-          "entitySet": "SpecialtyRiskProfile",
+          "title": "Cost Peer Deviation by Specialty",
+          "subTitle": "Worst outlier vs national peer baseline",
+          "entitySet": "SpecialtyPeerDeviations",
           "addODataSelect": true,
-          "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart",
-          "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant"
+          "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart#MacroSpecialtyRisk",
+          "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#MacroSpecialtyChart"
         }
       },
       "card02_organization": {
@@ -135,12 +135,12 @@
           "colSpan": 2
         },
         "settings": {
-          "title": "Average Patient Risk by Entity Type",
-          "subTitle": "Individual vs Organization",
-          "entitySet": "OrganizationClassification",
+          "title": "Macro Cost by Entity Class",
+          "subTitle": "Corporate networks vs individual clinicians",
+          "entitySet": "EntityTypeComparisons",
           "addODataSelect": true,
-          "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart",
-          "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant"
+          "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart#MacroCostIntensity",
+          "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#EntityCostChart"
         }
       }
     },
