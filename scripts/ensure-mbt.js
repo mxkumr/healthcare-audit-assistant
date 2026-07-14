@@ -57,6 +57,11 @@ function linkFrom(source) {
 }
 
 function ensureBinary() {
+  if (!fs.existsSync(mbtPkgDir)) {
+    // e.g. gen/srv production install — mbt devDependency not present
+    return;
+  }
+
   if (fs.existsSync(binPath)) {
     return;
   }
