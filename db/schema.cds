@@ -812,3 +812,132 @@ annotate medicare.CredentialDiscrepancies with @(
   Analytics.dataCategory   : #CUBE,
   Aggregation.ApplyDefault : true
 );
+
+// ─── Task 3.2 — Place of Service Analysis ─────────────────────────────────────
+
+// Aggregates payments and volume by specialty and place-of-service setting.
+// Source: ServiceDetails (procedure grain) — Place_Of_Srvc is F = Facility, O = Office.
+// Charge totals = Avg_* × Tot_Srvcs (same CMS line-item pattern as RuralAnalysisV2Tier).
+view PlaceOfServiceAnalysis as
+  select from ServiceDetails as s {
+    key s.Year,
+    key s.Rndrng_Prvdr_Type              as Specialty              : String,
+    key case
+          when s.Place_Of_Srvc = 'F' then 'Facility (Hospital/ASC)'
+          when s.Place_Of_Srvc = 'O' then 'Office (Non-Facility)'
+          else                             'Unknown Place of Service'
+        end                              as PlaceOfService         : String(30),
+
+    count(distinct s.Rndrng_NPI)         as TotalUniqueProviders   : Integer,
+    sum(s.Tot_Benes)                     as TotalPatientsServed    : Integer,
+    sum(cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal))
+                                         as TotalServicesRendered  : Decimal(15, 2),
+    sum(cast(replace(replace(s.Avg_Sbmtd_Chrg, '$', ''), ',', '') as Decimal)
+      * cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal))
+                                         as TotalSubmittedCharges  : Decimal(15, 2),
+    sum(cast(replace(replace(s.Avg_Mdcr_Alowd_Amt, '$', ''), ',', '') as Decimal)
+      * cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal))
+                                         as TotalAllowedCharges    : Decimal(15, 2),
+    sum(cast(replace(replace(s.Avg_Mdcr_Pymt_Amt, '$', ''), ',', '') as Decimal)
+      * cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal))
+                                         as TotalActualPayments    : Decimal(15, 2),
+
+    case
+      when sum(cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal)) > 0
+        then round(
+          sum(cast(replace(replace(s.Avg_Mdcr_Pymt_Amt, '$', ''), ',', '') as Decimal)
+            * cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal))
+          / sum(cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal))
+        )
+      else 0
+    end                                  as AvgPaymentPerService   : Decimal(15, 2),
+
+    case
+      when sum(cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal)) > 0
+        then round(
+          sum(cast(replace(replace(s.Avg_Sbmtd_Chrg, '$', ''), ',', '') as Decimal)
+            * cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal))
+          / sum(cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal))
+        )
+      else 0
+    end                                  as AvgSubmittedPerService : Decimal(15, 2)
+  }
+  group by
+    s.Year,
+    s.Rndrng_Prvdr_Type,
+    case
+      when s.Place_Of_Srvc = 'F' then 'Facility (Hospital/ASC)'
+      when s.Place_Of_Srvc = 'O' then 'Office (Non-Facility)'
+      else                             'Unknown Place of Service'
+    end;
+
+annotate medicare.PlaceOfServiceAnalysis with @(
+  Analytics.dataCategory   : #CUBE,
+  Aggregation.ApplyDefault : true
+);
+
+// Provider grain: one row per Year × NPI × Specialty × Place of Service.
+// Powers the ALP table — collapsed by specialty, expand to individual providers.
+view PlaceOfServiceProviderProfiles as
+  select from ServiceDetails as s {
+    key s.Year,
+    key s.Rndrng_NPI                     as NPI                    : String,
+    key s.Rndrng_Prvdr_Type              as Specialty              : String,
+    key case
+          when s.Place_Of_Srvc = 'F' then 'Facility (Hospital/ASC)'
+          when s.Place_Of_Srvc = 'O' then 'Office (Non-Facility)'
+          else                             'Unknown Place of Service'
+        end                              as PlaceOfService         : String(30),
+
+    max(upper(s.Rndrng_Prvdr_Last_Org_Name)) as ProviderName         : String,
+    max(s.Rndrng_Prvdr_State_Abrvtn)         as State                : String,
+
+    sum(s.Tot_Benes)                     as TotalPatientsServed    : Integer,
+    sum(cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal))
+                                         as TotalServicesRendered  : Decimal(15, 2),
+    sum(cast(replace(replace(s.Avg_Sbmtd_Chrg, '$', ''), ',', '') as Decimal)
+      * cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal))
+                                         as TotalSubmittedCharges  : Decimal(15, 2),
+    sum(cast(replace(replace(s.Avg_Mdcr_Alowd_Amt, '$', ''), ',', '') as Decimal)
+      * cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal))
+                                         as TotalAllowedCharges    : Decimal(15, 2),
+    sum(cast(replace(replace(s.Avg_Mdcr_Pymt_Amt, '$', ''), ',', '') as Decimal)
+      * cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal))
+                                         as TotalActualPayments    : Decimal(15, 2),
+
+    case
+      when sum(cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal)) > 0
+        then round(
+          sum(cast(replace(replace(s.Avg_Mdcr_Pymt_Amt, '$', ''), ',', '') as Decimal)
+            * cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal))
+          / sum(cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal))
+        )
+      else 0
+    end                                  as AvgPaymentPerService   : Decimal(15, 2),
+
+    case
+      when sum(cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal)) > 0
+        then round(
+          sum(cast(replace(replace(s.Avg_Sbmtd_Chrg, '$', ''), ',', '') as Decimal)
+            * cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal))
+          / sum(cast(replace(cast(s.Tot_Srvcs as String), ',', '') as Decimal))
+        )
+      else 0
+    end                                  as AvgSubmittedPerService : Decimal(15, 2),
+
+    cast(1 as Integer)                   as ProviderCount          : Integer
+  }
+  group by
+    s.Year,
+    s.Rndrng_NPI,
+    s.Rndrng_Prvdr_Type,
+    case
+      when s.Place_Of_Srvc = 'F' then 'Facility (Hospital/ASC)'
+      when s.Place_Of_Srvc = 'O' then 'Office (Non-Facility)'
+      else                             'Unknown Place of Service'
+    end;
+
+annotate medicare.PlaceOfServiceProviderProfiles with @(
+  Analytics.dataCategory   : #CUBE,
+  Aggregation.ApplyDefault : true
+);
