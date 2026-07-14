@@ -3,6 +3,10 @@
     {
       "name": "$XSAPPNAME.admin",
       "description": "admin"
+    },
+    {
+      "name": "$XSAPPNAME.audit.read",
+      "description": "Read Medicare audit analytical data and invoke Joule agent actions"
     }
   ],
   "attributes": [],
@@ -12,6 +16,14 @@
       "description": "generated",
       "scope-references": [
         "$XSAPPNAME.admin"
+      ],
+      "attribute-references": []
+    },
+    {
+      "name": "audit_analyst",
+      "description": "Medicare audit analyst — OData read + autonomous agent actions for Joule",
+      "scope-references": [
+        "$XSAPPNAME.audit.read"
       ],
       "attribute-references": []
     }

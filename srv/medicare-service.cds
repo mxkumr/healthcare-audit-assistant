@@ -74,6 +74,68 @@ service MedicareService @(path:'/medicare') {
   @readonly
   @cds.redirection.target: false
   entity RiskCostVolumeDynamics as projection on medicare.RiskCostVolumeDynamics;
+
+  @readonly
+  entity AgentScratchpad as projection on medicare.AgentScratchpad;
+
+  // ── Task 4: Joule / Autonomous Audit Agent actions ─────────────────────────
+
+  /** Primary orchestrator — multi-slice investigation across Tasks 1–3. */
+  action investigateAnomalies(
+    prompt    : String,
+    year      : String,
+    state     : String,
+    specialty : String,
+    npi       : String
+  ) returns {
+    narrative       : String;
+    confidenceScore : Integer;
+    year            : String;
+    flaggedNPIs     : String;
+    reasoningSteps  : String;
+    sessionId       : String;
+  };
+
+  /** Regional billing hotspot tool (Task 1.1). */
+  action getRegionalBillingOutliers(
+    state : String not null,
+    year  : String
+  ) returns {
+    narrative : String;
+    year      : String;
+    results   : String;
+    sessionId : String;
+  };
+
+  /** Provider drill-down tool (Tasks 2.1 + ServiceDetails). */
+  action getProviderClaimDetails(
+    npi  : String not null,
+    year : String
+  ) returns {
+    narrative : String;
+    year      : String;
+    provider  : String;
+    services  : String;
+    sessionId : String;
+  };
+
+  /** Specialty peer deviation tool (Task 2.2). */
+  action getSpecialtyPeerOutliers(
+    specialty : String,
+    year      : String,
+    state     : String
+  ) returns {
+    narrative : String;
+    year      : String;
+    results   : String;
+    sessionId : String;
+  };
+
+  /** Discovery helper — lists CMS years present in the analytical views. */
+  action listAuditYears() returns {
+    years       : String;
+    defaultYear : String;
+  };
 }
 
 // Self-association: all year records for the same provider name (object-page history table)
@@ -780,3 +842,37 @@ annotate MedicareService.RiskCostVolumeDynamics with @(
   TotalPatientsServed  @Analytics.Measure: true  @Aggregation.default: #SUM;
   TotalActualPayments  @Analytics.Measure: true  @Aggregation.default: #SUM  @Measures.ISOCurrency: 'USD';
 };
+
+// ── Task 4: Joule capability metadata ─────────────────────────────────────────
+using { Core } from '@sap/cds/common';
+
+annotate MedicareService with @Core.Description: 'Medicare audit OData service with analytical views (Tasks 1–3) and autonomous agent actions for Joule.';
+
+annotate MedicareService.investigateAnomalies with @(
+  Core.Description     : 'Run a multi-slice Medicare anomaly investigation and return a Markdown compliance report.',
+  Core.LongDescription : 'Queries RiskCostVolumeDynamics, PlaceOfServiceAnalysis, CredentialDiscrepancies, ProviderCostEfficiency, and CostAnalysisV2 for the requested year. Optional state, specialty, and NPI filters narrow the investigation scope.'
+);
+
+annotate MedicareService.getRegionalBillingOutliers with @(
+  Core.Description     : 'Return top billing hotspots for a US state and year.',
+  Core.LongDescription : 'Joule tool mapping to CostAnalysisV2 — surfaces highest TotalPaid buckets by state and provider type.'
+);
+
+annotate MedicareService.getProviderClaimDetails with @(
+  Core.Description     : 'Return provider classification metrics and top HCPCS service lines for an NPI.',
+  Core.LongDescription : 'Joule tool mapping to ProviderCostEfficiency and ServiceDetails for granular claim drill-down.'
+);
+
+annotate MedicareService.getSpecialtyPeerOutliers with @(
+  Core.Description     : 'Return providers with the largest cost deviation vs national specialty peers.',
+  Core.LongDescription : 'Joule tool mapping to SpecialtyPeerDeviations — surfaces CostTierDeviation outliers.'
+);
+
+annotate MedicareService.listAuditYears with @(
+  Core.Description     : 'List CMS performance years available in the audit dataset.',
+  Core.LongDescription : 'Discovery action for Joule to resolve which year parameter to pass into other agent tools.'
+);
+
+annotate MedicareService.AgentScratchpad with @(
+  Core.Description : 'Step-by-step reasoning log written by the autonomous audit agent during Joule investigations.'
+);
