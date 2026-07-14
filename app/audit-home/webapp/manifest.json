@@ -1,0 +1,185 @@
+{
+  "_version": "1.85.0",
+  "sap.app": {
+    "id": "com.medicare.audithome",
+    "type": "application",
+    "i18n": "i18n/i18n.properties",
+    "applicationVersion": { "version": "0.0.1" },
+    "title": "{{appTitle}}",
+    "description": "{{appDescription}}",
+    "dataSources": {
+      "mainService": {
+        "uri": "/medicare/",
+        "type": "OData",
+        "settings": {
+          "annotations": [],
+          "odataVersion": "4.0"
+        }
+      }
+    }
+  },
+  "sap.ui": {
+    "technology": "UI5",
+    "deviceTypes": { "desktop": true, "tablet": true, "phone": true }
+  },
+  "sap.ui5": {
+    "flexEnabled": true,
+    "dependencies": {
+      "minUI5Version": "1.148.1",
+      "libs": {
+        "sap.m": {},
+        "sap.ui.core": {},
+        "sap.fe.templates": {},
+        "sap.ovp": {},
+        "sap.ui.rta": {},
+        "sap.ui.layout": {}
+      }
+    },
+    "contentDensities": { "compact": true, "cozy": true },
+    "models": {
+      "i18n": {
+        "type": "sap.ui.model.resource.ResourceModel",
+        "settings": { "bundleName": "com.medicare.audithome.i18n.i18n" }
+      },
+      "mainModel": {
+        "dataSource": "mainService",
+        "preload": true,
+        "settings": {
+          "operationMode": "Server",
+          "autoExpandSelect": true,
+          "earlyRequests": true
+        }
+      }
+    },
+    "routing": { "config": {}, "routes": [], "targets": {} }
+  },
+  "sap.ovp": {
+    "globalFilterModel": "mainModel",
+    "globalFilterEntitySet": "CostAnalysisV2",
+    "containerLayout": "resizable",
+    "enableLiveFilter": true,
+    "considerAnalyticalParameters": false,
+    "cards": {
+      "card01_cost_analysis": {
+        "model": "mainModel",
+        "template": "sap.ovp.cards.v4.charts.analytical",
+        "settings": {
+          "title": "1.1 State Cost Analysis",
+          "subTitle": "Medicare total paid by state — KPIs, geographic footprint chart, and provider-level audit table",
+          "entitySet": "CostAnalysisV2",
+          "addODataSelect": true,
+          "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart#V2Footprint",
+          "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#V2Chart",
+          "identificationAnnotationPath": "com.sap.vocabularies.UI.v1.Identification#OVPNavCost"
+        }
+      },
+      "card02_rural_urban": {
+        "model": "mainModel",
+        "template": "sap.ovp.cards.v4.charts.analytical",
+        "settings": {
+          "title": "1.2 Rural vs Urban Distribution",
+          "subTitle": "Spend split by locality type — drill into procedure tiers and rural access gaps",
+          "entitySet": "RuralUrbanDistribution",
+          "addODataSelect": true,
+          "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart#RuralUrbanOVP",
+          "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#RuralUrbanOVP",
+          "identificationAnnotationPath": "com.sap.vocabularies.UI.v1.Identification#OVPNavRural"
+        }
+      },
+      "card03_bh_risk": {
+        "model": "mainModel",
+        "template": "sap.ovp.cards.v4.charts.analytical",
+        "settings": {
+          "title": "1.3 Behavioral Health Risk Frontier",
+          "subTitle": "Cost-complexity bubble chart — risk score vs paid per beneficiary by BH peer group",
+          "entitySet": "BehavioralHealthRiskProfile",
+          "addODataSelect": true,
+          "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart#CostComplexityFrontier",
+          "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#FrontierChart",
+          "identificationAnnotationPath": "com.sap.vocabularies.UI.v1.Identification#OVPNavBehavioral"
+        }
+      },
+      "card04_provider_efficiency": {
+        "model": "mainModel",
+        "template": "sap.ovp.cards.v4.charts.analytical",
+        "settings": {
+          "title": "2.1 Provider Cost Efficiency",
+          "subTitle": "Classify providers by cost × utilization matrix — flag high-cost outliers for review",
+          "entitySet": "ProviderCostEfficiency",
+          "addODataSelect": true,
+          "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart#EfficiencyOVP",
+          "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#EfficiencyOVP",
+          "identificationAnnotationPath": "com.sap.vocabularies.UI.v1.Identification#OVPNavEfficiency"
+        }
+      },
+      "card05_specialty_peers": {
+        "model": "mainModel",
+        "template": "sap.ovp.cards.v4.charts.analytical",
+        "settings": {
+          "title": "2.2a Specialty Peer Deviations",
+          "subTitle": "Compare billing intensity against national specialty baselines — surface worst peer outliers",
+          "entitySet": "SpecialtyPeerDeviations",
+          "addODataSelect": true,
+          "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart#MacroSpecialtyRisk",
+          "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#MacroSpecialtyChart",
+          "identificationAnnotationPath": "com.sap.vocabularies.UI.v1.Identification#OVPNavSpecialty"
+        }
+      },
+      "card06_entity_type": {
+        "model": "mainModel",
+        "template": "sap.ovp.cards.v4.charts.analytical",
+        "settings": {
+          "title": "2.2b Entity Type Comparison",
+          "subTitle": "Corporate networks vs individual clinicians — macro cost intensity by organization class",
+          "entitySet": "EntityTypeComparisons",
+          "addODataSelect": true,
+          "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart#MacroCostIntensity",
+          "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#EntityCostChart",
+          "identificationAnnotationPath": "com.sap.vocabularies.UI.v1.Identification#OVPNavEntityType"
+        }
+      },
+      "card07_risk_dynamics": {
+        "model": "mainModel",
+        "template": "sap.ovp.cards.v4.charts.analytical",
+        "settings": {
+          "title": "3.1 Risk-Cost-Volume Dynamics",
+          "subTitle": "Dual-axis view of specialty complexity vs billing intensity — association analysis entry point",
+          "entitySet": "RiskCostVolumeDynamics",
+          "addODataSelect": true,
+          "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart#RiskCostDualAxis",
+          "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#RiskCostChart",
+          "identificationAnnotationPath": "com.sap.vocabularies.UI.v1.Identification#OVPNavRiskDynamics"
+        }
+      },
+      "card08_place_of_service": {
+        "model": "mainModel",
+        "template": "sap.ovp.cards.v4.charts.analytical",
+        "settings": {
+          "title": "3.2 Place of Service Analysis",
+          "subTitle": "Facility vs office billing mix — detect POS code misclassification patterns",
+          "entitySet": "PlaceOfServiceAnalysis",
+          "addODataSelect": true,
+          "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart#PlaceOfServiceChart",
+          "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#PlaceOfServiceChart",
+          "identificationAnnotationPath": "com.sap.vocabularies.UI.v1.Identification#OVPNavPlaceOfService"
+        }
+      },
+      "card09_credential_gaps": {
+        "model": "mainModel",
+        "template": "sap.ovp.cards.v4.charts.analytical",
+        "settings": {
+          "title": "3.3 Credential Discrepancies",
+          "subTitle": "Charge padding by credential tier — flag providers billing above license scope",
+          "entitySet": "CredentialDiscrepancies",
+          "addODataSelect": true,
+          "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart#CredentialDiscrepancyChart",
+          "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#CredentialDiscrepancyChart",
+          "identificationAnnotationPath": "com.sap.vocabularies.UI.v1.Identification#OVPNavCredentialGaps"
+        }
+      }
+    },
+    "globalFilterControlType": "MacroFilterBar"
+  },
+  "sap.fiori": { "registrationIds": [], "archeType": "analytical" },
+  "sap.fe": { "app": { "enableLazyLoading": true } }
+}

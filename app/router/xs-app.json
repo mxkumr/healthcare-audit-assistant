@@ -1,5 +1,5 @@
 {
-  "welcomeFile": "/commedicare11costanalysis/index.html",
+  "welcomeFile": "/commedicareaudithome/index.html",
   "authenticationMethod": "route",
   "sessionTimeout": 30,
   "logout": {
@@ -15,14 +15,7 @@
       "csrfProtection": true
     },
     {
-      "source": "^/commedicare11costanalysis/medicare/(.*)$",
-      "destination": "srv-api",
-      "target": "/medicare/$1",
-      "authenticationType": "xsuaa",
-      "csrfProtection": true
-    },
-    {
-      "source": "^/commedicare13behavioralhelathrisk/medicare/(.*)$",
+      "source": "^/commedicare[a-z0-9]+/medicare/(.*)$",
       "destination": "srv-api",
       "target": "/medicare/$1",
       "authenticationType": "xsuaa",

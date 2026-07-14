@@ -78,8 +78,11 @@ npx cds build --production
 | Route | Target |
 |-------|--------|
 | `/medicare/*` | CAP srv (OData + agent actions) |
+| `/commedicare*/medicare/*` | CAP srv (fallback for nested HTML5 OData paths) |
 | `/resources/*`, `/test-resources/*` | UI5 CDN |
 | everything else | HTML5 Applications Repository runtime |
+
+**Welcome file:** `/commedicareaudithome/index.html` (Audit Command Center dashboard).
 
 ---
 
@@ -91,9 +94,44 @@ Your MTA uses **HTML5 Applications Repository**:
 - `app-host` — stores built Fiori zips
 - `app-runtime` — serves them via approuter
 
-Currently packaged Fiori apps: **1.1 Cost Analysis**, **1.3 BH Risk**.
+Currently packaged Fiori apps: **14 HTML5 modules** — main dashboard (OVP), three task overviews, ten ALP drill-down apps.
 
-To add more apps later: duplicate the `commedicare11costanalysis` module pattern in `mta.yaml`.
+| Layer | App ID | BTP path |
+|-------|--------|----------|
+| **Landing (9-card OVP)** | `com.medicare.audithome` | `/commedicareaudithome/index.html` |
+| Task 1 OVP | `com.medicare.task1overview` | `/commedicaretask1overview/index.html` |
+| Task 2 OVP | `com.medicare.task2overview` | `/commedicaretask2overview/index.html` |
+| Task 3 OVP | `com.medicare.task3overview` | `/commedicaretask3overview/index.html` |
+| 1.1 ALP | `com.medicare.11costanalysis` | `/commedicare11costanalysis/index.html` |
+| 1.2 ALP | `com.medicare.12ruralanalysis` | `/commedicare12ruralanalysis/index.html` |
+| 1.3 ALP | `com.medicare.13behavioralhelathrisk` | `/commedicare13behavioralhelathrisk/index.html` |
+| 2.1 ALP | `com.medicare.21providerclassification` | `/commedicare21providerclassification/index.html` |
+| 2.2a ALP | `com.medicare.22aspecialtyprofiling` | `/commedicare22aspecialtyprofiling/index.html` |
+| 2.2b ALP | `com.medicare.22borganizationprofiling` | `/commedicare22borganizationprofiling/index.html` |
+| 3.1 ALP | `com.medicare.31riskdynamics` | `/commedicare31riskdynamics/index.html` |
+| 3.2 ALP | `com.medicare.32placeofservice` | `/commedicare32placeofservice/index.html` |
+| 3.3 ALP | `com.medicare.33credentialdiscrepancies` | `/commedicare33credentialdiscrepancies/index.html` |
+| Risk ALP | `com.medicare.riskanalysis` | `/commedicareriskanalysis/index.html` |
+
+### Audit journey (native Fiori Elements OVP → ALP)
+
+**Audit Home** is a single OVP with **9 cards** — one preview per audit view. Each card header links directly to its ALP drill-down app:
+
+| Card | ALP app |
+|------|---------|
+| 1.1 State Cost Analysis | `/commedicare11costanalysis/index.html` |
+| 1.2 Rural vs Urban | `/commedicare12ruralanalysis/index.html` |
+| 1.3 Behavioral Health Risk | `/commedicare13behavioralhelathrisk/index.html` |
+| 2.1 Provider Efficiency | `/commedicare21providerclassification/index.html` |
+| 2.2a Specialty Peers | `/commedicare22aspecialtyprofiling/index.html` |
+| 2.2b Entity Type | `/commedicare22borganizationprofiling/index.html` |
+| 3.1 Risk Dynamics | `/commedicare31riskdynamics/index.html` |
+| 3.2 Place of Service | `/commedicare32placeofservice/index.html` |
+| 3.3 Credential Gaps | `/commedicare33credentialdiscrepancies/index.html` |
+
+Each card uses **DataFieldWithUrl** (`UI.Identification` in CDS). All apps are **Fiori Elements** (OVP or ALP) — no custom UI5 views.
+
+To add or reorder apps, edit `scripts/html5-apps.json` and run `npm run build` (regenerates `mta.yaml` HTML5 modules automatically).
 
 ---
 
@@ -160,7 +198,8 @@ cf app healthcare-audit-assistant
 ```
 
 Open in browser:
-- Fiori: `https://<approuter-url>/commedicare11costanalysis`
+- **Dashboard (start here):** `https://<approuter-url>/commedicareaudithome/index.html`
+- Task 1 OVP: `https://<approuter-url>/commedicaretask1overview/index.html`
 - OData metadata: `https://<approuter-url>/medicare/$metadata`
 
 ### Test agent on BTP
@@ -392,7 +431,7 @@ Fix in repo: `relativePaths: false` in both `ui5-deploy.yaml` files; keep `"uri"
 **5. Other code fixes** (redeploy after pull)
 
 - `index.html` UI5 bootstrap: `src="/resources/sap-ui-core.js"` (via approuter ui5 destination)
-- Approuter `welcomeFile`: `/commedicare11costanalysis/index.html`
+- Approuter `welcomeFile`: `/commedicareaudithome/index.html`
 
 **6. If `$metadata` is 200 but UI still blank**
 

@@ -1,0 +1,22 @@
+
+{
+    "credentials": {
+      "apiurl": "https://api.authentication.us10.hana.ondemand.com",
+      "clientid": "sb-healthcare-audit-assistant-BTPLearning_btpailearning-student15!t564356",
+      "clientsecret": "cef5d264-f5c1-4562-9e13-9c9aa94dbc88$tlIBk9Y4M0ven9GdztcvPwX0LgVmJztVcBzFsDZPTB4=",
+      "credential-type": "binding-secret",
+      "identityzone": "btpailearning",
+      "identityzoneid": "fd076d0a-367c-4a85-bd1b-908b1514c16b",
+      "sburl": "https://internal-xsuaa.authentication.us10.hana.ondemand.com",
+      "serviceInstanceId": "ae0056d0-1c1b-4279-ac2a-269ee3deaef9",
+      "subaccountid": "fd076d0a-367c-4a85-bd1b-908b1514c16b",
+      "tenantid": "fd076d0a-367c-4a85-bd1b-908b1514c16b",
+      "tenantmode": "dedicated",
+      "uaadomain": "authentication.us10.hana.ondemand.com",
+      "url": "https://btpailearning.authentication.us10.hana.ondemand.com",
+      "verificationkey": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAlpmOboMAelQrCkWS+ABY\n5GxZA7SuxA3c9bXzflkNBHyzq0G9PJzeZL9bPidNBZ2/3EeeSlcBOO9snhMmf0m/\n75b1jagLIcMEvwvMhWPQoy8pXEsXnBghjC9xAWcKayVNe76xqXRQIWVeQ5G0geey\nvvRNBHyZAmBLvOgkU9FHz8yxxEETD65iXcg1uMoC7cTErtiZXuSuWgQIYGxaSNoU\nBm8AMIHRqcry81S+cPjLLHJbrumqUx+gvJHw4+Z/l1R3Q5mDL4cJ4vnZPKf961Y9\n3QsvKCXdAmjLYYcp2FCXL9gU2zzKsxcFHNwE2mXTF5fbfuiijadaMNbbdSo+Buxo\ntwIDAQAB\n-----END PUBLIC KEY-----",
+      "xsappname": "healthcare-audit-assistant-BTPLearning_btpailearning-student15!t564356",
+      "zoneid": "fd076d0a-367c-4a85-bd1b-908b1514c16b"
+    }
+  }
+  

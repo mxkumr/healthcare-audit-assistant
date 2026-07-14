@@ -1,51 +1,27 @@
 using MedicareService as service from '../../srv/medicare-service';
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// Task 1 Overview — OVP preview charts + header navigation to child ALP apps
-// ═══════════════════════════════════════════════════════════════════════════════
+// Task 1 Overview — navigation only (preview chart for 1.2 lives in audit-home/annotations.cds)
 
 annotate service.CostAnalysisV2 with @(
   UI.Identification #OVPNavCost: [{
     $Type: 'UI.DataFieldWithUrl',
     Label: 'Open Cost Analysis (1.1)',
-    Value: '/com.medicare.11costanalysis/index.html'
+    Value: '/commedicare11costanalysis/index.html'
   }]
 );
 
 annotate service.RuralUrbanDistribution with @(
-
-  UI.Chart #RuralUrbanOVP: {
-    $Type     : 'UI.ChartDefinitionType',
-    Title     : 'Rural vs Urban Spend',
-    ChartType : #Donut,
-    Dimensions: [RuralUrban],
-    Measures  : [TotalPaid],
-    DimensionAttributes: [
-      {
-        $Type    : 'UI.ChartDimensionAttributeType',
-        Dimension: RuralUrban,
-        Role     : #Category
-      }
-    ],
-    MeasureAttributes: [
-      {
-        $Type   : 'UI.ChartMeasureAttributeType',
-        Measure : TotalPaid,
-        Role    : #Axis1
-      }
-    ]
-  },
-
-  UI.PresentationVariant #RuralUrbanOVP: {
-    $Type         : 'UI.PresentationVariantType',
-    GroupBy       : [RuralUrban],
-    SortOrder     : [{ Property: TotalPaid, Descending: true }],
-    Visualizations: ['@UI.Chart#RuralUrbanOVP']
-  },
-
   UI.Identification #OVPNavRural: [{
     $Type: 'UI.DataFieldWithUrl',
     Label: 'Open Rural Analysis (1.2)',
-    Value: '/com.medicare.12ruralanalysis/index.html'
+    Value: '/commedicare12ruralanalysis/index.html'
+  }]
+);
+
+annotate service.BehavioralHealthRiskProfile with @(
+  UI.Identification #OVPNavBehavioral: [{
+    $Type: 'UI.DataFieldWithUrl',
+    Label: 'Open Behavioral Health Risk (1.3)',
+    Value: '/commedicare13behavioralhelathrisk/index.html'
   }]
 );
