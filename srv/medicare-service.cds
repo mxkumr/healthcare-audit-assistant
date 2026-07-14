@@ -54,6 +54,10 @@ service MedicareService @(path:'/medicare') {
   @readonly
   @cds.redirection.target: false
   entity EntityTypeCostInsight as projection on medicare.EntityTypeCostInsight;
+
+  @readonly
+  @cds.redirection.target: false
+  entity CredentialDiscrepancies as projection on medicare.CredentialDiscrepancies;
 }
 
 // Self-association: all year records for the same provider name (object-page history table)
@@ -547,4 +551,47 @@ annotate MedicareService.EntityTypeCostInsight with {
   HigherEntityAvgCost  @Analytics.Measure: true;
   LowerEntityAvgCost   @Analytics.Measure: true;
   CostPremiumPct       @Analytics.Measure: true  @Measures.Unit: '%';
+};
+
+// ── Task 3.3: CredentialDiscrepancies (credentials & charge write-offs) ────────
+annotate MedicareService.CredentialDiscrepancies with @(
+  Aggregation.ApplySupported: {
+    Transformations        : ['aggregate', 'groupby', 'filter', 'orderby', 'skip', 'top'],
+    GroupableProperties    : [Year, StandardizedCredential],
+    AggregatableProperties : [
+      {Property: TotalUniqueProviders},
+      {Property: TotalPatientsServed},
+      {Property: TotalSubmittedCharges},
+      {Property: TotalAllowedCharges},
+      {Property: TotalActualPayments},
+      {Property: ChargePaddingAmt},
+      {Property: PolicyShortfallAmt},
+      {Property: PaidToAllowedRatePct},
+      {Property: ChargePaddingRatePct}
+    ]
+  }
+);
+
+annotate MedicareService.CredentialDiscrepancies with @(
+  Aggregation.CustomAggregate #TotalUniqueProviders   : 'Edm.Int32',
+  Aggregation.CustomAggregate #TotalPatientsServed    : 'Edm.Int32',
+  Aggregation.CustomAggregate #TotalSubmittedCharges  : 'Edm.Decimal',
+  Aggregation.CustomAggregate #TotalAllowedCharges    : 'Edm.Decimal',
+  Aggregation.CustomAggregate #TotalActualPayments    : 'Edm.Decimal',
+  Aggregation.CustomAggregate #ChargePaddingAmt       : 'Edm.Decimal',
+  Aggregation.CustomAggregate #PolicyShortfallAmt     : 'Edm.Decimal',
+  Aggregation.CustomAggregate #PaidToAllowedRatePct   : 'Edm.Decimal',
+  Aggregation.CustomAggregate #ChargePaddingRatePct     : 'Edm.Decimal'
+) {
+  Year                     @Analytics.Dimension: true;
+  StandardizedCredential   @Analytics.Dimension: true;
+  TotalUniqueProviders     @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalPatientsServed      @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalSubmittedCharges    @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalAllowedCharges      @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalActualPayments      @Analytics.Measure: true  @Aggregation.default: #SUM;
+  ChargePaddingAmt         @Analytics.Measure: true  @Aggregation.default: #SUM;
+  PolicyShortfallAmt       @Analytics.Measure: true  @Aggregation.default: #SUM;
+  PaidToAllowedRatePct     @Analytics.Measure: true  @Aggregation.default: #AVG;
+  ChargePaddingRatePct     @Analytics.Measure: true  @Aggregation.default: #AVG;
 };

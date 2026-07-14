@@ -101,11 +101,12 @@
         "template": "sap.ovp.cards.v4.charts.analytical",
         "settings": {
           "title": "Cost by State",
-          "subTitle": "Total Paid ($) per State",
+          "subTitle": "Total Paid ($) per State — open 1.1 for full audit dashboard",
           "entitySet": "CostAnalysisV2",
           "addODataSelect": true,
           "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart#V2Footprint",
-          "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#V2Chart"
+          "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#V2Chart",
+          "identificationAnnotationPath": "com.sap.vocabularies.UI.v1.Identification#OVPNavCost"
         }
       },
       "card01_rural": {
@@ -113,11 +114,12 @@
         "template": "sap.ovp.cards.v4.charts.analytical",
         "settings": {
           "title": "Rural vs Urban",
-          "subTitle": "Total Paid ($) by locality type",
+          "subTitle": "Total Paid ($) by locality type — open 1.2 for procedure-tier drill-down",
           "entitySet": "RuralUrbanDistribution",
           "addODataSelect": true,
-          "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart",
-          "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant"
+          "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart#RuralUrbanOVP",
+          "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#RuralUrbanOVP",
+          "identificationAnnotationPath": "com.sap.vocabularies.UI.v1.Identification#OVPNavRural"
         }
       },
       "card02_risk": {

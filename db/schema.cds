@@ -730,3 +730,85 @@ view EntityTypeCostInsight as
       1
     )                                        as CostPremiumPct         : Decimal(15, 1)
   };
+
+// ─── Task 3.3 - Credentials & Charge Discrepancies ───────────────────────────
+
+// Standardizes credentials and splits the financial gap into:
+//   ChargePaddingAmt   = Submitted - Allowed  (inflated billing vs fee schedule)
+//   PolicyShortfallAmt = Allowed - Paid       (85% mid-level rule, cost-sharing)
+//   PaidToAllowedRatePct = Paid ÷ Allowed     (statutory reimbursement tracking)
+view CredentialDiscrepancies as
+  select from ProviderSummary as p {
+    key p.Year,
+    key case
+          when upper(p.Rndrng_Prvdr_Crdntls) like '%M.D.%' or upper(p.Rndrng_Prvdr_Crdntls) = 'MD'
+            then 'MD - Doctor of Medicine'
+          when upper(p.Rndrng_Prvdr_Crdntls) like '%D.O.%' or upper(p.Rndrng_Prvdr_Crdntls) = 'DO'
+            then 'DO - Osteopathic Medicine'
+          when upper(p.Rndrng_Prvdr_Crdntls) like '%N.P.%' or upper(p.Rndrng_Prvdr_Crdntls) = 'NP'
+            or upper(p.Rndrng_Prvdr_Crdntls) like '%NURSE PRACTITIONER%'
+            then 'NP - Nurse Practitioner'
+          when upper(p.Rndrng_Prvdr_Crdntls) like '%P.A.%' or upper(p.Rndrng_Prvdr_Crdntls) = 'PA'
+            or upper(p.Rndrng_Prvdr_Crdntls) like '%PHYSICIAN ASSISTANT%'
+            then 'PA - Physician Assistant'
+          when upper(p.Rndrng_Prvdr_Crdntls) like '%CRNA%'
+            then 'CRNA - Nurse Anesthetist'
+          when p.Rndrng_Prvdr_Crdntls is null or p.Rndrng_Prvdr_Crdntls = ''
+            then 'Unspecified Credentials'
+          else 'Other Specialists'
+        end                                  as StandardizedCredential : String(50),
+
+    count(distinct p.Rndrng_NPI)             as TotalUniqueProviders   : Integer,
+    sum(p.Tot_Benes)                         as TotalPatientsServed    : Integer,
+    sum(p.Tot_Sbmtd_Chrg)                    as TotalSubmittedCharges  : Decimal(15, 2),
+    sum(p.Tot_Mdcr_Alowd_Amt)                as TotalAllowedCharges    : Decimal(15, 2),
+    sum(p.Tot_Mdcr_Pymt_Amt)                 as TotalActualPayments    : Decimal(15, 2),
+
+    // 1. Charge padding - billed amount above Medicare fee-schedule allowance
+    (sum(p.Tot_Sbmtd_Chrg) - sum(p.Tot_Mdcr_Alowd_Amt))
+                                             as ChargePaddingAmt       : Decimal(15, 2),
+
+    // 2. Policy shortfall - allowed amount not realized as payment (85% rule, cost-sharing)
+    (sum(p.Tot_Mdcr_Alowd_Amt) - sum(p.Tot_Mdcr_Pymt_Amt))
+                                             as PolicyShortfallAmt     : Decimal(15, 2),
+
+    // 3. Paid-to-allowed rate - statutory reimbursement tracking (NP/PA expected lower)
+    case
+      when sum(p.Tot_Mdcr_Alowd_Amt) > 0
+        then round((sum(p.Tot_Mdcr_Pymt_Amt) / sum(p.Tot_Mdcr_Alowd_Amt)) * 100)
+      else 0
+    end                                      as PaidToAllowedRatePct   : Decimal(5, 2),
+
+    // Charge-padding rate - share of submitted charges rejected by fee schedule
+    case
+      when sum(p.Tot_Sbmtd_Chrg) > 0
+        then round(
+          ((sum(p.Tot_Sbmtd_Chrg) - sum(p.Tot_Mdcr_Alowd_Amt)) / sum(p.Tot_Sbmtd_Chrg)) * 100
+        )
+      else 0
+    end                                      as ChargePaddingRatePct   : Decimal(5, 2)
+  }
+  group by
+    p.Year,
+    case
+      when upper(p.Rndrng_Prvdr_Crdntls) like '%M.D.%' or upper(p.Rndrng_Prvdr_Crdntls) = 'MD'
+        then 'MD - Doctor of Medicine'
+      when upper(p.Rndrng_Prvdr_Crdntls) like '%D.O.%' or upper(p.Rndrng_Prvdr_Crdntls) = 'DO'
+        then 'DO - Osteopathic Medicine'
+      when upper(p.Rndrng_Prvdr_Crdntls) like '%N.P.%' or upper(p.Rndrng_Prvdr_Crdntls) = 'NP'
+        or upper(p.Rndrng_Prvdr_Crdntls) like '%NURSE PRACTITIONER%'
+        then 'NP - Nurse Practitioner'
+      when upper(p.Rndrng_Prvdr_Crdntls) like '%P.A.%' or upper(p.Rndrng_Prvdr_Crdntls) = 'PA'
+        or upper(p.Rndrng_Prvdr_Crdntls) like '%PHYSICIAN ASSISTANT%'
+        then 'PA - Physician Assistant'
+      when upper(p.Rndrng_Prvdr_Crdntls) like '%CRNA%'
+        then 'CRNA - Nurse Anesthetist'
+      when p.Rndrng_Prvdr_Crdntls is null or p.Rndrng_Prvdr_Crdntls = ''
+        then 'Unspecified Credentials'
+      else 'Other Specialists'
+    end;
+
+annotate medicare.CredentialDiscrepancies with @(
+  Analytics.dataCategory   : #CUBE,
+  Aggregation.ApplyDefault : true
+);

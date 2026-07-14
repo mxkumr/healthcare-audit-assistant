@@ -15,6 +15,7 @@
   },
   "scripts": {
     "start": "cds-serve",
+    "watch": "cds watch",
     "watch-1.1cost-analysis": "cds watch --open com.medicare.11costanalysis/index.html?sap-ui-xx-viewCache=false --livereload false",
     "watch-1.2rural-analysis": "cds watch --open com.medicare.12ruralanalysis/index.html?sap-ui-xx-viewCache=false --livereload false",
     "undeploy": "cf undeploy healthcare-audit-assistant --delete-services --delete-service-keys --delete-service-brokers",
@@ -25,7 +26,8 @@
     "watch-2.2borganization-profiling": "cds watch --open com.medicare.22borganizationprofiling/index.html?sap-ui-xx-viewCache=false --livereload false",
     "watch-task1-overview": "cds watch --open com.medicare.task1overview/index.html?sap-ui-xx-viewCache=false --livereload false",
     "watch-risk-analysis": "cds watch --open com.medicare.riskanalysis/index.html?sap-ui-xx-viewCache=false --livereload false",
-    "watch-task2-overview": "cds watch --open com.medicare.task2overview/index.html?sap-ui-xx-viewCache=false --livereload false"
+    "watch-task2-overview": "cds watch --open com.medicare.task2overview/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-3.3credential-discrepancies": "cds watch --open com.medicare.33credentialdiscrepancies/index.html?sap-ui-xx-viewCache=false --livereload false"
   },
   "private": true,
   "cds": {
@@ -46,6 +48,7 @@
     "app/2.2borganization-profiling",
     "app/task1-overview",
     "app/risk-analysis",
-    "app/task2-overview"
+    "app/task2-overview",
+    "app/3.3credential-discrepancies"
   ]
 }
