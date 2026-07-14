@@ -38,7 +38,7 @@ annotate service.ProviderCostEfficiency with @(
   UI.Identification #OVPNavEfficiency: [{
     $Type: 'UI.DataFieldWithUrl',
     Label: 'Open Provider Classification (2.1)',
-    Value: '/com.medicare.21providerclassification/index.html'
+    Value: '/commedicare21providerclassification/index.html'
   }]
 );
 
@@ -46,7 +46,7 @@ annotate service.SpecialtyPeerDeviations with @(
   UI.Identification #OVPNavSpecialty: [{
     $Type: 'UI.DataFieldWithUrl',
     Label: 'Open Specialty Profiling (2.2a)',
-    Value: '/com.medicare.22aspecialtyprofiling/index.html'
+    Value: '/commedicare22aspecialtyprofiling/index.html'
   }]
 );
 
@@ -54,6 +54,6 @@ annotate service.EntityTypeComparisons with @(
   UI.Identification #OVPNavEntityType: [{
     $Type: 'UI.DataFieldWithUrl',
     Label: 'Open Entity Type Comparison (2.2b)',
-    Value: '/com.medicare.22borganizationprofiling/index.html'
+    Value: '/commedicare22borganizationprofiling/index.html'
   }]
 );

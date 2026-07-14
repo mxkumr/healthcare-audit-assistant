@@ -2,14 +2,20 @@
   "name": "3.2place-of-service",
   "version": "0.0.1",
   "description": "Task 3.2 – Medicare payment disparities by specialty and place of service",
-  "keywords": ["ui5", "openui5", "sapui5"],
+  "keywords": [
+    "ui5",
+    "openui5",
+    "sapui5"
+  ],
   "main": "webapp/index.html",
   "dependencies": {},
   "devDependencies": {
     "@ui5/cli": "^4.0.33",
-    "@sap/ux-ui5-tooling": "1"
+    "@sap/ux-ui5-tooling": "1",
+    "ui5-task-zipper": "^3.4.x"
   },
   "scripts": {
-    "build": "ui5 build preload --clean-dest"
+    "build": "npm run build:cf",
+    "build:cf": "ui5 build preload --clean-dest --config ui5-deploy.yaml --include-task=generateCachebusterInfo"
   }
 }

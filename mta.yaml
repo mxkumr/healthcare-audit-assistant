@@ -63,13 +63,101 @@ modules:
     build-result: resources
     requires:
     - artifacts:
+      - commedicareaudithome.zip
+      name: commedicareaudithome
+      target-path: resources/
+    - artifacts:
+      - commedicaretask1overview.zip
+      name: commedicaretask1overview
+      target-path: resources/
+    - artifacts:
+      - commedicaretask2overview.zip
+      name: commedicaretask2overview
+      target-path: resources/
+    - artifacts:
+      - commedicaretask3overview.zip
+      name: commedicaretask3overview
+      target-path: resources/
+    - artifacts:
       - commedicare11costanalysis.zip
       name: commedicare11costanalysis
+      target-path: resources/
+    - artifacts:
+      - commedicare12ruralanalysis.zip
+      name: commedicare12ruralanalysis
       target-path: resources/
     - artifacts:
       - commedicare13behavioralhelathrisk.zip
       name: commedicare13behavioralhelathrisk
       target-path: resources/
+    - artifacts:
+      - commedicare21providerclassification.zip
+      name: commedicare21providerclassification
+      target-path: resources/
+    - artifacts:
+      - commedicare22aspecialtyprofiling.zip
+      name: commedicare22aspecialtyprofiling
+      target-path: resources/
+    - artifacts:
+      - commedicare22borganizationprofiling.zip
+      name: commedicare22borganizationprofiling
+      target-path: resources/
+    - artifacts:
+      - commedicare31riskdynamics.zip
+      name: commedicare31riskdynamics
+      target-path: resources/
+    - artifacts:
+      - commedicare32placeofservice.zip
+      name: commedicare32placeofservice
+      target-path: resources/
+    - artifacts:
+      - commedicare33credentialdiscrepancies.zip
+      name: commedicare33credentialdiscrepancies
+      target-path: resources/
+    - artifacts:
+      - commedicareriskanalysis.zip
+      name: commedicareriskanalysis
+      target-path: resources/
+- name: commedicareaudithome
+  type: html5
+  path: app/audit-home
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+- name: commedicaretask1overview
+  type: html5
+  path: app/task1-overview
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+- name: commedicaretask2overview
+  type: html5
+  path: app/task2-overview
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+- name: commedicaretask3overview
+  type: html5
+  path: app/task3-overview
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
 - name: commedicare11costanalysis
   type: html5
   path: app/1.1cost-analysis
@@ -80,9 +168,89 @@ modules:
     - npm install
     - npm run build:cf
     supported-platforms: []
+- name: commedicare12ruralanalysis
+  type: html5
+  path: app/1.2rural-analysis
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
 - name: commedicare13behavioralhelathrisk
   type: html5
   path: app/1.3behavioral-helath-risk
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+- name: commedicare21providerclassification
+  type: html5
+  path: app/2.1provider-classification
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+- name: commedicare22aspecialtyprofiling
+  type: html5
+  path: app/2.2aspecialty-profiling
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+- name: commedicare22borganizationprofiling
+  type: html5
+  path: app/2.2borganization-profiling
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+- name: commedicare31riskdynamics
+  type: html5
+  path: app/3.1risk-dynamics
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+- name: commedicare32placeofservice
+  type: html5
+  path: app/3.2place-of-service
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+- name: commedicare33credentialdiscrepancies
+  type: html5
+  path: app/3.3credential-discrepancies
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+- name: commedicareriskanalysis
+  type: html5
+  path: app/risk-analysis
   build-parameters:
     build-result: dist
     builder: custom
@@ -160,4 +328,6 @@ build-parameters:
     commands:
     - npm ci
     - node scripts/sanitize-csv-for-hana.js
+    - node scripts/fix-html5-bootstrap.js
+    - node scripts/ensure-html5-deploy.js
     - npx cds build --production

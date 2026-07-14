@@ -1,0 +1,107 @@
+{
+  "_version": "1.85.0",
+  "sap.app": {
+    "id": "com.medicare.task3overview",
+    "type": "application",
+    "i18n": "i18n/i18n.properties",
+    "applicationVersion": { "version": "0.0.1" },
+    "title": "{{appTitle}}",
+    "description": "{{appDescription}}",
+    "dataSources": {
+      "mainService": {
+        "uri": "/medicare/",
+        "type": "OData",
+        "settings": {
+          "annotations": [],
+          "odataVersion": "4.0"
+        }
+      }
+    }
+  },
+  "sap.ui": {
+    "technology": "UI5",
+    "deviceTypes": { "desktop": true, "tablet": true, "phone": true }
+  },
+  "sap.ui5": {
+    "flexEnabled": true,
+    "dependencies": {
+      "minUI5Version": "1.148.1",
+      "libs": {
+        "sap.m": {},
+        "sap.ui.core": {},
+        "sap.fe.templates": {},
+        "sap.ovp": {},
+        "sap.ui.rta": {},
+        "sap.ui.layout": {}
+      }
+    },
+    "contentDensities": { "compact": true, "cozy": true },
+    "models": {
+      "i18n": {
+        "type": "sap.ui.model.resource.ResourceModel",
+        "settings": { "bundleName": "com.medicare.task3overview.i18n.i18n" }
+      },
+      "mainModel": {
+        "dataSource": "mainService",
+        "preload": true,
+        "settings": {
+          "operationMode": "Server",
+          "autoExpandSelect": true,
+          "earlyRequests": true
+        }
+      }
+    },
+    "routing": { "config": {}, "routes": [], "targets": {} }
+  },
+  "sap.ovp": {
+    "globalFilterModel": "mainModel",
+    "globalFilterEntitySet": "RiskCostVolumeDynamics",
+    "containerLayout": "resizable",
+    "enableLiveFilter": true,
+    "considerAnalyticalParameters": false,
+    "cards": {
+      "card00_risk": {
+        "model": "mainModel",
+        "template": "sap.ovp.cards.v4.charts.analytical",
+        "settings": {
+          "title": "Risk-Cost-Volume Dynamics",
+          "subTitle": "Specialty complexity vs billing intensity — open 3.1",
+          "entitySet": "RiskCostVolumeDynamics",
+          "addODataSelect": true,
+          "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart#RiskCostDualAxis",
+          "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#RiskCostChart",
+          "identificationAnnotationPath": "com.sap.vocabularies.UI.v1.Identification#OVPNavRiskDynamics"
+        }
+      },
+      "card01_pos": {
+        "model": "mainModel",
+        "template": "sap.ovp.cards.v4.charts.analytical",
+        "settings": {
+          "title": "Place of Service",
+          "subTitle": "Facility vs office billing mix — open 3.2",
+          "entitySet": "PlaceOfServiceAnalysis",
+          "addODataSelect": true,
+          "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart#PlaceOfServiceChart",
+          "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#PlaceOfServiceChart",
+          "identificationAnnotationPath": "com.sap.vocabularies.UI.v1.Identification#OVPNavPlaceOfService"
+        }
+      },
+      "card02_cred": {
+        "model": "mainModel",
+        "template": "sap.ovp.cards.v4.charts.analytical",
+        "settings": {
+          "title": "Credential Discrepancies",
+          "subTitle": "Charge padding by credential tier — open 3.3",
+          "entitySet": "CredentialDiscrepancies",
+          "addODataSelect": true,
+          "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart#CredentialDiscrepancyChart",
+          "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#CredentialDiscrepancyChart",
+          "identificationAnnotationPath": "com.sap.vocabularies.UI.v1.Identification#OVPNavCredentialGaps"
+        }
+      }
+    },
+    "globalFilterControlType": "MacroFilterBar"
+  },
+  "sap.fiori": { "registrationIds": [], "archeType": "analytical" },
+  "sap.fe": { "app": { "enableLazyLoading": true } }
+}

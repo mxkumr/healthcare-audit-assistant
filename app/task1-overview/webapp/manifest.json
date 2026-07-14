@@ -131,7 +131,8 @@
           "entitySet": "BehavioralHealthRiskProfile",
           "addODataSelect": true,
           "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart#CostComplexityFrontier",
-          "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#FrontierChart"
+          "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#FrontierChart",
+          "identificationAnnotationPath": "com.sap.vocabularies.UI.v1.Identification#OVPNavBehavioral"
         }
       }
     },
