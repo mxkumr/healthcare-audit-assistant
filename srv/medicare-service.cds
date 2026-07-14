@@ -58,6 +58,14 @@ service MedicareService @(path:'/medicare') {
   @readonly
   @cds.redirection.target: false
   entity CredentialDiscrepancies as projection on medicare.CredentialDiscrepancies;
+
+  @readonly
+  @cds.redirection.target: false
+  entity PlaceOfServiceAnalysis as projection on medicare.PlaceOfServiceAnalysis;
+
+  @readonly
+  @cds.redirection.target: false
+  entity PlaceOfServiceProviderProfiles as projection on medicare.PlaceOfServiceProviderProfiles;
 }
 
 // Self-association: all year records for the same provider name (object-page history table)
@@ -594,4 +602,94 @@ annotate MedicareService.CredentialDiscrepancies with @(
   PolicyShortfallAmt       @Analytics.Measure: true  @Aggregation.default: #SUM;
   PaidToAllowedRatePct     @Analytics.Measure: true  @Aggregation.default: #AVG;
   ChargePaddingRatePct     @Analytics.Measure: true  @Aggregation.default: #AVG;
+};
+
+// ── Task 3.2: PlaceOfServiceAnalysis (facility vs office payment disparity) ───
+annotate MedicareService.PlaceOfServiceAnalysis with @(
+  Aggregation.ApplySupported: {
+    Transformations        : ['aggregate', 'groupby', 'filter', 'orderby', 'skip', 'top'],
+    GroupableProperties    : [Year, Specialty, PlaceOfService],
+    AggregatableProperties : [
+      {Property: TotalUniqueProviders},
+      {Property: TotalPatientsServed},
+      {Property: TotalServicesRendered},
+      {Property: TotalSubmittedCharges},
+      {Property: TotalAllowedCharges},
+      {Property: TotalActualPayments},
+      {Property: AvgPaymentPerService},
+      {Property: AvgSubmittedPerService}
+    ]
+  }
+);
+
+annotate MedicareService.PlaceOfServiceAnalysis with @(
+  Aggregation.CustomAggregate #TotalUniqueProviders   : 'Edm.Int32',
+  Aggregation.CustomAggregate #TotalPatientsServed    : 'Edm.Int32',
+  Aggregation.CustomAggregate #TotalServicesRendered  : 'Edm.Decimal',
+  Aggregation.CustomAggregate #TotalSubmittedCharges  : 'Edm.Decimal',
+  Aggregation.CustomAggregate #TotalAllowedCharges    : 'Edm.Decimal',
+  Aggregation.CustomAggregate #TotalActualPayments    : 'Edm.Decimal',
+  Aggregation.CustomAggregate #AvgPaymentPerService   : 'Edm.Decimal',
+  Aggregation.CustomAggregate #AvgSubmittedPerService : 'Edm.Decimal'
+) {
+  Year                     @Analytics.Dimension: true;
+  Specialty                @Analytics.Dimension: true;
+  PlaceOfService           @Analytics.Dimension: true;
+  TotalUniqueProviders     @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalPatientsServed      @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalServicesRendered    @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalSubmittedCharges    @Analytics.Measure: true  @Aggregation.default: #SUM  @Measures.ISOCurrency: 'USD';
+  TotalAllowedCharges      @Analytics.Measure: true  @Aggregation.default: #SUM  @Measures.ISOCurrency: 'USD';
+  TotalActualPayments      @Analytics.Measure: true  @Aggregation.default: #SUM  @Measures.ISOCurrency: 'USD';
+  AvgPaymentPerService     @Analytics.Measure: true  @Aggregation.default: #AVG  @Measures.ISOCurrency: 'USD';
+  AvgSubmittedPerService   @Analytics.Measure: true  @Aggregation.default: #AVG  @Measures.ISOCurrency: 'USD';
+};
+
+// ── Task 3.2: PlaceOfServiceProviderProfiles (provider drill-down by specialty) ─
+annotate MedicareService.PlaceOfServiceProviderProfiles with @(
+  Aggregation.ApplySupported: {
+    Transformations        : ['aggregate', 'groupby', 'filter', 'orderby', 'skip', 'top'],
+    GroupableProperties    : [
+      Year, Specialty, PlaceOfService, NPI, ProviderName, State
+    ],
+    AggregatableProperties : [
+      {Property: ProviderCount},
+      {Property: TotalPatientsServed},
+      {Property: TotalServicesRendered},
+      {Property: TotalSubmittedCharges},
+      {Property: TotalAllowedCharges},
+      {Property: TotalActualPayments},
+      {
+        Property: AvgPaymentPerService,
+        SupportedAggregationMethods: ['avg']
+      },
+      {Property: AvgSubmittedPerService}
+    ]
+  }
+);
+
+annotate MedicareService.PlaceOfServiceProviderProfiles with @(
+  Aggregation.CustomAggregate #ProviderCount          : 'Edm.Int32',
+  Aggregation.CustomAggregate #TotalPatientsServed    : 'Edm.Int32',
+  Aggregation.CustomAggregate #TotalServicesRendered  : 'Edm.Decimal',
+  Aggregation.CustomAggregate #TotalSubmittedCharges  : 'Edm.Decimal',
+  Aggregation.CustomAggregate #TotalAllowedCharges    : 'Edm.Decimal',
+  Aggregation.CustomAggregate #TotalActualPayments    : 'Edm.Decimal',
+  Aggregation.CustomAggregate #AvgPaymentPerService   : 'Edm.Decimal',
+  Aggregation.CustomAggregate #AvgSubmittedPerService : 'Edm.Decimal'
+) {
+  Year                     @Analytics.Dimension: true;
+  Specialty                @Analytics.Dimension: true;
+  PlaceOfService           @Analytics.Dimension: true;
+  NPI                      @Analytics.Dimension: true;
+  ProviderName             @Analytics.Dimension: true;
+  State                    @Analytics.Dimension: true;
+  ProviderCount            @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalPatientsServed      @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalServicesRendered    @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalSubmittedCharges    @Analytics.Measure: true  @Aggregation.default: #SUM  @Measures.ISOCurrency: 'USD';
+  TotalAllowedCharges      @Analytics.Measure: true  @Aggregation.default: #SUM  @Measures.ISOCurrency: 'USD';
+  TotalActualPayments      @Analytics.Measure: true  @Aggregation.default: #SUM  @Measures.ISOCurrency: 'USD';
+  AvgPaymentPerService     @Analytics.Measure: true  @Aggregation.default: #AVG  @Measures.ISOCurrency: 'USD';
+  AvgSubmittedPerService   @Analytics.Measure: true  @Aggregation.default: #AVG  @Measures.ISOCurrency: 'USD';
 };

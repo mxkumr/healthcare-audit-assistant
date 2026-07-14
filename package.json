@@ -27,6 +27,7 @@
     "watch-task1-overview": "cds watch --open com.medicare.task1overview/index.html?sap-ui-xx-viewCache=false --livereload false",
     "watch-risk-analysis": "cds watch --open com.medicare.riskanalysis/index.html?sap-ui-xx-viewCache=false --livereload false",
     "watch-task2-overview": "cds watch --open com.medicare.task2overview/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-3.2place-of-service": "cds watch --open com.medicare.32placeofservice/index.html?sap-ui-xx-viewCache=false --livereload false",
     "watch-3.3credential-discrepancies": "cds watch --open com.medicare.33credentialdiscrepancies/index.html?sap-ui-xx-viewCache=false --livereload false"
   },
   "private": true,
@@ -49,6 +50,7 @@
     "app/task1-overview",
     "app/risk-analysis",
     "app/task2-overview",
+    "app/3.2place-of-service",
     "app/3.3credential-discrepancies"
   ]
 }
