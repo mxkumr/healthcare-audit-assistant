@@ -271,6 +271,7 @@ No separate `.env` AI credentials needed for the Joule path.
 
 | Issue | Fix |
 |-------|-----|
+| `npm ci` fails — missing workspace in lock file | Run `npm install` locally, commit updated `package-lock.json`, then rebuild. Common after adding new apps under `app/*` workspaces (`audit-home`, `task3-overview`, etc.). |
 | `rimraf: not found` | Use `rm -rf resources mta_archives && mbt build` |
 | `mbt/unpacked_bin/mbt: not found` | `npm install -g mbt` then `npm run ensure-mbt` or manual symlink (see Part E) |
 | `Not logged in` | `cf login` |
