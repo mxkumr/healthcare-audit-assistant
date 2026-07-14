@@ -233,9 +233,98 @@ No separate `.env` AI credentials needed for the Joule path.
 | `mbt/unpacked_bin/mbt: not found` | Global mbt + symlink (see Part E) |
 | `Not logged in` | `cf login` |
 | 401 on `/medicare` | Assign admin or audit_analyst role |
-| White Fiori screen | Check `$metadata` + browser console |
+| White Fiori screen | See **White screen after login** below |
 | HTML5 app 404 | Confirm `html5-runtime` service bound to approuter |
 | Empty agent data | Check db-deployer logs: `cf logs healthcare-audit-assistant-db-deployer --recent` |
+
+### White screen after login
+
+Login works but the page stays blank — almost always **OData metadata or UI5 bootstrap failing** after auth.
+
+**1. Open browser DevTools → Network** (after login) and look for:
+
+| Request | Expected | If it fails |
+|---------|----------|-------------|
+| `/medicare/$metadata` | **200** XML | 404 → see **Metadata 404** below; 401/403 → roles; 502 → srv down |
+| `/resources/sap-ui-core.js` | **200** JS | UI5 CDN blocked → index.html must use `/resources/` (approuter → ui5 destination) |
+| `/commedicare11costanalysis/Component-preload.js` | **200** | HTML5 repo not deployed → rebuild MTA |
+
+**2. Test OData from BTP terminal** (same user/session as browser):
+
+```bash
+TOKEN=$(cf oauth-token | sed 's/bearer //')
+curl -s -o /dev/null -w "%{http_code}" \
+  "https://<approuter-url>/medicare/\$metadata" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+Expect `200`. If `401`, assign role collections (see Part E). If `404`, check `app/router/xs-app.json` medicare route.
+
+**3. Try explicit app URL**
+
+```
+https://<approuter-url>/commedicare11costanalysis/index.html
+https://<approuter-url>/commedicare13behavioralhelathrisk/index.html
+```
+
+### Metadata 404
+
+In DevTools, check the **full URL** of the failing `$metadata` request:
+
+| Failing URL | Cause | Fix |
+|-------------|-------|-----|
+| `/commedicare11costanalysis/medicare/$metadata` | HTML5 zip built with `relativePaths: true` — relative OData URI | Redeploy (see below). **Approuter fallback routes** in `xs-app.json` also forward this path to CAP srv. |
+| `/medicare/$metadata` | CAP srv not reachable or wrong service path | `cf apps` — srv must be **started**. `cf logs healthcare-audit-assistant-srv --recent` |
+
+**Redeploy (BTP terminal):**
+
+```bash
+git pull   # get relativePaths: false + approuter fallback routes
+npm ci && npm run build
+cf deploy mta_archives/archive.mtar --retries 1
+```
+
+**Verify after deploy:**
+
+```bash
+TOKEN=$(cf oauth-token | sed 's/bearer //')
+curl -s -o /dev/null -w "%{http_code}\n" \
+  "https://<approuter-url>/medicare/\$metadata" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+Expect `200`. Then hard-refresh the Fiori app (private window).
+
+**4. Root cause: `relativePaths: true` in `ui5-deploy.yaml`**
+
+With a **standalone approuter** (not Work Zone), OData must use an **absolute** path `/medicare/` so requests hit the approuter medicare route. If the HTML5 zip is built with `relativePaths: true`, the URI becomes `medicare/` and the browser calls `/commedicare11costanalysis/medicare/$metadata` → **404** → white screen.
+
+Fix in repo: `relativePaths: false` in both `ui5-deploy.yaml` files; keep `"uri": "/medicare/"` in manifest.
+
+**5. Other code fixes** (redeploy after pull)
+
+- `index.html` UI5 bootstrap: `src="/resources/sap-ui-core.js"` (via approuter ui5 destination)
+- Approuter `welcomeFile`: `/commedicare11costanalysis/index.html`
+
+**6. If `$metadata` is 200 but UI still blank**
+
+Open Console tab — Fiori Elements fails silently when UI annotations are missing. Check metadata contains `CostAnalysisV2` and `UI.SelectionPresentationVariant` with qualifier `ALPDashboard`. CAP merges annotations from `app/services.cds` at `cds build --production` time.
+
+**6. Role assignment without Security menu**
+
+Ask instructor to assign your BTP user to:
+
+- `admin (healthcare-audit-assistant BTPLearning_btpailearning-student15)`
+- `audit_analyst (healthcare-audit-assistant BTPLearning_btpailearning-student15)`
+
+Application: `healthcare-audit-assistant-BTPLearning_btpailearning-student15!t564356`
+
+**7. Redeploy after fixes**
+
+```bash
+npm ci && npm run build
+cf deploy mta_archives/archive.mtar --retries 1
+```
 
 ---
 
