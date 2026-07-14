@@ -490,17 +490,6 @@ view RiskScoreDistribution as
       else                                   '5 - Very High (>=2.0)'
     end;
 
-    p.Bene_Avg_Risk_Scre as AvgRiskScore,
-    p.Tot_Benes as TotalBeneficiaries,
-
-    p.Bene_CC_PH_Hypertension_V2_Pct as HypertensionPct,
-    p.Bene_CC_PH_Diabetes_V2_Pct as DiabetesPct,
-    p.Bene_CC_PH_CKD_V2_Pct as CKDPct,
-    p.Bene_CC_PH_HF_NonIHD_V2_Pct as HeartFailurePct,
-
-    p.Tot_Mdcr_Pymt_Amt as TotalPaid,
-    g.RuralInd
-  };
   // Pass 1: median BH burden per (Year, State, ProviderType) group
 view BHBurdenMedianByGroup as
   select from ProviderSummary as p {
