@@ -29,6 +29,7 @@ This document is the **shared primary example** used across all task docs (`1.1`
 2.2  PIZZO +1,013% vs Pain Management peers         → specialty-relative flag
 2.2B PIZZO = Individual Clinician                   → not a corporate-network pattern
 3.1  Pain Management $3,733 avg · PIZZO $9,953      → 2.7× specialty cost-complexity gap
+3.2  PIZZO Office only · 111,227 svcs · $401/svc    → 74% of Pain Mgmt office volume
 3.3  PIZZO MD · Q4253/11042 charge padding mix      → service-line escalation target
 ```
 
@@ -190,11 +191,37 @@ PIZZO practices in **Urban/Metro** (RUCA 1 · Newport Beach). Task 1.2 compares 
 
 **Audit decision:** Task 3.1 explains why Pain Management ranks **#2** nationally on cost — it is largely **one CA MD** on **Q4253** membrane billing.
 
+→ Next: **Task 3.2** (place of service on **same provider**)
+
+---
+
+## Step 8 — Task 3.2 Place of Service Analysis
+
+**App:** `app/3.2place-of-service/` · **Grain:** Year × NPI × Specialty × Place of Service  
+**Same provider lens:** Expand **Pain Management** → **PIZZO-BERKEY is Row 1** (Avg Payment per Service desc).
+
+### PIZZO-BERKEY — place-of-service profile (2022)
+
+| Provider | POS | Avg Pay/Service | Services | Total Paid |
+|----------|-----|----------------:|---------:|-----------:|
+| **PIZZO-BERKEY** | **Office (Non-Facility)** | **$401** | **111,227** | **$44.6M** |
+
+**Read:** PIZZO bills **only in the office setting** — no Facility row. **111,227** of **149,352** Pain Management office service units (**~74%**) belong to this NPI. At **$401/service**, PIZZO is **30% above** the Pain Management office specialty average (**$309/service**). All high-volume HCPCS from Tasks 1.2/3.3 (`Q4253`, `11042`, `99348`) carry `Place_Of_Srvc = O` in `ServiceDetails`.
+
+### Pain Management specialty POS context
+
+| Place of Service | Services | Avg Pay/Service | Total Paid |
+|------------------|---------:|----------------:|-----------:|
+| **Office** | 149,352 | $309 | $46.1M |
+| **Facility** | 119 | $98 | $11.6K |
+
+**Audit decision:** The **$9,953/patient** flag (Tasks 2.1–3.1) decomposes to **111K office service units** at **$401 each** — not facility upcoding. Escalate on **HCPCS mix and unit volume**, not POS category shift.
+
 → Next: **Task 3.3** (credential + charge padding on **same service lines**)
 
 ---
 
-## Step 8 — Task 3.3 Credential Discrepancies
+## Step 9 — Task 3.3 Credential Discrepancies
 
 **App:** `app/3.3credential-discrepancies/` · **Grain:** Year × Standardized Credential  
 **Same provider lens:** PIZZO maps to **MD - Doctor of Medicine**; evaluate **PIZZO's** padding on **Q4253** and **11042**, not only the class-level Row 1.
@@ -235,7 +262,8 @@ PIZZO practices in **Urban/Metro** (RUCA 1 · Newport Beach). Task 1.2 compares 
 | **2.2** | Specialty Profiling | **+1,013%** vs Pain Management peers |
 | **2.2B** | Entity Comparison | **Individual Clinician** — not org pattern |
 | **3.1** | Risk-Cost-Volume | **90%** of Pain Mgmt $ · **2.7×** specialty avg cost |
-| **3.3** | Credential Discrepancies | **MD** · **Q4253** dollar volume + **11042/99348** padding |
+| **3.2** | Place of Service | **Office only** · **111,227** svcs · **$401**/service |
+| **3.3** | Credential Discrepancies | **MD** · **Q4253** volume + **11042/99348** padding |
 
 **Workpaper target:** **PIZZO-BERKEY** · NPI `1003056821` · 2022 · CA · Pain Management  
 **Service-line priority:** **Q4253** (Zenith amniotic membrane) → **11042** (debridement) → **99348** (home visits)
@@ -255,4 +283,5 @@ Each task doc includes a **Primary example — Row 1 (audit journey)** section p
 | [2.2-specialty-profiling.md](./2.2-specialty-profiling.md) | Specialty peer deviation |
 | [2.2b-entity-type-comparison.md](./2.2b-entity-type-comparison.md) | Individual vs organization |
 | [3.1-risk-dynamics.md](./3.1-risk-dynamics.md) | Specialty risk vs cost |
+| [3.2-place-of-service.md](./3.2-place-of-service.md) | Facility vs office payment disparity |
 | [3.3-credential-discrepancies.md](./3.3-credential-discrepancies.md) | Credential-class billing gaps |
