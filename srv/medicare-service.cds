@@ -33,6 +33,10 @@ service MedicareService @(path:'/medicare') {
 
   @readonly
   @cds.redirection.target: false
+  entity BehavioralHealthRiskProfile as projection on medicare.BehavioralHealthRiskProfile;
+
+  @readonly
+  @cds.redirection.target: false
   entity ProviderCostEfficiency as projection on medicare.ProviderCostEfficiency;
 
   @readonly
@@ -314,6 +318,54 @@ annotate MedicareService.RiskScoreDistribution with @(
   AvgRiskScore       @Analytics.Measure: true  @Aggregation.default: #AVG;
   AvgHypertensionPct @Analytics.Measure: true  @Aggregation.default: #AVG;
   AvgDiabetesPct     @Analytics.Measure: true  @Aggregation.default: #AVG;
+};
+
+// ── Task 1.3: BehavioralHealthRiskProfile (cost-complexity frontier) ──────────
+annotate MedicareService.BehavioralHealthRiskProfile with @(
+  Aggregation.ApplySupported: {
+    Transformations        : ['aggregate', 'groupby', 'filter', 'orderby', 'skip', 'top'],
+    GroupableProperties    : [Year, State, ProviderType, BHBurdenGroup],
+    AggregatableProperties : [
+      {Property: ProviderCount},
+      {Property: AvgRiskScore},
+      {Property: PaidPerBeneficiary},
+      {Property: TotalPaid},
+      {Property: TotalBeneficiaries},
+      {Property: TotalSubmitted},
+      {Property: TotalAllowed},
+      {Property: TotalDrugPaid},
+      {Property: AvgUniqueProcedures},
+      {Property: MedicareAcceptCount}
+    ]
+  }
+);
+
+annotate MedicareService.BehavioralHealthRiskProfile with @(
+  Aggregation.CustomAggregate #ProviderCount       : 'Edm.Int32',
+  Aggregation.CustomAggregate #AvgRiskScore        : 'Edm.Decimal',
+  Aggregation.CustomAggregate #PaidPerBeneficiary  : 'Edm.Decimal',
+  Aggregation.CustomAggregate #TotalPaid           : 'Edm.Decimal',
+  Aggregation.CustomAggregate #TotalBeneficiaries  : 'Edm.Int32',
+  Aggregation.CustomAggregate #TotalSubmitted      : 'Edm.Decimal',
+  Aggregation.CustomAggregate #TotalAllowed        : 'Edm.Decimal',
+  Aggregation.CustomAggregate #TotalDrugPaid       : 'Edm.Decimal',
+  Aggregation.CustomAggregate #AvgUniqueProcedures : 'Edm.Decimal',
+  Aggregation.CustomAggregate #MedicareAcceptCount : 'Edm.Int32'
+) {
+  Year                  @Analytics.Dimension: true;
+  State                 @Analytics.Dimension: true;
+  ProviderType          @Analytics.Dimension: true;
+  BHBurdenGroup         @Analytics.Dimension: true;
+  ProviderCount         @Analytics.Measure: true  @Aggregation.default: #SUM;
+  AvgRiskScore          @Analytics.Measure: true  @Aggregation.default: #AVG;
+  PaidPerBeneficiary    @Analytics.Measure: true  @Aggregation.default: #AVG;
+  TotalPaid             @Analytics.Measure: true  @Aggregation.default: #SUM  @Measures.ISOCurrency: 'USD';
+  TotalBeneficiaries    @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalSubmitted        @Analytics.Measure: true  @Aggregation.default: #SUM  @Measures.ISOCurrency: 'USD';
+  TotalAllowed          @Analytics.Measure: true  @Aggregation.default: #SUM  @Measures.ISOCurrency: 'USD';
+  TotalDrugPaid         @Analytics.Measure: true  @Aggregation.default: #SUM  @Measures.ISOCurrency: 'USD';
+  AvgUniqueProcedures   @Analytics.Measure: true  @Aggregation.default: #AVG;
+  MedicareAcceptCount   @Analytics.Measure: true  @Aggregation.default: #SUM;
 };
 
 // ── Task 2.1: ProviderCostEfficiency (2-Axis Risk Matrix) ─────────────────────

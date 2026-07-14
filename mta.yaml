@@ -65,9 +65,23 @@ modules:
       - commedicare11costanalysis.zip
       name: commedicare11costanalysis
       target-path: resources/
+    - artifacts:
+      - commedicare13behavioralhelathrisk.zip
+      name: commedicare13behavioralhelathrisk
+      target-path: resources/
 - name: commedicare11costanalysis
   type: html5
   path: app/1.1cost-analysis
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+- name: commedicare13behavioralhelathrisk
+  type: html5
+  path: app/1.3behavioral-helath-risk
   build-parameters:
     build-result: dist
     builder: custom

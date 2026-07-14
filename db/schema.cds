@@ -490,6 +490,98 @@ view RiskScoreDistribution as
       else                                   '5 - Very High (>=2.0)'
     end;
 
+// ─── Task 1.3 — Cost-Complexity Frontier (BH burden peer groups) ─────────────
+
+// Pass 1: median BH burden per (Year, State, ProviderType) group
+view BHBurdenMedianByGroup as
+  select from ProviderSummary as p {
+    key p.Year,
+    key p.Rndrng_Prvdr_State_Abrvtn as State        : String,
+    key p.Rndrng_Prvdr_Type         as ProviderType : String,
+
+    count(p.Rndrng_NPI) as ProviderCount : Integer,
+
+    median(
+      ( coalesce(p.Bene_CC_BH_ADHD_OthCD_V1_Pct, 0)
+      + coalesce(p.Bene_CC_BH_Alcohol_Drug_V1_Pct, 0)
+      + coalesce(p.Bene_CC_BH_Tobacco_V1_Pct, 0)
+      + coalesce(p.Bene_CC_BH_Alz_NonAlzdem_V2_Pct, 0)
+      + coalesce(p.Bene_CC_BH_Anxiety_V1_Pct, 0)
+      + coalesce(p.Bene_CC_BH_Bipolar_V1_Pct, 0)
+      + coalesce(p.Bene_CC_BH_Mood_V2_Pct, 0)
+      + coalesce(p.Bene_CC_BH_Depress_V1_Pct, 0)
+      + coalesce(p.Bene_CC_BH_PD_V1_Pct, 0)
+      + coalesce(p.Bene_CC_BH_PTSD_V1_Pct, 0)
+      + coalesce(p.Bene_CC_BH_Schizo_OthPsy_V1_Pct, 0) ) / 11
+    ) as MedianBHBurden : Decimal
+  }
+  group by
+    p.Year, p.Rndrng_Prvdr_State_Abrvtn, p.Rndrng_Prvdr_Type
+  having count(p.Rndrng_NPI) >= 10;
+
+// Pass 2: classify each provider vs their peer group's median, then aggregate
+view BehavioralHealthRiskProfile as
+  select from ProviderSummary as p
+  inner join BHBurdenMedianByGroup as m
+    on  m.Year         = p.Year
+    and m.State        = p.Rndrng_Prvdr_State_Abrvtn
+    and m.ProviderType = p.Rndrng_Prvdr_Type {
+
+    key p.Year,
+    key p.Rndrng_Prvdr_State_Abrvtn as State        : String,
+    key p.Rndrng_Prvdr_Type         as ProviderType : String,
+    key case
+          when ( ( coalesce(p.Bene_CC_BH_ADHD_OthCD_V1_Pct, 0)
+                 + coalesce(p.Bene_CC_BH_Alcohol_Drug_V1_Pct, 0)
+                 + coalesce(p.Bene_CC_BH_Tobacco_V1_Pct, 0)
+                 + coalesce(p.Bene_CC_BH_Alz_NonAlzdem_V2_Pct, 0)
+                 + coalesce(p.Bene_CC_BH_Anxiety_V1_Pct, 0)
+                 + coalesce(p.Bene_CC_BH_Bipolar_V1_Pct, 0)
+                 + coalesce(p.Bene_CC_BH_Mood_V2_Pct, 0)
+                 + coalesce(p.Bene_CC_BH_Depress_V1_Pct, 0)
+                 + coalesce(p.Bene_CC_BH_PD_V1_Pct, 0)
+                 + coalesce(p.Bene_CC_BH_PTSD_V1_Pct, 0)
+                 + coalesce(p.Bene_CC_BH_Schizo_OthPsy_V1_Pct, 0) ) / 11 ) >= m.MedianBHBurden
+            then 'B - High BH Burden'
+            else 'A - Low BH Burden'
+        end                          as BHBurdenGroup : String,
+
+    count(p.Rndrng_NPI)                        as ProviderCount       : Integer,
+    cast(round(avg(p.Bene_Avg_Risk_Scre), 3) as Decimal(10,3)) as AvgRiskScore : Decimal(10,3),
+    sum(p.Tot_Sbmtd_Chrg)                      as TotalSubmitted      : Decimal,
+    sum(p.Tot_Mdcr_Alowd_Amt)                  as TotalAllowed        : Decimal,
+    sum(p.Tot_Mdcr_Pymt_Amt)                   as TotalPaid           : Decimal,
+    sum(p.Tot_Benes)                           as TotalBeneficiaries  : Integer,
+    cast(round(cast(sum(p.Tot_Mdcr_Pymt_Amt) as Decimal) / nullif(sum(p.Tot_Benes), 0), 3) as Decimal(10,3))
+                                            as PaidPerBeneficiary  : Decimal(10,3),
+    sum(p.Drug_Mdcr_Pymt_Amt)                  as TotalDrugPaid       : Decimal,
+    avg(p.Tot_HCPCS_Cds)                       as AvgUniqueProcedures : Decimal,
+    sum(case when p.Rndrng_Prvdr_Mdcr_Prtcptg_Ind = 'Y' then 1 else 0 end)
+                                                as MedicareAcceptCount : Integer
+  }
+  group by
+    p.Year, p.Rndrng_Prvdr_State_Abrvtn, p.Rndrng_Prvdr_Type,
+    case
+      when ( ( coalesce(p.Bene_CC_BH_ADHD_OthCD_V1_Pct, 0)
+             + coalesce(p.Bene_CC_BH_Alcohol_Drug_V1_Pct, 0)
+             + coalesce(p.Bene_CC_BH_Tobacco_V1_Pct, 0)
+             + coalesce(p.Bene_CC_BH_Alz_NonAlzdem_V2_Pct, 0)
+             + coalesce(p.Bene_CC_BH_Anxiety_V1_Pct, 0)
+             + coalesce(p.Bene_CC_BH_Bipolar_V1_Pct, 0)
+             + coalesce(p.Bene_CC_BH_Mood_V2_Pct, 0)
+             + coalesce(p.Bene_CC_BH_Depress_V1_Pct, 0)
+             + coalesce(p.Bene_CC_BH_PD_V1_Pct, 0)
+             + coalesce(p.Bene_CC_BH_PTSD_V1_Pct, 0)
+             + coalesce(p.Bene_CC_BH_Schizo_OthPsy_V1_Pct, 0) ) / 11 ) >= m.MedianBHBurden
+      then 'B - High BH Burden'
+      else 'A - Low BH Burden'
+    end;
+
+annotate medicare.BehavioralHealthRiskProfile with @(
+  Analytics.dataCategory   : #CUBE,
+  Aggregation.ApplyDefault : true
+);
+
 // ─── Task 2 Views ────────────────────────────────────────────────────────────
 
 // Task 2.1 — 2-Axis Risk Matrix: Cost Classification × Utilization Profile
