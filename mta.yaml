@@ -327,6 +327,7 @@ build-parameters:
   - builder: custom
     commands:
     - npm ci
+    - node scripts/ensure-mbt.js
     - node scripts/sanitize-csv-for-hana.js
     - node scripts/fix-html5-bootstrap.js
     - node scripts/ensure-html5-deploy.js

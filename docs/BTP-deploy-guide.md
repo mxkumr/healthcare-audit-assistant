@@ -273,7 +273,7 @@ No separate `.env` AI credentials needed for the Joule path.
 |-------|-----|
 | `npm ci` fails — missing workspace in lock file | Run `npm install` locally, commit updated `package-lock.json`, then rebuild. Common after adding new apps under `app/*` workspaces (`audit-home`, `task3-overview`, etc.). |
 | `rimraf: not found` | Use `rm -rf resources mta_archives && mbt build` |
-| `mbt/unpacked_bin/mbt: not found` | `npm install -g mbt` then `npm run ensure-mbt` or manual symlink (see Part E) |
+| `mbt/unpacked_bin/mbt: not found` | Run `npm rebuild mbt` or `npm run ensure-mbt` after `npm ci`. The `postinstall` hook and MTA `before-all` both run `ensure-mbt.js` to download/link the binary. Fallback: `npm install -g mbt && npm run ensure-mbt` |
 | `Not logged in` | `cf login` |
 | 401 on `/medicare` | Assign admin or audit_analyst role |
 | White Fiori screen | See **White screen after login** below |
