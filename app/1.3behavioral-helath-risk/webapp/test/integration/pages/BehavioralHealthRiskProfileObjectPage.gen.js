@@ -32,7 +32,7 @@ sap.ui.define(['sap/fe/test/ObjectPage', 'sap/ui/test/actions/Press'], function(
 
     return new ObjectPage(
         {
-            appId: 'behavioralhealthrisk.behavioralhealthrisk',
+            appId: 'com.medicare.13behavioralhelathrisk',
             componentId: 'BehavioralHealthRiskProfileObjectPage',
             contextPath: '/BehavioralHealthRiskProfile'
         },

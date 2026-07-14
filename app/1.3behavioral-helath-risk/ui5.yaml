@@ -2,7 +2,7 @@
 
 specVersion: "4.0"
 metadata:
-  name: behavioralhealthrisk.behavioralhealthrisk
+  name: com.medicare.13behavioralhelathrisk
 type: application
 server:
   customMiddleware:

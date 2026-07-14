@@ -8,7 +8,7 @@
 |**Template Used**<br>Analytical List Page V4|
 |**Service Type**<br>Local CAP|
 |**Service URL**<br>http://localhost:4004/medicare/|
-|**Module Name**<br>behavioral-health-risk|
+|**Module Name**<br>1.3behavioral-helath-risk|
 |**Application Title**<br>Behavioral_Health_Risk|
 |**Namespace**<br>behavioral_health_risk|
 |**UI5 Theme**<br>sap_horizon|
@@ -17,7 +17,7 @@
 |**Add Eslint configuration**<br>True, see https://www.npmjs.com/package/@sap-ux/eslint-plugin-fiori-tools#rules for the eslint rules.|
 |**Main Entity**<br>BehavioralHealthRiskProfile|
 
-## behavioral-health-risk
+## 1.3behavioral-helath-risk
 
 An SAP Fiori application.
 
@@ -25,7 +25,7 @@ An SAP Fiori application.
 
 -   This app has been generated using the SAP Fiori tools - App Generator, as part of the SAP Fiori tools suite.  To launch the generated app, start your CAP project:  and navigate to the following location in your browser:
 
-http://localhost:4004/behavioralhealthrisk.behavioralhealthrisk/index.html
+http://localhost:4004/com.medicare.13behavioralhelathrisk/index.html
 
 #### Pre-requisites:
 

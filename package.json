@@ -20,7 +20,7 @@
     "undeploy": "cf undeploy healthcare-audit-assistant --delete-services --delete-service-keys --delete-service-brokers",
     "build": "rimraf resources mta_archives && mbt build --mtar archive",
     "deploy": "cf deploy mta_archives/archive.mtar --retries 1",
-    "watch-behavioral-health-risk": "cds watch --open behavioralhealthrisk.behavioralhealthrisk/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-1.3behavioral-helath-risk": "cds watch --open com.medicare.13behavioralhelathrisk/index.html?sap-ui-xx-viewCache=false --livereload false",
     "watch-2.1provider-classification": "cds watch --open com.medicare.21providerclassification/index.html?sap-ui-xx-viewCache=false --livereload false",
     "watch-specialty-classification": "cds watch --open com.medicare.specialtyclassification/index.html?sap-ui-xx-viewCache=false --livereload false",
     "watch-organization-classification": "cds watch --open com.medicare.organizationclassification/index.html?sap-ui-xx-viewCache=false --livereload false",
@@ -48,6 +48,6 @@
     "app/task1-overview",
     "app/risk-analysis",
     "app/task2-overview",
-    "app/behavioral-health-risk"
+    "app/1.3behavioral-helath-risk"
   ]
 }

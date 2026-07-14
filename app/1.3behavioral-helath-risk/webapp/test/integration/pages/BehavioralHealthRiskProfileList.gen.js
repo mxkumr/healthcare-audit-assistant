@@ -25,7 +25,7 @@ sap.ui.define(['sap/fe/test/ListReport'], function(ListReport) {
 
     return new ListReport(
         {
-            appId: 'behavioralhealthrisk.behavioralhealthrisk',
+            appId: 'com.medicare.13behavioralhelathrisk',
             componentId: 'BehavioralHealthRiskProfileList',
             contextPath: '/BehavioralHealthRiskProfile'
         },

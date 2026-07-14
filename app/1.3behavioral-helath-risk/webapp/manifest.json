@@ -1,7 +1,7 @@
 {
   "_version": "1.86.0",
   "sap.app": {
-    "id": "behavioralhealthrisk.behavioralhealthrisk",
+    "id": "com.medicare.13behavioralhelathrisk",
     "type": "application",
     "i18n": "i18n/i18n.properties",
     "applicationVersion": {
@@ -60,7 +60,7 @@
       "i18n": {
         "type": "sap.ui.model.resource.ResourceModel",
         "settings": {
-          "bundleName": "behavioralhealthrisk.behavioralhealthrisk.i18n.i18n"
+          "bundleName": "com.medicare.13behavioralhelathrisk.i18n.i18n"
         }
       },
       "": {
@@ -103,6 +103,7 @@
             "settings": {
               "contextPath": "/BehavioralHealthRiskProfile",
               "variantManagement": "Page",
+              "defaultTemplateAnnotationPath": "com.sap.vocabularies.UI.v1.SelectionPresentationVariant#ALPDashboard",
               "navigation": {
                 "BehavioralHealthRiskProfile": {
                   "detail": {
@@ -114,8 +115,29 @@
                 "@com.sap.vocabularies.UI.v1.LineItem": {
                   "tableSettings": {
                     "type": "AnalyticalTable",
-                    "selectionMode": "None"
+                    "selectionMode": "None",
+                    "enableExport": true
                   }
+                },
+                "@com.sap.vocabularies.UI.v1.Chart#CostComplexityFrontier": {
+                  "chartSettings": {
+                    "defaultChartType": "bubble",
+                    "enableStableColors": true,
+                    "vizProperties": {
+                      "plotArea": {
+                        "dataPointSize": { "min": 32, "max": 64 }
+                      },
+                      "interaction": {
+                        "zoom": { "enablement": "enabled" }
+                      }
+                    }
+                  },
+                  "requestFilterFields": [
+                    "Year",
+                    "State",
+                    "ProviderType",
+                    "BHBurdenGroup"
+                  ]
                 }
               },
               "views": {
@@ -123,12 +145,12 @@
                   {
                     "primary": [
                       {
-                        "annotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant"
+                        "annotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#FrontierChart"
                       }
                     ],
                     "secondary": [
                       {
-                        "annotationPath": "com.sap.vocabularies.UI.v1.LineItem"
+                        "annotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#FrontierTable"
                       }
                     ],
                     "defaultPath": "both"

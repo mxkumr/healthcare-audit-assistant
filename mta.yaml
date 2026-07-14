@@ -66,8 +66,8 @@ modules:
       name: commedicare11costanalysis
       target-path: resources/
     - artifacts:
-      - commedicarebehavioralhealthrisk.zip
-      name: commedicarebehavioralhealthrisk
+      - commedicare13behavioralhelathrisk.zip
+      name: commedicare13behavioralhelathrisk
       target-path: resources/
 - name: commedicare11costanalysis
   type: html5
@@ -79,9 +79,9 @@ modules:
     - npm install
     - npm run build:cf
     supported-platforms: []
-- name: commedicarebehavioralhealthrisk
+- name: commedicare13behavioralhelathrisk
   type: html5
-  path: app/behavioral-health-risk
+  path: app/1.3behavioral-helath-risk
   build-parameters:
     build-result: dist
     builder: custom

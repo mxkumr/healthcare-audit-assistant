@@ -500,17 +500,17 @@ view BHBurdenMedianByGroup as
     count(p.Rndrng_NPI) as ProviderCount : Integer,
 
     median(
-      ( p.Bene_CC_BH_ADHD_OthCD_V1_Pct
-      + p.Bene_CC_BH_Alcohol_Drug_V1_Pct
-      + p.Bene_CC_BH_Tobacco_V1_Pct
-      + p.Bene_CC_BH_Alz_NonAlzdem_V2_Pct
-      + p.Bene_CC_BH_Anxiety_V1_Pct
-      + p.Bene_CC_BH_Bipolar_V1_Pct
-      + p.Bene_CC_BH_Mood_V2_Pct
-      + p.Bene_CC_BH_Depress_V1_Pct
-      + p.Bene_CC_BH_PD_V1_Pct
-      + p.Bene_CC_BH_PTSD_V1_Pct
-      + p.Bene_CC_BH_Schizo_OthPsy_V1_Pct ) / 11
+      ( coalesce(p.Bene_CC_BH_ADHD_OthCD_V1_Pct, 0)
+      + coalesce(p.Bene_CC_BH_Alcohol_Drug_V1_Pct, 0)
+      + coalesce(p.Bene_CC_BH_Tobacco_V1_Pct, 0)
+      + coalesce(p.Bene_CC_BH_Alz_NonAlzdem_V2_Pct, 0)
+      + coalesce(p.Bene_CC_BH_Anxiety_V1_Pct, 0)
+      + coalesce(p.Bene_CC_BH_Bipolar_V1_Pct, 0)
+      + coalesce(p.Bene_CC_BH_Mood_V2_Pct, 0)
+      + coalesce(p.Bene_CC_BH_Depress_V1_Pct, 0)
+      + coalesce(p.Bene_CC_BH_PD_V1_Pct, 0)
+      + coalesce(p.Bene_CC_BH_PTSD_V1_Pct, 0)
+      + coalesce(p.Bene_CC_BH_Schizo_OthPsy_V1_Pct, 0) ) / 11
     ) as MedianBHBurden : Decimal
   }
   group by
@@ -521,7 +521,7 @@ view BHBurdenMedianByGroup as
 view BehavioralHealthRiskProfile as
   select from ProviderSummary as p
   inner join BHBurdenMedianByGroup as m
-    on  m.Year        = p.Year
+    on  m.Year         = p.Year
     and m.State        = p.Rndrng_Prvdr_State_Abrvtn
     and m.ProviderType = p.Rndrng_Prvdr_Type {
 
@@ -529,12 +529,17 @@ view BehavioralHealthRiskProfile as
     key p.Rndrng_Prvdr_State_Abrvtn as State        : String,
     key p.Rndrng_Prvdr_Type         as ProviderType : String,
     key case
-          when ( ( p.Bene_CC_BH_ADHD_OthCD_V1_Pct + p.Bene_CC_BH_Alcohol_Drug_V1_Pct
-                 + p.Bene_CC_BH_Tobacco_V1_Pct + p.Bene_CC_BH_Alz_NonAlzdem_V2_Pct
-                 + p.Bene_CC_BH_Anxiety_V1_Pct + p.Bene_CC_BH_Bipolar_V1_Pct
-                 + p.Bene_CC_BH_Mood_V2_Pct + p.Bene_CC_BH_Depress_V1_Pct
-                 + p.Bene_CC_BH_PD_V1_Pct + p.Bene_CC_BH_PTSD_V1_Pct
-                 + p.Bene_CC_BH_Schizo_OthPsy_V1_Pct ) / 11 ) >= m.MedianBHBurden
+          when ( ( coalesce(p.Bene_CC_BH_ADHD_OthCD_V1_Pct, 0)
+                 + coalesce(p.Bene_CC_BH_Alcohol_Drug_V1_Pct, 0)
+                 + coalesce(p.Bene_CC_BH_Tobacco_V1_Pct, 0)
+                 + coalesce(p.Bene_CC_BH_Alz_NonAlzdem_V2_Pct, 0)
+                 + coalesce(p.Bene_CC_BH_Anxiety_V1_Pct, 0)
+                 + coalesce(p.Bene_CC_BH_Bipolar_V1_Pct, 0)
+                 + coalesce(p.Bene_CC_BH_Mood_V2_Pct, 0)
+                 + coalesce(p.Bene_CC_BH_Depress_V1_Pct, 0)
+                 + coalesce(p.Bene_CC_BH_PD_V1_Pct, 0)
+                 + coalesce(p.Bene_CC_BH_PTSD_V1_Pct, 0)
+                 + coalesce(p.Bene_CC_BH_Schizo_OthPsy_V1_Pct, 0) ) / 11 ) >= m.MedianBHBurden
             then 'B - High BH Burden'
             else 'A - Low BH Burden'
         end                          as BHBurdenGroup : String,
@@ -555,15 +560,25 @@ view BehavioralHealthRiskProfile as
   group by
     p.Year, p.Rndrng_Prvdr_State_Abrvtn, p.Rndrng_Prvdr_Type,
     case
-      when ( ( p.Bene_CC_BH_ADHD_OthCD_V1_Pct + p.Bene_CC_BH_Alcohol_Drug_V1_Pct
-             + p.Bene_CC_BH_Tobacco_V1_Pct + p.Bene_CC_BH_Alz_NonAlzdem_V2_Pct
-             + p.Bene_CC_BH_Anxiety_V1_Pct + p.Bene_CC_BH_Bipolar_V1_Pct
-             + p.Bene_CC_BH_Mood_V2_Pct + p.Bene_CC_BH_Depress_V1_Pct
-             + p.Bene_CC_BH_PD_V1_Pct + p.Bene_CC_BH_PTSD_V1_Pct
-             + p.Bene_CC_BH_Schizo_OthPsy_V1_Pct ) / 11 ) >= m.MedianBHBurden
+      when ( ( coalesce(p.Bene_CC_BH_ADHD_OthCD_V1_Pct, 0)
+             + coalesce(p.Bene_CC_BH_Alcohol_Drug_V1_Pct, 0)
+             + coalesce(p.Bene_CC_BH_Tobacco_V1_Pct, 0)
+             + coalesce(p.Bene_CC_BH_Alz_NonAlzdem_V2_Pct, 0)
+             + coalesce(p.Bene_CC_BH_Anxiety_V1_Pct, 0)
+             + coalesce(p.Bene_CC_BH_Bipolar_V1_Pct, 0)
+             + coalesce(p.Bene_CC_BH_Mood_V2_Pct, 0)
+             + coalesce(p.Bene_CC_BH_Depress_V1_Pct, 0)
+             + coalesce(p.Bene_CC_BH_PD_V1_Pct, 0)
+             + coalesce(p.Bene_CC_BH_PTSD_V1_Pct, 0)
+             + coalesce(p.Bene_CC_BH_Schizo_OthPsy_V1_Pct, 0) ) / 11 ) >= m.MedianBHBurden
       then 'B - High BH Burden'
       else 'A - Low BH Burden'
     end;
+
+annotate medicare.BehavioralHealthRiskProfile with @(
+  Analytics.dataCategory   : #CUBE,
+  Aggregation.ApplyDefault : true
+);
 // ─── Task 2 Views ────────────────────────────────────────────────────────────
 
 // Task 2.1 — 2-Axis Risk Matrix: Cost Classification × Utilization Profile
