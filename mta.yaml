@@ -326,7 +326,7 @@ build-parameters:
   before-all:
   - builder: custom
     commands:
-    - npm ci
+    - npm ci --include=dev
     - node scripts/ensure-mbt.js
     - node scripts/sanitize-csv-for-hana.js
     - node scripts/fix-html5-bootstrap.js
