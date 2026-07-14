@@ -22,3 +22,7 @@ using from './3.1risk-dynamics/annotations';
 using from './3.2place-of-service/annotations';
 
 using from './3.3credential-discrepancies/annotations';
+
+using from './audit-home/annotations';
+
+using from './task3-overview/annotations';
