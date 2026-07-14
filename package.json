@@ -14,7 +14,6 @@
     "mbt": "^1.2.49"
   },
   "scripts": {
-    "postinstall": "node scripts/ensure-mbt.js",
     "start": "npx cds-serve",
     "watch": "npx cds watch",
     "watch-1.1cost-analysis": "npx cds watch --open com.medicare.11costanalysis/index.html?sap-ui-xx-viewCache=false --livereload false",
