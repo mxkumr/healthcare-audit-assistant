@@ -239,6 +239,91 @@ No separate `.env` AI credentials needed for the Joule path.
 | White Fiori screen | See **White screen after login** below |
 | HTML5 app 404 | Confirm `html5-runtime` service bound to approuter |
 | Empty agent data | Check db-deployer logs: `cf logs healthcare-audit-assistant-db-deployer --recent` |
+| Internal Server Error in Fiori | See **Internal Server Error (500)** below |
+| db-deployer CSV load failed | Run `npm run sanitize-data` before build; see **HANA CSV deploy errors** below |
+
+### HANA CSV deploy errors
+
+SQLite accepts empty strings (`""`) and `$1,234.56` in numeric CMS columns; **HANA rejects them**. Typical db-deployer errors:
+
+| Error | Cause | Fix |
+|-------|-------|-----|
+| `cannot insert NULL: ID` | `ServiceDetails` had UUID key not in CSV | Fixed: composite key `Year+NPI+HCPCS+Place` |
+| `invalid number string ''` | Empty quoted fields in `ProviderSummary` numeric columns | `npm run sanitize-data` before build |
+
+The MTA build runs `node scripts/sanitize-csv-for-hana.js` automatically in `before-all`.
+
+After pulling fixes:
+
+```bash
+npm ci && npm install -g mbt && npm run build
+cf deploy mta_archives/archive.mtar --retries 1
+cf logs healthcare-audit-assistant-db-deployer --recent   # expect "Deployment finished successfully"
+```
+
+### Internal Server Error (500)
+
+The UI shell loads but data requests fail — the CAP **srv** or **HANA db-deployer** is the problem.
+
+**1. Find the failing request (browser DevTools → Network)**
+
+Look for red **500** on URLs like:
+- `/medicare/CostAnalysisV2?...`
+- `/medicare/CostAnalysisV2/$count?...`
+
+Copy the full URL — it shows which query failed (KPI, chart, or table).
+
+**2. Test the backend directly (BTP terminal)**
+
+```bash
+TOKEN=$(cf oauth-token | sed 's/bearer //')
+APP=https://btplearning-btpailearning-student15-healthcare-audit-assistant.cfapps.us10.hana.ondemand.com
+
+# Simple read — should return JSON rows, not 500
+curl -s -o /dev/null -w "%{http_code}\n" \
+  "$APP/medicare/CostAnalysisV2?\$top=1" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+| Result | Meaning |
+|--------|---------|
+| **200** | Backend OK — likely a complex `$apply` / KPI query; pull latest annotation fixes and redeploy |
+| **500** | Database or srv crash — check logs below |
+| **401** | Role assignment needed |
+
+**3. Check srv logs**
+
+```bash
+cf logs healthcare-audit-assistant-srv --recent
+```
+
+Look for SQL errors, `table not found`, HANA connection failures, or `$apply` translation errors.
+
+**4. Check db-deployer (most common on student HANA)**
+
+```bash
+cf logs healthcare-audit-assistant-db-deployer --recent
+```
+
+The deployer runs once at deploy time. If CSV load failed (disk quota, timeout), tables are empty/missing → all data queries return **500**.
+
+Redeploy to retry:
+
+```bash
+cf deploy mta_archives/archive.mtar --retries 1
+```
+
+**5. Confirm apps are running**
+
+```bash
+cf apps
+```
+
+| App | Expected state |
+|-----|----------------|
+| `healthcare-audit-assistant-srv` | **started** |
+| `healthcare-audit-assistant` | **started** |
+| `healthcare-audit-assistant-db-deployer` | **stopped** (normal after successful deploy) |
 
 ### White screen after login
 
