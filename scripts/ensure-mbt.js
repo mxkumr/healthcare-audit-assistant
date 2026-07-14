@@ -9,26 +9,65 @@ const root = path.join(__dirname, '..');
 const mbtPkgDir = path.join(root, 'node_modules', 'mbt');
 const binDir = path.join(mbtPkgDir, 'unpacked_bin');
 const binPath = path.join(binDir, process.platform === 'win32' ? 'mbt.exe' : 'mbt');
+const isMtaRoot = fs.existsSync(path.join(root, 'mta.yaml'));
+
+function isWrapperScript(filePath) {
+  try {
+    const resolved = fs.realpathSync(filePath);
+    if (resolved.includes(`${path.sep}mbt${path.sep}bin${path.sep}mbt`)) return true;
+    const head = fs.readFileSync(resolved, 'utf8', { start: 0, end: 40 });
+    return head.startsWith('#!') && head.includes('node');
+  } catch {
+    return true;
+  }
+}
 
 function findMbtOnPath() {
+  const candidates = [];
   try {
-    const resolved = execSync('command -v mbt', { encoding: 'utf8' }).trim();
-    if (resolved && fs.existsSync(resolved)) return resolved;
+    candidates.push(execSync('command -v mbt', { encoding: 'utf8' }).trim());
   } catch {
     // not on PATH
   }
+
+  const home = process.env.HOME || process.env.USERPROFILE || '';
+  if (home) {
+    candidates.push(
+      path.join(home, '.npm-global', 'bin', 'mbt'),
+      path.join(home, '.local', 'bin', 'mbt')
+    );
+  }
+  candidates.push('/usr/local/bin/mbt');
+
+  for (const candidate of candidates) {
+    if (!candidate || !fs.existsSync(candidate) || isWrapperScript(candidate)) continue;
+    return candidate;
+  }
   return null;
+}
+
+function installMbtPackage() {
+  try {
+    console.log('[ensure-mbt] installing mbt npm package...');
+    execSync('npm install mbt@^1.2.49 --no-save --ignore-scripts', {
+      cwd: root,
+      stdio: 'inherit'
+    });
+    return fs.existsSync(mbtPkgDir);
+  } catch (err) {
+    console.warn(`[ensure-mbt] npm install mbt failed: ${err.message}`);
+    return false;
+  }
 }
 
 function downloadMbt() {
   const installJs = path.join(mbtPkgDir, 'install.js');
   if (!fs.existsSync(installJs)) {
-    console.warn('[ensure-mbt] mbt package not installed — run npm ci first');
     return false;
   }
 
   try {
-    console.log('[ensure-mbt] downloading mbt binary via npm package install script...');
+    console.log('[ensure-mbt] downloading mbt binary...');
     execSync('node install.js cloud-mta-build-tool', {
       cwd: mbtPkgDir,
       stdio: 'inherit'
@@ -56,14 +95,25 @@ function linkFrom(source) {
   console.log(`[ensure-mbt] linked ${source} -> ${binPath}`);
 }
 
+function installGlobalMbt() {
+  try {
+    console.log('[ensure-mbt] installing global mbt...');
+    execSync('npm install -g mbt@^1.2.49', { stdio: 'inherit' });
+    return findMbtOnPath();
+  } catch (err) {
+    console.warn(`[ensure-mbt] global install failed: ${err.message}`);
+    return null;
+  }
+}
+
 function ensureBinary() {
-  if (!fs.existsSync(mbtPkgDir)) {
-    // e.g. gen/srv production install — mbt devDependency not present
+  if (fs.existsSync(binPath)) {
+    console.log('[ensure-mbt] mbt binary already present');
     return;
   }
 
-  if (fs.existsSync(binPath)) {
-    return;
+  if (!fs.existsSync(mbtPkgDir)) {
+    installMbtPackage();
   }
 
   if (downloadMbt()) {
@@ -71,15 +121,22 @@ function ensureBinary() {
     return;
   }
 
-  const source = findMbtOnPath();
+  let source = findMbtOnPath();
+  if (!source) {
+    source = installGlobalMbt();
+  }
   if (source) {
     linkFrom(source);
     return;
   }
 
+  if (!isMtaRoot) {
+    return;
+  }
+
   console.error(
     '[ensure-mbt] mbt binary missing at node_modules/mbt/unpacked_bin/mbt\n' +
-      '  Fix on BAS: npm rebuild mbt  OR  npm install -g mbt && npm run ensure-mbt'
+      '  BAS fix: npm install -g mbt && npm run ensure-mbt'
   );
   process.exit(1);
 }
