@@ -21,6 +21,7 @@
     "undeploy": "cf undeploy healthcare-audit-assistant --delete-services --delete-service-keys --delete-service-brokers",
     "build": "node scripts/ensure-mbt.js && rm -rf resources mta_archives && npx mbt build --mtar archive",
     "ensure-mbt": "node scripts/ensure-mbt.js",
+    "sanitize-data": "node scripts/sanitize-csv-for-hana.js",
     "deploy": "cf deploy mta_archives/archive.mtar --retries 1",
     "watch-2.1provider-classification": "cds watch --open com.medicare.21providerclassification/index.html?sap-ui-xx-viewCache=false --livereload false",
     "watch-2.2aspecialty-profiling": "cds watch --open com.medicare.22aspecialtyprofiling/index.html?sap-ui-xx-viewCache=false --livereload false",

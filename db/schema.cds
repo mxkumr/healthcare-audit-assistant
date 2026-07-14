@@ -94,9 +94,10 @@ entity ProviderSummary {
 }
 
 entity ServiceDetails {
-  key ID                                : UUID;
-  Year                                  : String;
-  Rndrng_NPI                            : String;
+  key Year                                  : String;
+  key Rndrng_NPI                            : String;
+  key HCPCS_Cd                              : String;
+  key Place_Of_Srvc                         : String;
   Rndrng_Prvdr_Last_Org_Name            : String;
   Rndrng_Prvdr_First_Name               : String;
   Rndrng_Prvdr_MI                       : String;
@@ -113,10 +114,8 @@ entity ServiceDetails {
   Rndrng_Prvdr_Cntry                    : String;
   Rndrng_Prvdr_Type                     : String;
   Rndrng_Prvdr_Mdcr_Prtcptg_Ind         : String;
-  HCPCS_Cd                              : String;
   HCPCS_Desc                            : String;
   HCPCS_Drug_Ind                        : String;
-  Place_Of_Srvc                         : String;
   Tot_Benes                             : Integer;
   Tot_Srvcs                             : Decimal;
   Tot_Bene_Day_Srvcs                    : Decimal;

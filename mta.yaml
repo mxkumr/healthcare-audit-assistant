@@ -159,4 +159,5 @@ build-parameters:
   - builder: custom
     commands:
     - npm ci
+    - node scripts/sanitize-csv-for-hana.js
     - npx cds build --production
