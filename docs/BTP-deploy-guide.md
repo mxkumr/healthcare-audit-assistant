@@ -114,13 +114,16 @@ Entitlements for your subaccount:
 cd ~/projects/healthcare-audit-assistant
 
 npm ci
+npm install -g mbt          # once per BAS workspace — MTA build needs this binary
+npm run build               # runs ensure-mbt, then mbt build
+```
 
-# mbt binary fix (if needed on BAS)
+If `ensure-mbt` fails, link manually:
+
+```bash
 mkdir -p node_modules/mbt/unpacked_bin
 ln -sf "$(which mbt)" node_modules/mbt/unpacked_bin/mbt
-
-rm -rf resources mta_archives
-mbt build --mtar archive
+npm run build
 ```
 
 Success:
@@ -230,7 +233,7 @@ No separate `.env` AI credentials needed for the Joule path.
 | Issue | Fix |
 |-------|-----|
 | `rimraf: not found` | Use `rm -rf resources mta_archives && mbt build` |
-| `mbt/unpacked_bin/mbt: not found` | Global mbt + symlink (see Part E) |
+| `mbt/unpacked_bin/mbt: not found` | `npm install -g mbt` then `npm run ensure-mbt` or manual symlink (see Part E) |
 | `Not logged in` | `cf login` |
 | 401 on `/medicare` | Assign admin or audit_analyst role |
 | White Fiori screen | See **White screen after login** below |
@@ -336,7 +339,7 @@ npm ci && cds watch
 # → http://localhost:4004/launchpage.html#Shell-home
 
 # Build
-npm ci && mbt build --mtar archive
+npm ci && npm install -g mbt && npm run build
 
 # Deploy
 cf login && cf deploy mta_archives/archive.mtar --retries 1
