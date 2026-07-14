@@ -126,12 +126,12 @@
         "model": "mainModel",
         "template": "sap.ovp.cards.v4.charts.analytical",
         "settings": {
-          "title": "Risk Score Distribution",
-          "subTitle": "Provider count by risk band",
-          "entitySet": "RiskScoreDistribution",
+          "title": "Cost-Complexity Frontier",
+          "subTitle": "Risk score vs. paid per beneficiary by BH group",
+          "entitySet": "BehavioralHealthRiskProfile",
           "addODataSelect": true,
-          "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart",
-          "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant"
+          "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart#CostComplexityFrontier",
+          "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#FrontierChart"
         }
       }
     },

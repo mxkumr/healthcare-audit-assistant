@@ -15,6 +15,8 @@ using from './risk-analysis/annotations';
 
 using from './task2-overview/annotations';
 
+using from './1.3behavioral-helath-risk/annotations';
+
 using from './3.2place-of-service/annotations';
 
 using from './3.3credential-discrepancies/annotations';
