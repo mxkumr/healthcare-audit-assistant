@@ -14,7 +14,7 @@ builder:
       afterTask: generateCachebusterInfo
       configuration:
         archiveName: commedicare13behavioralhelathrisk
-        relativePaths: true
+        relativePaths: false
         additionalFiles:
           - xs-app.json
 resources:

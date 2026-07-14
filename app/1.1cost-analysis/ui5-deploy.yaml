@@ -17,6 +17,6 @@ builder:
       afterTask: generateCachebusterInfo
       configuration:
         archiveName: commedicare11costanalysis
-        relativePaths: true
+        relativePaths: false
         additionalFiles:
           - xs-app.json
