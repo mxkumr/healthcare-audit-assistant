@@ -40,9 +40,9 @@ annotate service.CostAnalysisV2 with @(
     $Type     : 'UI.ChartDefinitionType',
     Title     : 'Rejected Over-Charges by State',
     ChartType : #Bar,
-    Dimensions: [State],
+    Dimensions: [StateName],
     DimensionAttributes: [
-      { $Type: 'UI.ChartDimensionAttributeType', Dimension: State, Role: #Category }
+      { $Type: 'UI.ChartDimensionAttributeType', Dimension: StateName, Role: #Category }
     ],
     Measures  : [RejectedCharges],
     MeasureAttributes: [
@@ -77,13 +77,13 @@ annotate service.CostAnalysisV2 with @(
   // KPI 2: state with highest aggregate TotalPaid (top-1 anchor via PresentationVariant)
   UI.DataPoint #TopSpendingState: {
     $Type      : 'UI.DataPointType',
-    Value      : State,
+    Value      : StateName,
     Title      : 'Highest Expenditure Target',
     Description: 'The state with the greatest aggregate Medicare disbursement in the current filter context.'
   },
   UI.PresentationVariant #TopSpendingState: {
     $Type         : 'UI.PresentationVariantType',
-    GroupBy       : [State],
+    GroupBy       : [StateName],
     SortOrder     : [{ Property: TotalPaid, Descending: true }],
     MaxItems      : 1,
     Visualizations: ['@UI.DataPoint#TopSpendingState']
@@ -304,6 +304,14 @@ annotate service.CostAnalysisV2 with @(
   UI.SelectionPresentationVariant #ALPDashboard: {
     $Type              : 'UI.SelectionPresentationVariantType',
     Text               : 'Cost Analysis Dashboard',
+    SelectionVariant   : {
+      $Type      : 'UI.SelectionVariantType',
+      Text       : '2022 baseline',
+      SelectOptions: [{
+        PropertyName: Year,
+        Ranges      : [{ Sign: #I, Option: #EQ, Low: '2022' }]
+      }]
+    },
     PresentationVariant: ![@UI.PresentationVariant#V2Chart]
   }
 );
