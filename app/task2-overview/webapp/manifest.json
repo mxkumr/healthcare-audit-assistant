@@ -104,11 +104,12 @@
         },
         "settings": {
           "title": "Providers per Efficiency Class",
-          "subTitle": "Distribution by cost-efficiency tier",
+          "subTitle": "Distribution by cost-efficiency tier — open 2.1 for risk matrix",
           "entitySet": "ProviderCostEfficiency",
           "addODataSelect": true,
-          "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart",
-          "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#EfficiencyOVP"
+          "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart#EfficiencyOVP",
+          "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#EfficiencyOVP",
+          "identificationAnnotationPath": "com.sap.vocabularies.UI.v1.Identification#OVPNavEfficiency"
         }
       },
       "card01_specialty": {
@@ -120,11 +121,12 @@
         },
         "settings": {
           "title": "Cost Peer Deviation by Specialty",
-          "subTitle": "Worst outlier vs national peer baseline",
+          "subTitle": "Worst outlier vs national peer baseline — open 2.2a",
           "entitySet": "SpecialtyPeerDeviations",
           "addODataSelect": true,
           "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart#MacroSpecialtyRisk",
-          "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#MacroSpecialtyChart"
+          "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#MacroSpecialtyChart",
+          "identificationAnnotationPath": "com.sap.vocabularies.UI.v1.Identification#OVPNavSpecialty"
         }
       },
       "card02_organization": {
@@ -136,11 +138,12 @@
         },
         "settings": {
           "title": "Macro Cost by Entity Class",
-          "subTitle": "Corporate networks vs individual clinicians",
+          "subTitle": "Corporate networks vs individual clinicians — open 2.2b",
           "entitySet": "EntityTypeComparisons",
           "addODataSelect": true,
           "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart#MacroCostIntensity",
-          "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#EntityCostChart"
+          "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#EntityCostChart",
+          "identificationAnnotationPath": "com.sap.vocabularies.UI.v1.Identification#OVPNavEntityType"
         }
       }
     },
