@@ -1,0 +1,720 @@
+commit 021c67804b8826b149a55a9897fc845621f71eb2
+Author: internetmonstr <manishkumar.official17@gmail.com>
+AuthorDate: 2026-06-10T13:46:11+02:00
+Committer: internetmonstr <manishkumar.official17@gmail.com>
+CommitDate: 2026-06-10T13:46:11+02:00
+Parents: 789d382ae35b45470ee9c70b0fbd68378acb6958
+Branch-refs: HEAD -> feature/Task2, origin/feature/Task2
+
+    feat: Add ProviderPerformanceMetrics view for comprehensive analysis
+
+- Introduced new view `ProviderPerformanceMetrics` to evaluate provider performance across various dimensions, including patient outcomes and service utilization.
+- Updated `medicare-service.cds` to expose `ProviderPerformanceMetrics` as a projection.
+- Enhanced `annotations.cds` with UI annotations for better visualization of performance metrics.
+- Modified `package.json` and `package-lock.json` to include dependencies for the new performance metrics app.
+
+---
+commit 789d382ae35b45470ee9c70b0fbd68378acb6958
+Author: internetmonstr <manishkumar.official17@gmail.com>
+AuthorDate: 2026-06-10T13:16:35+02:00
+Committer: internetmonstr <manishkumar.official17@gmail.com>
+CommitDate: 2026-06-10T13:16:35+02:00
+Parents: 36c9770059fb3a06bee8d0fb5c6d849469297b85
+Branch-refs: 
+
+    feat: Add ProviderCostEfficiency view for enhanced analytics
+
+- Introduced new view `ProviderCostEfficiency` to analyze provider performance metrics, including cost per beneficiary and overall efficiency.
+- Updated `medicare-service.cds` to expose `ProviderCostEfficiency` as a projection.
+- Enhanced `annotations.cds` with UI annotations for improved visualization of cost efficiency data.
+- Modified `package.json` and `package-lock.json` to include dependencies for the new cost efficiency app.
+
+---
+commit 36c9770059fb3a06bee8d0fb5c6d849469297b85
+Author: internetmonstr <manishkumar.official17@gmail.com>
+AuthorDate: 2026-06-10T13:00:32+02:00
+Committer: internetmonstr <manishkumar.official17@gmail.com>
+CommitDate: 2026-06-10T13:00:32+02:00
+Parents: a240956dca35ca711a6d21df701ef44581f95085
+Branch-refs: 
+
+    feat: Introduce OrganizationClassification for provider segmentation
+
+- Added new view `OrganizationClassification` to analyze provider data by entity type (Individual vs Organization), including metrics such as average risk score and cost per beneficiary.
+- Updated `annotations.cds` with UI annotations for enhanced visualization of organization classification data.
+- Exposed `OrganizationClassification` as a projection in `medicare-service.cds`.
+- Modified `package.json` and `package-lock.json` to include dependencies for the new organization classification app.
+- Enhanced `services.cds` to incorporate organization classification in the service layer.
+
+---
+commit a240956dca35ca711a6d21df701ef44581f95085
+Author: internetmonstr <manishkumar.official17@gmail.com>
+AuthorDate: 2026-06-10T12:26:34+02:00
+Committer: internetmonstr <manishkumar.official17@gmail.com>
+CommitDate: 2026-06-10T12:26:34+02:00
+Parents: d2a1404440602dad3c54a621fdfa976df5163cae
+Branch-refs: 
+
+    feat: Implement SpecialtyRiskProfile for specialty-level classification
+
+- Added new view `SpecialtyRiskProfile` to aggregate provider data by specialty, including metrics such as average risk score and complexity tier.
+- Updated `medicare-service.cds` to expose `SpecialtyRiskProfile` as a projection.
+- Enhanced `annotations.cds` with UI annotations for better visualization of specialty data.
+- Modified `package.json` and `package-lock.json` to include dependencies for the new specialty classification app.
+
+---
+commit d2a1404440602dad3c54a621fdfa976df5163cae
+Author: internetmonstr <manishkumar.official17@gmail.com>
+AuthorDate: 2026-06-10T12:05:11+02:00
+Committer: internetmonstr <manishkumar.official17@gmail.com>
+CommitDate: 2026-06-10T12:05:11+02:00
+Parents: 091b0d4796659e9cbfe2adda23fe79e7c0ebaeb6
+Branch-refs: 
+
+    refactor: Enhance RuralUrbanDistribution view for clarity and accuracy
+
+- Updated mapping of the CMS Rural Indicator to include 'Super Rural' classification.
+- Clarified logic for determining 'Unknown' status based on GeoReference matches.
+- Improved comments to reflect the changes and rationale behind the adjustments.
+
+---
+commit 091b0d4796659e9cbfe2adda23fe79e7c0ebaeb6
+Author: internetmonstr <manishkumar.official17@gmail.com>
+AuthorDate: 2026-06-10T11:46:14+02:00
+Committer: internetmonstr <manishkumar.official17@gmail.com>
+CommitDate: 2026-06-10T11:46:14+02:00
+Parents: 98ac86dbc2f3b0ddc08d28e9b727995c5dc22217 ecd15bec0b64612e29b46269fa82d8bc1bf253fb
+Branch-refs: 
+
+    Merge branch 'feature/Task1' into feature/Task2
+
+# Conflicts:
+#	app/cost-analysis/annotations.cds
+#	app/services.cds
+#	db/schema.cds
+#	package-lock.json
+#	package.json
+#	srv/medicare-service.cds
+
+---
+commit 98ac86dbc2f3b0ddc08d28e9b727995c5dc22217
+Author: internetmonstr <manishkumar.official17@gmail.com>
+AuthorDate: 2026-06-10T11:37:40+02:00
+Committer: internetmonstr <manishkumar.official17@gmail.com>
+CommitDate: 2026-06-10T11:37:40+02:00
+Parents: 27362e027b88a69ed779246c7b723981bee9de19
+Branch-refs: 
+
+    chore: normalize readme.md to detailed project doc (fix case-duplicate before merge)
+
+
+---
+commit 25e150b7df870a1d8bde462e91d6ae5a6a28e256
+Author: internetmonstr <manishkumar.official17@gmail.com>
+AuthorDate: 2026-06-10T11:35:06+02:00
+Committer: internetmonstr <manishkumar.official17@gmail.com>
+CommitDate: 2026-06-10T11:35:06+02:00
+Parents: 27362e027b88a69ed779246c7b723981bee9de19 f1643fa37f1fb295137a2e719cd71facc0f20c18
+Branch-refs: refs/stash
+
+    On feature/Task2: Task2 README stub regression (pre-merge)
+
+
+---
+commit f1643fa37f1fb295137a2e719cd71facc0f20c18
+Author: internetmonstr <manishkumar.official17@gmail.com>
+AuthorDate: 2026-06-10T11:35:06+02:00
+Committer: internetmonstr <manishkumar.official17@gmail.com>
+CommitDate: 2026-06-10T11:35:06+02:00
+Parents: 27362e027b88a69ed779246c7b723981bee9de19
+Branch-refs: 
+
+    index on feature/Task2: 27362e0 feat: Added Fiori UI for Task 2 providerclassification
+
+
+---
+commit 27362e027b88a69ed779246c7b723981bee9de19
+Author: Manish Kumar Bala Kumar <maba00033@stud.uni-saarland.de>
+AuthorDate: 2026-06-10T09:30:30+00:00
+Committer: Manish Kumar Bala Kumar <maba00033@stud.uni-saarland.de>
+CommitDate: 2026-06-10T09:30:30+00:00
+Parents: 51022f007795cc09b1441427c43bfd31a6038f5c
+Branch-refs: 
+
+    feat: Added Fiori UI for Task 2 providerclassification
+
+
+---
+commit 51022f007795cc09b1441427c43bfd31a6038f5c
+Author: internetmonstr <manishkumar.official17@gmail.com>
+AuthorDate: 2026-06-10T11:20:58+02:00
+Committer: internetmonstr <manishkumar.official17@gmail.com>
+CommitDate: 2026-06-10T11:20:58+02:00
+Parents: 12ede99ed40a7dcf6e80a2b74fa0854503665c72
+Branch-refs: 
+
+    refactor: Update CDS annotations for ProviderCostEfficiency
+
+- Updated annotations in `annotations.cds` for improved chart definitions and measures.
+- Enhanced `schema.cds` to include a new ProviderCount measure and refined CostPerBeneficiary calculation.
+- Added aggregation metadata in `medicare-service.cds` to support advanced analytics for ProviderCostEfficiency.
+
+---
+commit 6a626c06c7abd190c549a3346893d7a3af331bd1
+Author: Manish Kumar B <69885981+mxkumr@users.noreply.github.com>
+AuthorDate: 2026-06-10T11:09:55+02:00
+Committer: GitHub <noreply@github.com>
+CommitDate: 2026-06-10T11:09:55+02:00
+Parents: 356c661e26de9f978e12400eedb928f51d26f9ec ecd15bec0b64612e29b46269fa82d8bc1bf253fb
+Branch-refs: origin/dev
+
+    Merge pull request #10 from mxkumr/feature/Task1
+
+Task 1 completion Feature/task1
+
+Medicare Analytics Dashboard
+Implemented Components
+1. CDS Analytical Views (db/schema.cds)
+CostByStateProviderType
+Provides aggregated cost analysis by:
+
+State
+Provider Type
+Features:
+
+Total Medicare payments grouped by state and provider category.
+Supports analytical reporting and visualization.
+RuralUrbanDistribution
+Analyzes cost disparities using geographical classifications.
+
+Features:
+
+Comparison between Rural and Urban healthcare costs.
+Geo-based analytical insights.
+Suitable for donut and distribution charts.
+RiskScoreDistribution
+Provides a risk-based cost distribution model.
+
+Features:
+
+Histogram-style risk band analysis.
+Categorizes beneficiaries into risk groups.
+Supports trend and risk assessment reporting.
+2. OData Service (srv/medicare-service.cds)
+All analytical views are exposed through OData with analytical capabilities enabled.
+
+Supported Features
+@Aggregation.ApplySupported
+Custom Aggregates
+@Analytics.Dimension
+@Analytics.Measure
+These annotations enable:
+
+Fiori Elements Analytical List Pages (ALP)
+Aggregations and drill-down capabilities
+Analytical charts and KPI visualizations
+3. Fiori Elements Applications
+Application	Purpose
+cost-analysis	Analytical List Page (ALP) featuring Total Paid by State bar chart, KPI cards, visual filters, and analytical table
+rural-analysis	Rural vs Urban comparison with donut chart and analytical list report
+risk-analysis	Risk band distribution using column chart and analytical list report
+task1-overview	Overview Page (OVP) containing three analytical cards for Cost, Rural/Urban, and Risk analytics
+Dashboard Overview
+Cost Analysis
+Bar chart displaying Total Medicare Payments by State
+KPI indicators for cost monitoring
+Visual filters for interactive analysis
+Analytical table with drill-down support
+Rural vs Urban Analysis
+Donut chart comparing Rural and Urban costs
+Distribution analysis across geographical classifications
+Interactive analytical reporting
+Risk Score Analysis
+Column chart representing risk score bands
+Beneficiary distribution by risk category
+Cost trend analysis across risk groups
+Overview Page (OVP)
+The Overview Page consolidates:
+
+Cost Analytics Card
+Rural vs Urban Distribution Card
+Risk Score Distribution Card
+Providing a single-entry dashboard for Medicare analytics insights.
+---
+commit ecd15bec0b64612e29b46269fa82d8bc1bf253fb
+Author: internetmonstr <manishkumar.official17@gmail.com>
+AuthorDate: 2026-06-09T13:13:41+02:00
+Committer: internetmonstr <manishkumar.official17@gmail.com>
+CommitDate: 2026-06-09T13:13:41+02:00
+Parents: bbfe69c9f224225a62b75214a2231d4bb80af5ca c90a7e9adb6fabf4fb58e8cd4135a8b80fdb4133
+Branch-refs: origin/feature/Task1, feature/Task1
+
+    Merge branch 'feature/Task1' of https://github.com/mxkumr/healthcare-audit-assistant into feature/Task1
+
+
+---
+commit bbfe69c9f224225a62b75214a2231d4bb80af5ca
+Author: internetmonstr <manishkumar.official17@gmail.com>
+AuthorDate: 2026-06-09T13:06:32+02:00
+Committer: internetmonstr <manishkumar.official17@gmail.com>
+CommitDate: 2026-06-09T13:06:32+02:00
+Parents: c236af8a9d584e27e7837139be619f7d06c68c99
+Branch-refs: 
+
+    Refactor RuralUrbanDistribution view and enhance cost-analysis app
+
+- Removed duplicate entry for risk-analysis in package.json
+- Added PaidPerBene metric to RuralUrbanDistribution view for better cost analysis
+- Updated chart type to Donut for improved visualization of Total Paid by Rural/Urban
+- Enhanced Medicare service annotations to include PaidPerBene for analytics
+
+---
+commit c90a7e9adb6fabf4fb58e8cd4135a8b80fdb4133
+Author: Manish Kumar Bala Kumar <maba00033@stud.uni-saarland.de>
+AuthorDate: 2026-06-09T10:46:52+00:00
+Committer: Manish Kumar Bala Kumar <maba00033@stud.uni-saarland.de>
+CommitDate: 2026-06-09T10:46:52+00:00
+Parents: c236af8a9d584e27e7837139be619f7d06c68c99
+Branch-refs: 
+
+    chore: removed duplicate riskanalysis in package.json
+
+
+---
+commit c236af8a9d584e27e7837139be619f7d06c68c99
+Author: Manish Kumar Bala Kumar <maba00033@stud.uni-saarland.de>
+AuthorDate: 2026-06-09T10:33:11+00:00
+Committer: Manish Kumar Bala Kumar <maba00033@stud.uni-saarland.de>
+CommitDate: 2026-06-09T10:33:11+00:00
+Parents: 8b1c1cce005082f232ffbd14b24d284ae7693597
+Branch-refs: 
+
+    Added frontend for the riskanalysis
+
+
+---
+commit 8b1c1cce005082f232ffbd14b24d284ae7693597
+Author: Manish Kumar Bala Kumar <maba00033@stud.uni-saarland.de>
+AuthorDate: 2026-06-09T10:27:26+00:00
+Committer: Manish Kumar Bala Kumar <maba00033@stud.uni-saarland.de>
+CommitDate: 2026-06-09T10:27:26+00:00
+Parents: f73471a5c309c7dbfe5472f6e8022e9d31e367dc
+Branch-refs: 
+
+    Added Individual analytical page for RuralUrban Data
+
+
+---
+commit 12ede99ed40a7dcf6e80a2b74fa0854503665c72
+Author: Anushka Choudhary <anch00011@stud.uni-saarland.de>
+AuthorDate: 2026-06-09T10:17:41+00:00
+Committer: Anushka Choudhary <anch00011@stud.uni-saarland.de>
+CommitDate: 2026-06-09T10:17:41+00:00
+Parents: 28028c21c09dca342aef04543758129b5f466675
+Branch-refs: 
+
+    feat: Task 2 - Classification Tool complete
+
+- Added ProviderCostEfficiency view with 3 classifications:
+  1. Cost Efficiency: Highly Efficient/Efficient/Average/Inefficient/Outlier
+     based on cost per beneficiary thresholds
+  2. Risk Profile: Low/Moderate/High/Very High Risk
+     based on Bene_Avg_Risk_Scre
+  3. Utilization: Low/Moderate/High
+     based on services per beneficiary ratio
+- Added Fiori annotations with chart and selection filters
+
+---
+commit f73471a5c309c7dbfe5472f6e8022e9d31e367dc
+Author: Manish Kumar Bala Kumar <maba00033@stud.uni-saarland.de>
+AuthorDate: 2026-06-09T10:13:04+00:00
+Committer: Manish Kumar Bala Kumar <maba00033@stud.uni-saarland.de>
+CommitDate: 2026-06-09T10:13:04+00:00
+Parents: f8a0b8697508c7e1e4b7fa9abe178a22e4372f7f
+Branch-refs: 
+
+    Fixed the annotation, card nested loop. Cards are displayed perfectly and change the card template to v4 to support Odata.
+
+
+---
+commit f8a0b8697508c7e1e4b7fa9abe178a22e4372f7f
+Author: Manish Kumar Bala Kumar <maba00033@stud.uni-saarland.de>
+AuthorDate: 2026-06-09T09:59:45+00:00
+Committer: Manish Kumar Bala Kumar <maba00033@stud.uni-saarland.de>
+CommitDate: 2026-06-09T09:59:45+00:00
+Parents: 6e4e0c6723e5ad7f02567daf9871451989cbf188
+Branch-refs: 
+
+    I have added OVP but the blank screen is back
+
+
+---
+commit 6e4e0c6723e5ad7f02567daf9871451989cbf188
+Author: internetmonstr <manishkumar.official17@gmail.com>
+AuthorDate: 2026-06-09T11:43:58+02:00
+Committer: internetmonstr <manishkumar.official17@gmail.com>
+CommitDate: 2026-06-09T11:43:58+02:00
+Parents: 0102bd90d71c4830e11b2fb03d5e825e2d8cfedd
+Branch-refs: 
+
+    feat: fine grained and annotated the task 1 datas Refactor data models and enhance visualizations for healthcare analytics
+
+- Updated README to reflect project structure and next steps
+- Modified RuralUrbanDistribution view to simplify Rural/Urban categorization and improve clarity
+- Enhanced RiskScoreDistribution view to categorize providers into risk bands for better analysis
+- Added aggregation annotations for both RuralUrbanDistribution and RiskScoreDistribution in the Medicare service
+- Improved UI annotations for better data presentation in the cost-analysis app
+
+---
+commit 0102bd90d71c4830e11b2fb03d5e825e2d8cfedd
+Author: internetmonstr <manishkumar.official17@gmail.com>
+AuthorDate: 2026-06-09T11:07:01+02:00
+Committer: internetmonstr <manishkumar.official17@gmail.com>
+CommitDate: 2026-06-09T11:07:01+02:00
+Parents: 28028c21c09dca342aef04543758129b5f466675
+Branch-refs: 
+
+    feat: Enhance cost-analysis app with KPIs and visual filters
+
+- Updated README to provide a project overview and next steps
+- Added UI annotations for CostByStateProviderType, including object page headers, line items, and KPIs for Total Paid and Total Beneficiaries
+- Implemented visual filters for State and Provider Type in the manifest
+- Refined aggregation annotations in the Medicare service for improved data handling
+
+---
+commit e6fa66eaba9fabaa382150094bc0d25cf0a66077
+Author: internetmonstr <manishkumar.official17@gmail.com>
+AuthorDate: 2026-06-08T23:54:25+02:00
+Committer: internetmonstr <manishkumar.official17@gmail.com>
+CommitDate: 2026-06-08T23:54:25+02:00
+Parents: a68b67b79a142917b45bebe9ab5ba9a1038aea00
+Branch-refs: origin/feature/frontend, feature/frontend
+
+    chore: Revise README and update RuralUrbanDistribution view
+
+- Simplified README to focus on project structure and next steps.
+- Updated RuralUrbanDistribution view to handle null geo values by coalescing them into default categories for compliance with OData V4 requirements.
+
+---
+commit a68b67b79a142917b45bebe9ab5ba9a1038aea00
+Author: internetmonstr <manishkumar.official17@gmail.com>
+AuthorDate: 2026-06-08T23:39:08+02:00
+Committer: internetmonstr <manishkumar.official17@gmail.com>
+CommitDate: 2026-06-08T23:39:08+02:00
+Parents: 28028c21c09dca342aef04543758129b5f466675
+Branch-refs: 
+
+    refactor: Update README and enhance CDS annotations
+
+- Revised README to provide a clearer project introduction and structure.
+- Added UI presentation variant annotations for RuralUrbanDistribution in annotations.cds.
+- Updated MedicareService to clarify analytical capabilities and ensure UI annotations are defined in the app layer.
+
+---
+commit 5442e2778f4c58494c136f19cd12304b6f959984
+Author: internetmonstr <manishkumar.official17@gmail.com>
+AuthorDate: 2026-06-08T23:09:18+02:00
+Committer: internetmonstr <manishkumar.official17@gmail.com>
+CommitDate: 2026-06-08T23:09:18+02:00
+Parents: e329f97459d16b925a3d411116ef79415803878d
+Branch-refs: origin/feature/btp-foundation, feature/btp-foundation
+
+    feat: add SQLite configuration to package.json for data handling
+
+
+---
+commit 28028c21c09dca342aef04543758129b5f466675
+Author: Anushka Choudhary <anch00011@stud.uni-saarland.de>
+AuthorDate: 2026-06-08T20:51:25+00:00
+Committer: Anushka Choudhary <anch00011@stud.uni-saarland.de>
+CommitDate: 2026-06-08T20:51:25+00:00
+Parents: 6f9239f8069fbdd6bbda48d37906951017441d1d
+Branch-refs: origin/feature/cap-data-models, feature/cap-data-models
+
+    feat: Task 1 - Data Visualization complete
+
+- Added CostByStateProviderType view with aggregation annotations
+- Added RuralUrbanDistribution view with chart annotations
+- Added RiskScoreDistribution view with beneficiary metrics
+- Generated Fiori Analytical List Page for cost-analysis app
+- Added sample CSV data for testing
+- Fixed CDS aggregation type annotations
+
+---
+commit 356c661e26de9f978e12400eedb928f51d26f9ec
+Author: Manish Kumar B <69885981+mxkumr@users.noreply.github.com>
+AuthorDate: 2026-06-08T22:03:55+02:00
+Committer: GitHub <noreply@github.com>
+CommitDate: 2026-06-08T22:03:55+02:00
+Parents: ad211292c2f5d9def834d6b39a86d65ae6aebd9f 6f9239f8069fbdd6bbda48d37906951017441d1d
+Branch-refs: 
+
+    Merge pull request #7 from mxkumr/feature/cap-data-models
+
+feat: add Medicare CDS schema, OData V4 service, seed and  data cleaned dataset
+---
+commit 6f9239f8069fbdd6bbda48d37906951017441d1d
+Author: Manish Kumar B <69885981+mxkumr@users.noreply.github.com>
+AuthorDate: 2026-06-08T16:53:37+02:00
+Committer: GitHub <noreply@github.com>
+CommitDate: 2026-06-08T16:53:37+02:00
+Parents: 06f322ac2c064768a8250ee7eb536c1530eb19fe 20eada2074ef17ea0335c2ff124c8bc4a2c55429
+Branch-refs: 
+
+    Merge pull request #8 from mxkumr/feature/cleandataset
+
+fix: stabilize Medicare CAP foundation for SAP BTP deployment
+---
+commit e329f97459d16b925a3d411116ef79415803878d
+Author: Manish Kumar Bala Kumar <maba00033@stud.uni-saarland.de>
+AuthorDate: 2026-06-08T13:25:38+00:00
+Committer: Manish Kumar Bala Kumar <maba00033@stud.uni-saarland.de>
+CommitDate: 2026-06-08T13:25:38+00:00
+Parents: 65628e8307123eb2a8df660a4a0948857850576e
+Branch-refs: 
+
+    Used SAP UI generate to create flat views
+
+
+---
+commit 65628e8307123eb2a8df660a4a0948857850576e
+Author: internetmonstr <manishkumar.official17@gmail.com>
+AuthorDate: 2026-06-08T15:14:52+02:00
+Committer: internetmonstr <manishkumar.official17@gmail.com>
+CommitDate: 2026-06-08T15:14:52+02:00
+Parents: 9ad71272ce1086746ef5b2bbf39f2c03a97e15d9
+Branch-refs: 
+
+    refactor: enhance Medicare data visualization with enriched provider views
+
+Updated the task1-visualization.cds file to introduce two analytical entities: ProviderAnalytics for flat data aggregation and pre-aggregated convenience views (CostByState, CostByProviderType, etc.) for simplified reporting. Improved the structure and clarity of the code, ensuring better integration with the Fiori Elements dashboard and AI tools.
+
+---
+commit 9ad71272ce1086746ef5b2bbf39f2c03a97e15d9
+Author: internetmonstr <manishkumar.official17@gmail.com>
+AuthorDate: 2026-06-08T14:59:13+02:00
+Committer: internetmonstr <manishkumar.official17@gmail.com>
+CommitDate: 2026-06-08T14:59:13+02:00
+Parents: 20eada2074ef17ea0335c2ff124c8bc4a2c55429
+Branch-refs: 
+
+    chore: expand README and enhance Medicare service definitions
+
+Enhanced the Medicare service definitions by adding a redirection target for the ProviderSummary entity, ensuring better integration with the overall application architecture.
+
+---
+commit 20eada2074ef17ea0335c2ff124c8bc4a2c55429
+Author: internetmonstr <manishkumar.official17@gmail.com>
+AuthorDate: 2026-06-08T10:47:44+02:00
+Committer: internetmonstr <manishkumar.official17@gmail.com>
+CommitDate: 2026-06-08T10:47:44+02:00
+Parents: 06f322ac2c064768a8250ee7eb536c1530eb19fe
+Branch-refs: 
+
+    fix: stabilize Medicare CAP foundation for SAP BTP deployment
+
+Prepare the healthcare-audit-assistant data layer and CDS model so the
+project can be built, deployed, and extended on SAP BTP (CAP + HANA +
+XSUAA via mta.yaml).
+
+Data fixes:
+- Replace invalid Geo_Reference source files (xlsx/semicolon CSV mix) with
+  a single CAP-loadable medicare-GeoReference.csv covering 2019–2023
+  (214,806 rows: Year, ZipCode, State, Carrier, Locality, RuralInd)
+- Remove UTF-8 BOM from medicare-ServiceDetails.csv so Rndrng_NPI maps
+  correctly to the CDS entity
+- Remove leftover bookshop/currency sample CSVs from the CAP template
+
+CDS model:
+- Add composite key Year + ZipCode to GeoReference and Carrier field
+- Add associations: ServiceDetails → ProviderSummary (Year + NPI),
+  ProviderSummary → ServiceDetails, ProviderSummary → GeoReference
+  (Zip5 + Year)
+
+App shell:
+- Replace bookshop Fiori sandbox tiles with Audit Control Center launchpad
+  placeholder for upcoming Task 1–4 Fiori Elements apps
+
+Verified locally with cds compile and cds deploy to SQLite.
+
+---
+commit 06f322ac2c064768a8250ee7eb536c1530eb19fe
+Author: Anushka Choudhary <anch00011@stud.uni-saarland.de>
+AuthorDate: 2026-06-06T15:52:25+00:00
+Committer: Anushka Choudhary <anch00011@stud.uni-saarland.de>
+CommitDate: 2026-06-06T15:52:25+00:00
+Parents: 8905c8641689bcf28262fa5462cfbcf37aa7b2b3
+Branch-refs: feature/foundation-fixes
+
+    feat: add Year as composite key, update data files 2019-2023
+
+
+---
+commit 8905c8641689bcf28262fa5462cfbcf37aa7b2b3
+Author: Anushka Choudhary <anch00011@stud.uni-saarland.de>
+AuthorDate: 2026-06-06T15:42:41+00:00
+Committer: Anushka Choudhary <anch00011@stud.uni-saarland.de>
+CommitDate: 2026-06-06T15:42:41+00:00
+Parents: b07390f35de23e9873c080284fae44c059d64b4e ad211292c2f5d9def834d6b39a86d65ae6aebd9f
+Branch-refs: 
+
+    fix: resolve merge conflicts keeping Medicare schema
+
+
+---
+commit b07390f35de23e9873c080284fae44c059d64b4e
+Author: Anushka Choudhary <anch00011@stud.uni-saarland.de>
+AuthorDate: 2026-06-06T15:40:01+00:00
+Committer: Anushka Choudhary <anch00011@stud.uni-saarland.de>
+CommitDate: 2026-06-06T15:40:01+00:00
+Parents: 75bb210a4681522951115f01e50c70345d0544e6
+Branch-refs: 
+
+    feat: update data files with all years 2019-2023
+
+
+---
+commit ecb18f508fd8ba6aec5107cacf995c92d8235734
+Author: Manish Kumar Bala Kumar <maba00033@stud.uni-saarland.de>
+AuthorDate: 2026-06-04T20:29:45+00:00
+Committer: Manish Kumar Bala Kumar <maba00033@stud.uni-saarland.de>
+CommitDate: 2026-06-04T20:29:45+00:00
+Parents: e02ff89e7ce044c7bba868c6b7c3965bc781fb82 580834b5598e7fcb7c05b607c76ce18cf8668180
+Branch-refs: origin/feature/task4-ai-agent-integration, feature/task4-ai-agent-integration
+
+    Merge branch 'feature/cap-data-models' of https://github.com/mxkumr/healthcare-audit-assistant into feature/task4-ai-agent-integration
+
+
+---
+commit 580834b5598e7fcb7c05b607c76ce18cf8668180
+Author: Manish Kumar Bala Kumar <maba00033@stud.uni-saarland.de>
+AuthorDate: 2026-06-04T20:23:30+00:00
+Committer: Manish Kumar Bala Kumar <maba00033@stud.uni-saarland.de>
+CommitDate: 2026-06-04T20:23:30+00:00
+Parents: b5b25765f0bc98c6e860575f0ea59fe8a683473b
+Branch-refs: 
+
+    fix: align GeoReference CSV headers with CMS schema mapping criteria
+
+
+---
+commit b5b25765f0bc98c6e860575f0ea59fe8a683473b
+Author: Manish Kumar Bala Kumar <maba00033@stud.uni-saarland.de>
+AuthorDate: 2026-06-04T19:59:10+00:00
+Committer: Manish Kumar Bala Kumar <maba00033@stud.uni-saarland.de>
+CommitDate: 2026-06-04T19:59:10+00:00
+Parents: 6a97feaaee61080b3360f95ab421f4238d0c76e0
+Branch-refs: 
+
+    git commit -m "chore: eliminate broken boilerplate references and achieve pristine build state"
+
+
+---
+commit 6a97feaaee61080b3360f95ab421f4238d0c76e0
+Author: Manish Kumar Bala Kumar <maba00033@stud.uni-saarland.de>
+AuthorDate: 2026-06-04T19:48:54+00:00
+Committer: Manish Kumar Bala Kumar <maba00033@stud.uni-saarland.de>
+CommitDate: 2026-06-04T19:48:54+00:00
+Parents: 74f07360685dbbb6bf0129554147d83a52b19069
+Branch-refs: 
+
+    fix: resolve GeoReference CSV header schema mismatch and convert delimiters
+
+
+---
+commit e02ff89e7ce044c7bba868c6b7c3965bc781fb82
+Author: Manish Kumar Bala Kumar <maba00033@stud.uni-saarland.de>
+AuthorDate: 2026-06-04T19:05:52+00:00
+Committer: Manish Kumar Bala Kumar <maba00033@stud.uni-saarland.de>
+CommitDate: 2026-06-04T19:05:52+00:00
+Parents: 74f07360685dbbb6bf0129554147d83a52b19069
+Branch-refs: 
+
+    feat: expose medicare endpoints as raw OData actions for Joule.
+
+
+---
+commit 74f07360685dbbb6bf0129554147d83a52b19069
+Author: copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>
+AuthorDate: 2026-06-04T17:35:31+00:00
+Committer: GitHub <noreply@github.com>
+CommitDate: 2026-06-04T17:35:31+00:00
+Parents: 75bb210a4681522951115f01e50c70345d0544e6 ad211292c2f5d9def834d6b39a86d65ae6aebd9f
+Branch-refs: 
+
+    Merge branch 'dev' into feature/cap-data-models
+
+
+---
+commit 75bb210a4681522951115f01e50c70345d0544e6
+Author: Anushka Choudhary <anch00011@stud.uni-saarland.de>
+AuthorDate: 2026-06-03T11:52:32+00:00
+Committer: Anushka Choudhary <anch00011@stud.uni-saarland.de>
+CommitDate: 2026-06-03T11:52:32+00:00
+Parents: ac00960543481b4cf819e030ab7b1eda6d15be8b
+Branch-refs: 
+
+    feat: add Medicare CDS schema, OData V4 service and seed data
+
+
+---
+commit ad211292c2f5d9def834d6b39a86d65ae6aebd9f
+Author: Manish Kumar B <69885981+mxkumr@users.noreply.github.com>
+AuthorDate: 2026-06-03T01:35:21+02:00
+Committer: GitHub <noreply@github.com>
+CommitDate: 2026-06-03T01:35:21+02:00
+Parents: ac00960543481b4cf819e030ab7b1eda6d15be8b d5b97ce8113389db3b9c81f4805410ffcb7fc757
+Branch-refs: 
+
+    Merge pull request #5 from mxkumr/feature/full_stack_biolerplate
+
+Complete initial full-stack CAP project
+---
+commit a0cc535393359fc9aee5a57c6e98a05c89d08539
+Author: Manish Kumar Bala Kumar <maba00033@stud.uni-saarland.de>
+AuthorDate: 2026-05-24T21:09:17+00:00
+Committer: Manish Kumar Bala Kumar <maba00033@stud.uni-saarland.de>
+CommitDate: 2026-05-24T21:09:17+00:00
+Parents: d5b97ce8113389db3b9c81f4805410ffcb7fc757
+Branch-refs: origin/feature/AI_skeleton
+
+    feat: implement autonomous tool-calling orchestration skeleton and mock OData actions
+
+
+---
+commit d5b97ce8113389db3b9c81f4805410ffcb7fc757
+Author: Manish Kumar Bala Kumar <maba00033@stud.uni-saarland.de>
+AuthorDate: 2026-05-24T18:57:07+00:00
+Committer: Manish Kumar Bala Kumar <maba00033@stud.uni-saarland.de>
+CommitDate: 2026-05-24T18:57:07+00:00
+Parents: ac00960543481b4cf819e030ab7b1eda6d15be8b
+Branch-refs: origin/feature/full_stack_biolerplate
+
+    Complete initial full-stack CAP project
+
+
+---
+commit ac00960543481b4cf819e030ab7b1eda6d15be8b
+Author: Manish Kumar B <69885981+mxkumr@users.noreply.github.com>
+AuthorDate: 2026-05-23T09:58:32+02:00
+Committer: GitHub <noreply@github.com>
+CommitDate: 2026-05-23T09:58:32+02:00
+Parents: 3bf961afdc6262b53d92b40b87541e47daf34ec9
+Branch-refs: origin/main, origin/HEAD
+
+    Expand README with project details and requirements
+
+Added detailed project outline and requirements for healthcare analytics application.
+---
+commit 3bf961afdc6262b53d92b40b87541e47daf34ec9
+Author: Manish Kumar B <69885981+mxkumr@users.noreply.github.com>
+AuthorDate: 2026-05-23T09:54:45+02:00
+Committer: GitHub <noreply@github.com>
+CommitDate: 2026-05-23T09:54:45+02:00
+Parents: 
+Branch-refs: 
+
+    Initial commit
+
+
+---
