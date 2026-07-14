@@ -1033,3 +1033,39 @@ annotate medicare.PlaceOfServiceProviderProfiles with @(
   Analytics.dataCategory   : #CUBE,
   Aggregation.ApplyDefault : true
 );
+
+// ─── Task 3.1 — Risk-Cost-Volume Dynamics ─────────────────────────────────────
+
+// Specialty × Year grain — beneficiary-weighted risk and cost intensity.
+// Avoids NPI-level overplotting on the ALP chart; one column pair per specialty.
+view RiskCostVolumeDynamics as
+  select from ProviderCostEfficiency {
+    key Year,
+    key ProviderType                         as Specialty              : String,
+
+    count(distinct NPI)                      as TotalUniqueProviders   : Integer,
+
+    case
+      when sum(TotalBeneficiaries) > 0
+      then round(sum(AvgRiskScore * TotalBeneficiaries) / sum(TotalBeneficiaries), 2)
+      else 0
+    end                                      as PatientRiskScore       : Decimal(5, 2),
+
+    case
+      when sum(TotalBeneficiaries) > 0
+      then round(sum(CostPerBeneficiary * TotalBeneficiaries) / sum(TotalBeneficiaries), 2)
+      else 0
+    end                                      as CostPerPatient         : Decimal(11, 2),
+
+    sum(TotalBeneficiaries)                  as TotalPatientsServed    : Integer,
+    sum(CostPerBeneficiary * TotalBeneficiaries)
+                                             as TotalActualPayments    : Decimal(15, 2)
+  }
+  group by
+    Year,
+    ProviderType;
+
+annotate medicare.RiskCostVolumeDynamics with @(
+  Analytics.dataCategory   : #CUBE,
+  Aggregation.ApplyDefault : true
+);

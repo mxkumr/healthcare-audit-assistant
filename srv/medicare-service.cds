@@ -70,6 +70,10 @@ service MedicareService @(path:'/medicare') {
   @readonly
   @cds.redirection.target: false
   entity PlaceOfServiceProviderProfiles as projection on medicare.PlaceOfServiceProviderProfiles;
+
+  @readonly
+  @cds.redirection.target: false
+  entity RiskCostVolumeDynamics as projection on medicare.RiskCostVolumeDynamics;
 }
 
 // Self-association: all year records for the same provider name (object-page history table)
@@ -744,4 +748,35 @@ annotate MedicareService.PlaceOfServiceProviderProfiles with @(
   TotalActualPayments      @Analytics.Measure: true  @Aggregation.default: #SUM  @Measures.ISOCurrency: 'USD';
   AvgPaymentPerService     @Analytics.Measure: true  @Aggregation.default: #AVG  @Measures.ISOCurrency: 'USD';
   AvgSubmittedPerService   @Analytics.Measure: true  @Aggregation.default: #AVG  @Measures.ISOCurrency: 'USD';
+};
+
+// ── Task 3.1: RiskCostVolumeDynamics (specialty risk-cost frontier) ───────────
+annotate MedicareService.RiskCostVolumeDynamics with @(
+  Aggregation.ApplySupported: {
+    Transformations        : ['aggregate', 'groupby', 'filter', 'orderby', 'skip', 'top'],
+    GroupableProperties    : [Year, Specialty],
+    AggregatableProperties : [
+      {Property: TotalUniqueProviders},
+      {Property: PatientRiskScore},
+      {Property: CostPerPatient},
+      {Property: TotalPatientsServed},
+      {Property: TotalActualPayments}
+    ]
+  }
+);
+
+annotate MedicareService.RiskCostVolumeDynamics with @(
+  Aggregation.CustomAggregate #TotalUniqueProviders : 'Edm.Int32',
+  Aggregation.CustomAggregate #PatientRiskScore     : 'Edm.Decimal',
+  Aggregation.CustomAggregate #CostPerPatient       : 'Edm.Decimal',
+  Aggregation.CustomAggregate #TotalPatientsServed  : 'Edm.Int32',
+  Aggregation.CustomAggregate #TotalActualPayments  : 'Edm.Decimal'
+) {
+  Year                 @Analytics.Dimension: true;
+  Specialty            @Analytics.Dimension: true;
+  TotalUniqueProviders @Analytics.Measure: true  @Aggregation.default: #SUM;
+  PatientRiskScore     @Analytics.Measure: true  @Aggregation.default: #AVG;
+  CostPerPatient       @Analytics.Measure: true  @Aggregation.default: #AVG;
+  TotalPatientsServed  @Analytics.Measure: true  @Aggregation.default: #SUM;
+  TotalActualPayments  @Analytics.Measure: true  @Aggregation.default: #SUM  @Measures.ISOCurrency: 'USD';
 };
