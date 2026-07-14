@@ -30,7 +30,8 @@
     "watch-1.3behavioral-helath-risk": "cds watch --open com.medicare.13behavioralhelathrisk/index.html?sap-ui-xx-viewCache=false --livereload false",
     "watch-3.1risk-dynamics": "cds watch --open com.medicare.31riskdynamics/index.html?sap-ui-xx-viewCache=false --livereload false",
     "watch-3.2place-of-service": "cds watch --open com.medicare.32placeofservice/index.html?sap-ui-xx-viewCache=false --livereload false",
-    "watch-3.3credential-discrepancies": "cds watch --open com.medicare.33credentialdiscrepancies/index.html?sap-ui-xx-viewCache=false --livereload false"
+    "watch-3.3credential-discrepancies": "cds watch --open com.medicare.33credentialdiscrepancies/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "test-agent": "curl -s -X POST http://localhost:4004/medicare/listAuditYears -H 'Content-Type: application/json' -d '{}' && echo && curl -s -X POST http://localhost:4004/medicare/investigateAnomalies -H 'Content-Type: application/json' -d '{\"prompt\":\"CA Pain Management audit\",\"year\":\"2022\",\"state\":\"CA\",\"specialty\":\"Pain Management\",\"npi\":\"1003056821\"}'"
   },
   "private": true,
   "cds": {

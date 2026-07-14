@@ -1069,3 +1069,15 @@ annotate medicare.RiskCostVolumeDynamics with @(
   Analytics.dataCategory   : #CUBE,
   Aggregation.ApplyDefault : true
 );
+
+// ─── Task 4 — Autonomous Audit Agent (Joule scratchpad) ───────────────────────
+
+entity AgentScratchpad {
+  key ID            : UUID;
+      sessionId     : String(100);
+      step          : Integer;
+      toolName      : String(100);
+      inputPayload  : LargeString;
+      outputPayload : LargeString;
+      createdAt     : Timestamp;
+}

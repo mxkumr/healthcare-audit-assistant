@@ -235,7 +235,9 @@ PIZZO practices in **Urban/Metro** (RUCA 1 · Newport Beach). Task 1.2 compares 
 | **2.2** | Specialty Profiling | **+1,013%** vs Pain Management peers |
 | **2.2B** | Entity Comparison | **Individual Clinician** — not org pattern |
 | **3.1** | Risk-Cost-Volume | **90%** of Pain Mgmt $ · **2.7×** specialty avg cost |
-| **3.3** | Credential Discrepancies | **MD** · **Q4253** dollar volume + **11042/99348** padding |
+| **3.2** | Place of Service | **Office only** · **111,227** svcs · **$401**/service |
+| **3.3** | Credential Discrepancies | **MD** · **Q4253** volume + **11042/99348** padding |
+| **4.1** | Autonomous Agent (Joule) | `investigateAnomalies` flags NPI **`1003056821`** |
 
 **Workpaper target:** **PIZZO-BERKEY** · NPI `1003056821` · 2022 · CA · Pain Management  
 **Service-line priority:** **Q4253** (Zenith amniotic membrane) → **11042** (debridement) → **99348** (home visits)
@@ -256,3 +258,4 @@ Each task doc includes a **Primary example — Row 1 (audit journey)** section p
 | [2.2b-entity-type-comparison.md](./2.2b-entity-type-comparison.md) | Individual vs organization |
 | [3.1-risk-dynamics.md](./3.1-risk-dynamics.md) | Specialty risk vs cost |
 | [3.3-credential-discrepancies.md](./3.3-credential-discrepancies.md) | Credential-class billing gaps |
+| [4.1-autonomous-audit-agent.md](./4.1-autonomous-audit-agent.md) | Joule agent actions & OData contract |
