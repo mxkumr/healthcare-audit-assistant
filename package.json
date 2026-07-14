@@ -19,7 +19,7 @@
     "watch-1.1cost-analysis": "cds watch --open com.medicare.11costanalysis/index.html?sap-ui-xx-viewCache=false --livereload false",
     "watch-1.2rural-analysis": "cds watch --open com.medicare.12ruralanalysis/index.html?sap-ui-xx-viewCache=false --livereload false",
     "undeploy": "cf undeploy healthcare-audit-assistant --delete-services --delete-service-keys --delete-service-brokers",
-    "build": "rimraf resources mta_archives && mbt build --mtar archive",
+    "build": "rm -rf resources mta_archives && npx mbt build --mtar archive",
     "deploy": "cf deploy mta_archives/archive.mtar --retries 1",
     "watch-2.1provider-classification": "cds watch --open com.medicare.21providerclassification/index.html?sap-ui-xx-viewCache=false --livereload false",
     "watch-2.2aspecialty-profiling": "cds watch --open com.medicare.22aspecialtyprofiling/index.html?sap-ui-xx-viewCache=false --livereload false",
@@ -36,8 +36,24 @@
   "private": true,
   "cds": {
     "requires": {
+      "[development]": {
+        "auth": {
+          "kind": "mocked",
+          "users": {
+            "audit.admin@tester.sap.com": {
+              "password": "initial",
+              "roles": ["admin"]
+            },
+            "audit.analyst@tester.sap.com": {
+              "password": "initial",
+              "roles": ["audit_analyst"]
+            }
+          }
+        }
+      },
       "[production]": {
-        "auth": "xsuaa"
+        "auth": "xsuaa",
+        "db": "hana"
       }
     }
   },
