@@ -78,6 +78,12 @@ service MedicareService @(path:'/medicare') {
   @readonly
   entity AgentScratchpad as projection on medicare.AgentScratchpad;
 
+  // ── Doc 11: Fiori Evaluate AI (course incidents pattern → SAP AI Core) ───────
+  action checkAI(Query : String);
+
+  /** Doc 12: AI → JSON chart data for custom VizFrame extension (returns JSON string). */
+  function diagram(Query : String) returns LargeString;
+
   // ── Task 4: Joule / Autonomous Audit Agent actions ─────────────────────────
 
   /** Primary orchestrator — multi-slice investigation across Tasks 1–3. */
