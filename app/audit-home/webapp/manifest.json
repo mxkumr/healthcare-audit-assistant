@@ -65,7 +65,7 @@
         "template": "sap.ovp.cards.v4.charts.analytical",
         "settings": {
           "title": "1.1 State Cost Analysis",
-          "subTitle": "Medicare total paid by state — KPIs, geographic footprint chart, and provider-level audit table",
+          "subTitle": "Medicare total paid by state — click chart or header link to open full ALP",
           "entitySet": "CostAnalysisV2",
           "addODataSelect": true,
           "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart#V2Footprint",
@@ -78,7 +78,7 @@
         "template": "sap.ovp.cards.v4.charts.analytical",
         "settings": {
           "title": "1.2 Rural vs Urban Distribution",
-          "subTitle": "Spend split by locality type — drill into procedure tiers and rural access gaps",
+          "subTitle": "Spend by locality type — click chart or header link to open full ALP",
           "entitySet": "RuralUrbanDistribution",
           "addODataSelect": true,
           "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart#RuralUrbanOVP",
@@ -91,7 +91,7 @@
         "template": "sap.ovp.cards.v4.charts.analytical",
         "settings": {
           "title": "1.3 Behavioral Health Risk Frontier",
-          "subTitle": "Cost-complexity bubble chart — risk score vs paid per beneficiary by BH peer group",
+          "subTitle": "Risk score vs paid per beneficiary — click chart or header link to open full ALP",
           "entitySet": "BehavioralHealthRiskProfile",
           "addODataSelect": true,
           "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart#CostComplexityFrontier",
@@ -104,7 +104,7 @@
         "template": "sap.ovp.cards.v4.charts.analytical",
         "settings": {
           "title": "2.1 Provider Cost Efficiency",
-          "subTitle": "Classify providers by cost × utilization matrix — flag high-cost outliers for review",
+          "subTitle": "Cost × utilization matrix — click chart or header link to open full ALP",
           "entitySet": "ProviderCostEfficiency",
           "addODataSelect": true,
           "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart#EfficiencyOVP",
@@ -117,7 +117,7 @@
         "template": "sap.ovp.cards.v4.charts.analytical",
         "settings": {
           "title": "2.2a Specialty Peer Deviations",
-          "subTitle": "Compare billing intensity against national specialty baselines — surface worst peer outliers",
+          "subTitle": "Specialty peer outliers — click chart or header link to open full ALP",
           "entitySet": "SpecialtyPeerDeviations",
           "addODataSelect": true,
           "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart#MacroSpecialtyRisk",
@@ -130,7 +130,7 @@
         "template": "sap.ovp.cards.v4.charts.analytical",
         "settings": {
           "title": "2.2b Entity Type Comparison",
-          "subTitle": "Corporate networks vs individual clinicians — macro cost intensity by organization class",
+          "subTitle": "Corporate vs individual cost intensity — click chart or header link to open full ALP",
           "entitySet": "EntityTypeComparisons",
           "addODataSelect": true,
           "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart#MacroCostIntensity",
@@ -143,7 +143,7 @@
         "template": "sap.ovp.cards.v4.charts.analytical",
         "settings": {
           "title": "3.1 Risk-Cost-Volume Dynamics",
-          "subTitle": "Dual-axis view of specialty complexity vs billing intensity — association analysis entry point",
+          "subTitle": "Specialty complexity vs billing intensity — click chart or header link to open full ALP",
           "entitySet": "RiskCostVolumeDynamics",
           "addODataSelect": true,
           "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart#RiskCostDualAxis",
@@ -156,9 +156,10 @@
         "template": "sap.ovp.cards.v4.charts.analytical",
         "settings": {
           "title": "3.2 Place of Service Analysis",
-          "subTitle": "Facility vs office billing mix — detect POS code misclassification patterns",
+          "subTitle": "Facility vs office billing mix — click chart or header link to open full ALP",
           "entitySet": "PlaceOfServiceAnalysis",
           "addODataSelect": true,
+          "selectionAnnotationPath": "com.sap.vocabularies.UI.v1.SelectionVariant#PlaceOfServiceOVPYear",
           "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart#PlaceOfServiceChart",
           "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#PlaceOfServiceChart",
           "identificationAnnotationPath": "com.sap.vocabularies.UI.v1.Identification#OVPNavPlaceOfService"
@@ -169,7 +170,7 @@
         "template": "sap.ovp.cards.v4.charts.analytical",
         "settings": {
           "title": "3.3 Credential Discrepancies",
-          "subTitle": "Charge padding by credential tier — flag providers billing above license scope",
+          "subTitle": "Charge padding by credential tier — click chart or header link to open full ALP",
           "entitySet": "CredentialDiscrepancies",
           "addODataSelect": true,
           "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart#CredentialDiscrepancyChart",

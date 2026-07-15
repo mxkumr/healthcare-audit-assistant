@@ -78,9 +78,10 @@
         "template": "sap.ovp.cards.v4.charts.analytical",
         "settings": {
           "title": "Place of Service",
-          "subTitle": "Facility vs office billing mix — open 3.2",
+          "subTitle": "Facility vs office billing mix — click chart or header link to open full ALP",
           "entitySet": "PlaceOfServiceAnalysis",
           "addODataSelect": true,
+          "selectionAnnotationPath": "com.sap.vocabularies.UI.v1.SelectionVariant#PlaceOfServiceOVPYear",
           "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart#PlaceOfServiceChart",
           "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#PlaceOfServiceChart",
           "identificationAnnotationPath": "com.sap.vocabularies.UI.v1.Identification#OVPNavPlaceOfService"
