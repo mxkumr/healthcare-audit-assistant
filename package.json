@@ -5,7 +5,7 @@
     "@cap-js/hana": "^2",
     "@sap/cds": "^9",
     "@sap/xssec": "^4",
-    "dotenv": "^16.4.5",
+    "dotenv": "^16.6.1",
     "mbt": "^1.2.49"
   },
   "devDependencies": {
@@ -47,11 +47,15 @@
           "users": {
             "audit.admin@tester.sap.com": {
               "password": "initial",
-              "roles": ["admin"]
+              "roles": [
+                "admin"
+              ]
             },
             "audit.analyst@tester.sap.com": {
               "password": "initial",
-              "roles": ["audit_analyst"]
+              "roles": [
+                "audit_analyst"
+              ]
             }
           }
         }
