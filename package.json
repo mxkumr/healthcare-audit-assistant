@@ -5,6 +5,7 @@
     "@cap-js/hana": "^2",
     "@sap/cds": "^9",
     "@sap/xssec": "^4",
+    "dotenv": "^16.4.5",
     "mbt": "^1.2.49"
   },
   "devDependencies": {
