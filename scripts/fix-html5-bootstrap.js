@@ -7,6 +7,8 @@ const path = require('path');
 const root = path.join(__dirname, '..');
 const apps = JSON.parse(fs.readFileSync(path.join(__dirname, 'html5-apps.json'), 'utf8'));
 
+const UI5_CDN = 'https://ui5.sap.com/1.148.1/resources/sap-ui-core.js';
+
 const XS_APP = {
   welcomeFile: '/index.html',
   authenticationMethod: 'route',
@@ -40,6 +42,14 @@ function titleFromPath(appPath) {
   return path.basename(appPath).replace(/-/g, ' ');
 }
 
+function ui5LibsAttr(manifest) {
+  if (manifest['sap.ovp']) {
+    return 'data-sap-ui-libs="sap.m,sap.ui.core,sap.fe.templates,sap.ovp,sap.ui.layout,sap.ui.rta"';
+  }
+  return 'data-sap-ui-libs="sap.m,sap.ui.core,sap.fe.templates"';
+}
+
+// ui5.sap.com CDN works for cds watch (local) and BTP browser; html5 zip xs-app still proxies /resources as fallback
 for (const { path: appPath } of apps) {
   const abs = path.join(root, appPath);
   const manifestPath = path.join(abs, 'webapp/manifest.json');
@@ -51,8 +61,10 @@ for (const { path: appPath } of apps) {
     continue;
   }
 
-  const componentId = readJson(manifestPath)['sap.app'].id;
+  const manifest = readJson(manifestPath);
+  const componentId = manifest['sap.app'].id;
   const title = titleFromPath(appPath);
+  const libsAttr = ui5LibsAttr(manifest);
 
   const indexHtml = `<!DOCTYPE html>
 <html lang="en">
@@ -68,14 +80,15 @@ for (const { path: appPath } of apps) {
     </style>
     <script
         id="sap-ui-bootstrap"
-        src="/resources/sap-ui-core.js"
-        data-sap-ui-version="1.148.1"
+        src="${UI5_CDN}"
         data-sap-ui-theme="sap_horizon"
         data-sap-ui-resource-roots='{"${componentId}": "./"}'
         data-sap-ui-on-init="module:sap/ui/core/ComponentSupport"
         data-sap-ui-compat-version="edge"
         data-sap-ui-async="true"
-        data-sap-ui-frame-options="trusted"
+        data-sap-ui-frame-options="allow"
+        data-sap-ui-bindingSyntax="complex"
+        ${libsAttr}
     ></script>
 </head>
 <body class="sapUiBody sapUiSizeCompact" id="content">

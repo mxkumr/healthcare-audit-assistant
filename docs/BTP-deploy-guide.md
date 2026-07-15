@@ -30,9 +30,31 @@ Already implemented — Joule actions on `MedicareService`:
 - `getSpecialtyPeerOutliers`
 - `listAuditYears`
 
+### Local dev on BAS (avoid dual `@sap/cds` error)
+
+BTP Application Studio often has a **global** `@sap/cds` under `/extbin/globals/bun/...`. Running bare `cds watch` loads **both** global and project copies → error.
+
+**Use project-local CAP only:**
+
+```bash
+cd ~/projects/healthcare-audit-assistant
+npm ci --include=dev
+npm run watch-audit-home    # 9-card OVP dashboard
+# or: npm run watch
+```
+
+Do **not** run `cds watch` directly. If you must, prepend local bin:
+
+```bash
+export PATH="$PWD/node_modules/.bin:$PATH"
+cds watch
+```
+
+Open: `http://localhost:4004/com.medicare.audithome/index.html` (use BAS port-forward preview URL).
+
 ### Local launch page (Doc 05)
 
-With `cds watch` running, open:
+With `npm run watch` running, open:
 
 ```
 http://localhost:4004/launchpage.html#Shell-home
@@ -273,11 +295,12 @@ No separate `.env` AI credentials needed for the Joule path.
 |-------|-----|
 | `npm ci` fails — missing workspace in lock file | Run `npm install` locally, commit updated `package-lock.json`, then rebuild. Common after adding new apps under `app/*` workspaces (`audit-home`, `task3-overview`, etc.). |
 | `rimraf: not found` | Use `rm -rf resources mta_archives && mbt build` |
-| `ensure-mbt.js` fails in `gen/srv` | Fixed: removed `postinstall` hook (CDS copies it into `gen/srv` where the script does not exist). |
+| `cds watch` — @sap/cds loaded from two locations | BAS has a **global** `@sap/cds` (bun) plus project `node_modules`. Use **local only**: `npm ci --include=dev` then `npm run watch` (not bare `cds watch`). See **Local dev on BAS** below. |
 | `mbt/unpacked_bin/mbt: not found` | Run `npm ci --include=dev && npm run ensure-mbt`. MTA `before-all` does this automatically. Fallback: `npm install -g mbt && npm run ensure-mbt` |
 | `Not logged in` | `cf login` |
 | 401 on `/medicare` | Assign admin or audit_analyst role |
-| White Fiori screen | See **White screen after login** below |
+| White Fiori screen (local `npm run watch`) | `index.html` must use **relative** `resources/sap-ui-core.js` (not `/resources/`). Root `/resources/` is 404 on cds watch; app path `/com.medicare.audithome/resources/` works. Restart watch after pull. |
+| White Fiori screen (BTP) | See **White screen after login** below |
 | HTML5 app 404 | Confirm `html5-runtime` service bound to approuter |
 | Empty agent data | Check db-deployer logs: `cf logs healthcare-audit-assistant-db-deployer --recent` |
 | Internal Server Error in Fiori | See **Internal Server Error (500)** below |
@@ -460,9 +483,9 @@ cf deploy mta_archives/archive.mtar --retries 1
 ## Quick command cheat sheet
 
 ```bash
-# Local
-npm ci && cds watch
-# → http://localhost:4004/launchpage.html#Shell-home
+# Local (BAS — use npm scripts, not bare cds watch)
+npm ci --include=dev && npm run watch-audit-home
+# → http://localhost:4004/com.medicare.audithome/index.html
 
 # Build
 npm ci && npm install -g mbt && npm run build
