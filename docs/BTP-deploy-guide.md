@@ -60,7 +60,13 @@ With `npm run watch` running, open:
 http://localhost:4004/launchpage.html#Shell-home
 ```
 
-On BTP Application Studio, use your port-4004 workspace URL + `/launchpage.html#Shell-home`.
+Launchpad tile URLs must use `/com.medicare.<id>/` (cds-plugin-ui5 mount) — **not** `/webapp`.
+
+Direct dashboard (no launchpad):
+
+```
+http://localhost:4004/com.medicare.audithome/index.html
+```
 
 ### Local auth (Doc 06)
 
