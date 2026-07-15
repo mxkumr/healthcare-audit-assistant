@@ -1,8 +1,25 @@
 const cds = require('@sap/cds');
 const { AuditAgentEngine } = require('./lib/audit-agent');
+const { runCheckAI, runDiagram } = require('./lib/check-ai');
 
 module.exports = cds.service.impl(async function () {
   const agent = new AuditAgentEngine(this.entities);
+
+  this.on('checkAI', async (req) => {
+    try {
+      await runCheckAI(req, this.entities.ProviderCostEfficiency);
+    } catch (error) {
+      return req.reject(500, `Evaluate AI failed: ${error.message}`);
+    }
+  });
+
+  this.on('diagram', async (req) => {
+    try {
+      return await runDiagram(req, this.entities.ProviderCostEfficiency);
+    } catch (error) {
+      return req.reject(500, `Generate diagram failed: ${error.message}`);
+    }
+  });
 
   this.on('listAuditYears', async () => {
     try {

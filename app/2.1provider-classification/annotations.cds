@@ -81,6 +81,11 @@ annotate service.ProviderCostEfficiency with @(
   },
 
   UI.LineItem: [
+    {
+      $Type : 'UI.DataFieldForAction',
+      Action: 'MedicareService.EntityContainer/checkAI',
+      Label : '{i18n>Evaluate_AI}'
+    },
     { $Type: 'UI.DataField', Value: ProviderName,          Label: 'Provider Name' },
     { $Type: 'UI.DataField', Value: NPI,                   Label: 'NPI' },
     { $Type: 'UI.DataField', Value: Year,                  Label: 'Year' },

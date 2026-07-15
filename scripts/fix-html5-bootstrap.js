@@ -43,10 +43,13 @@ function titleFromPath(appPath) {
 }
 
 function ui5LibsAttr(manifest) {
+  const base = ['sap.m', 'sap.ui.core', 'sap.fe.templates'];
+  const declared = Object.keys(manifest['sap.ui5']?.dependencies?.libs || {});
+  const libs = [...new Set([...base, ...declared])];
   if (manifest['sap.ovp']) {
-    return 'data-sap-ui-libs="sap.m,sap.ui.core,sap.fe.templates,sap.ovp,sap.ui.layout,sap.ui.rta"';
+    libs.push('sap.ovp', 'sap.ui.layout', 'sap.ui.rta');
   }
-  return 'data-sap-ui-libs="sap.m,sap.ui.core,sap.fe.templates"';
+  return `data-sap-ui-libs="${libs.join(',')}"`;
 }
 
 // ui5.sap.com CDN works for cds watch (local) and BTP browser; html5 zip xs-app still proxies /resources as fallback
