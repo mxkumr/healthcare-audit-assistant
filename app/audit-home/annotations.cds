@@ -2,23 +2,26 @@ using MedicareService as service from '../../srv/medicare-service';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Audit Home — OVP preview charts + click-to-navigate (UI.Identification URLs)
-// Analytical OVP cards: click chart OR header link → opens target ALP app
+// DataFieldWithUrl: Url = target path, Value = link label (mandatory)
+// Analytical cards: click chart OR header link → opens target ALP on approuter
 // ═══════════════════════════════════════════════════════════════════════════════
 
 annotate service.CostAnalysisV2 with @(
   UI.Identification #OVPNavCost: [{
-    $Type: 'UI.DataFieldWithUrl',
-    Label: 'Open 1.1 State Cost Analysis →',
-    Value: '/commedicare11costanalysis/index.html'
+    $Type : 'UI.DataFieldWithUrl',
+    Label : 'Open full analysis',
+    Value : '1.1 State Cost Analysis →',
+    Url   : '/commedicare11costanalysis/index.html'
   }]
 );
 
 annotate service.RuralUrbanDistribution with @(
 
   UI.Identification #OVPNavRural: [{
-    $Type: 'UI.DataFieldWithUrl',
-    Label: 'Open 1.2 Rural vs Urban →',
-    Value: '/commedicare12ruralanalysis/index.html'
+    $Type : 'UI.DataFieldWithUrl',
+    Label : 'Open full analysis',
+    Value : '1.2 Rural vs Urban →',
+    Url   : '/commedicare12ruralanalysis/index.html'
   }],
 
   UI.Chart #RuralUrbanOVP: {
@@ -53,51 +56,57 @@ annotate service.RuralUrbanDistribution with @(
 
 annotate service.BehavioralHealthRiskProfile with @(
   UI.Identification #OVPNavBehavioral: [{
-    $Type: 'UI.DataFieldWithUrl',
-    Label: 'Open 1.3 Behavioral Health Risk →',
-    Value: '/commedicare13behavioralhelathrisk/index.html'
+    $Type : 'UI.DataFieldWithUrl',
+    Label : 'Open full analysis',
+    Value : '1.3 Behavioral Health Risk →',
+    Url   : '/commedicare13behavioralhelathrisk/index.html'
   }]
 );
 
 annotate service.ProviderCostEfficiency with @(
   UI.Identification #OVPNavEfficiency: [{
-    $Type: 'UI.DataFieldWithUrl',
-    Label: 'Open 2.1 Provider Classification →',
-    Value: '/commedicare21providerclassification/index.html'
+    $Type : 'UI.DataFieldWithUrl',
+    Label : 'Open full analysis',
+    Value : '2.1 Provider Classification →',
+    Url   : '/commedicare21providerclassification/index.html'
   }]
 );
 
 annotate service.SpecialtyPeerDeviations with @(
   UI.Identification #OVPNavSpecialty: [{
-    $Type: 'UI.DataFieldWithUrl',
-    Label: 'Open 2.2a Specialty Profiling →',
-    Value: '/commedicare22aspecialtyprofiling/index.html'
+    $Type : 'UI.DataFieldWithUrl',
+    Label : 'Open full analysis',
+    Value : '2.2a Specialty Profiling →',
+    Url   : '/commedicare22aspecialtyprofiling/index.html'
   }]
 );
 
 annotate service.EntityTypeComparisons with @(
   UI.Identification #OVPNavEntityType: [{
-    $Type: 'UI.DataFieldWithUrl',
-    Label: 'Open 2.2b Entity Type Comparison →',
-    Value: '/commedicare22borganizationprofiling/index.html'
+    $Type : 'UI.DataFieldWithUrl',
+    Label : 'Open full analysis',
+    Value : '2.2b Entity Type Comparison →',
+    Url   : '/commedicare22borganizationprofiling/index.html'
   }]
 );
 
 annotate service.RiskCostVolumeDynamics with @(
   UI.Identification #OVPNavRiskDynamics: [{
-    $Type: 'UI.DataFieldWithUrl',
-    Label: 'Open 3.1 Risk-Cost Dynamics →',
-    Value: '/commedicare31riskdynamics/index.html'
+    $Type : 'UI.DataFieldWithUrl',
+    Label : 'Open full analysis',
+    Value : '3.1 Risk-Cost Dynamics →',
+    Url   : '/commedicare31riskdynamics/index.html'
   }]
 );
 
-// Card 3.2 — chart must live on PlaceOfServiceAnalysis (OVP entitySet), not ProviderProfiles
+// Card 3.2 — chart on PlaceOfServiceAnalysis (OVP entitySet)
 annotate service.PlaceOfServiceAnalysis with @(
 
   UI.Identification #OVPNavPlaceOfService: [{
-    $Type: 'UI.DataFieldWithUrl',
-    Label: 'Open 3.2 Place of Service →',
-    Value: '/commedicare32placeofservice/index.html'
+    $Type : 'UI.DataFieldWithUrl',
+    Label : 'Open full analysis',
+    Value : '3.2 Place of Service →',
+    Url   : '/commedicare32placeofservice/index.html'
   }],
 
   UI.DataPoint #PosAvgPaymentFmt: {
@@ -160,8 +169,9 @@ annotate service.PlaceOfServiceAnalysis with @(
 
 annotate service.CredentialDiscrepancies with @(
   UI.Identification #OVPNavCredentialGaps: [{
-    $Type: 'UI.DataFieldWithUrl',
-    Label: 'Open 3.3 Credential Discrepancies →',
-    Value: '/commedicare33credentialdiscrepancies/index.html'
+    $Type : 'UI.DataFieldWithUrl',
+    Label : 'Open full analysis',
+    Value : '3.3 Credential Discrepancies →',
+    Url   : '/commedicare33credentialdiscrepancies/index.html'
   }]
 );

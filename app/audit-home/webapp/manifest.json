@@ -24,6 +24,16 @@
   },
   "sap.ui5": {
     "flexEnabled": true,
+    "extends": {
+      "extensions": {
+        "sap.ui.controllerExtensions": {
+          "sap.ovp.app.Main": {
+            "controllerName": "com.medicare.audithome.ext.OverViewPageExt",
+            "enabled": true
+          }
+        }
+      }
+    },
     "dependencies": {
       "minUI5Version": "1.148.1",
       "libs": {

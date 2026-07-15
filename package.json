@@ -15,11 +15,11 @@
   },
   "scripts": {
     "start": "npx cds-serve",
-    "watch": "npx cds watch",
+    "watch": "npx cds watch --open com.medicare.audithome/index.html?sap-ui-xx-viewCache=false --livereload false",
     "watch-1.1cost-analysis": "npx cds watch --open com.medicare.11costanalysis/index.html?sap-ui-xx-viewCache=false --livereload false",
     "watch-1.2rural-analysis": "npx cds watch --open com.medicare.12ruralanalysis/index.html?sap-ui-xx-viewCache=false --livereload false",
     "undeploy": "cf undeploy healthcare-audit-assistant --delete-services --delete-service-keys --delete-service-brokers",
-    "build": "node scripts/ensure-mbt.js && node scripts/fix-html5-bootstrap.js && node scripts/ensure-html5-deploy.js && node scripts/generate-mta-html5.js && rm -rf resources mta_archives && npx mbt build --mtar archive",
+    "build": "node scripts/ensure-mbt.js && node scripts/fix-html5-bootstrap.js && node scripts/ensure-html5-deploy.js && node scripts/generate-mta-html5.js && node scripts/verify-html5-deploy.js && rm -rf resources mta_archives && npx mbt build --mtar archive",
     "ensure-mbt": "node scripts/ensure-mbt.js",
     "sanitize-data": "node scripts/sanitize-csv-for-hana.js",
     "deploy": "cf deploy mta_archives/archive.mtar --retries 1",
