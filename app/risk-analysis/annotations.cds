@@ -1,6 +1,6 @@
 using MedicareService as service from '../../srv/medicare-service';
 
-annotate service.RiskScoreDistribution with @{
+annotate service.RiskScoreDistribution with @(
   UI.LineItem: [
     {
       $Type : 'UI.DataFieldForAction',
@@ -15,4 +15,4 @@ annotate service.RiskScoreDistribution with @{
     { $Type: 'UI.DataField', Value: TotalPaid,      Label: 'Total Medicare Paid' },
     { $Type: 'UI.DataField', Value: AvgRiskScore,   Label: 'Avg Risk Score' }
   ]
-};
+);

@@ -1,3 +1,4 @@
+using { Core } from '@sap/cds/common';
 using medicare from '../db/schema';
 
 service MedicareService @(path:'/medicare') {
@@ -850,8 +851,6 @@ annotate MedicareService.RiskCostVolumeDynamics with @(
 };
 
 // ── Task 4: Joule capability metadata ─────────────────────────────────────────
-using { Core } from '@sap/cds/common';
-
 annotate MedicareService with @Core.Description: 'Medicare audit OData service with analytical views (Tasks 1–3) and autonomous agent actions for Joule.';
 
 annotate MedicareService.investigateAnomalies with @(
