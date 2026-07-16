@@ -1,0 +1,334 @@
+_schema-version: 3.3.0
+ID: healthcare-audit-assistant
+description: A simple CAP project.
+version: 1.0.0
+modules:
+- name: healthcare-audit-assistant-srv
+  type: nodejs
+  path: gen/srv
+  requires:
+  - name: healthcare-audit-assistant-auth
+  - name: healthcare-audit-assistant-db
+  provides:
+  - name: srv-api
+    properties:
+      srv-url: ${default-url}
+  parameters:
+    buildpack: nodejs_buildpack
+    instances: 1
+  build-parameters:
+    builder: npm-ci
+- name: healthcare-audit-assistant-db-deployer
+  type: hdb
+  path: gen/db
+  requires:
+  - name: healthcare-audit-assistant-db
+  parameters:
+    buildpack: nodejs_buildpack
+- name: healthcare-audit-assistant
+  type: approuter.nodejs
+  path: app/router
+  requires:
+  - name: srv-api
+    group: destinations
+    properties:
+      forwardAuthToken: true
+      name: srv-api
+      url: ~{srv-url}
+  - name: healthcare-audit-assistant-auth
+  - name: healthcare-audit-assistant-html5-runtime
+  - name: healthcare-audit-assistant-destination-service
+    group: destinations
+    properties:
+      forwardAuthToken: false
+      name: ui5
+      url: https://ui5.sap.com
+  provides:
+  - name: app-api
+    properties:
+      app-protocol: ${protocol}
+      app-uri: ${default-uri}
+  parameters:
+    disk-quota: 256M
+    keep-existing-routes: true
+    memory: 256M
+- name: healthcare-audit-assistant-app-content
+  type: com.sap.application.content
+  path: .
+  requires:
+  - name: healthcare-audit-assistant-repo-host
+    parameters:
+      content-target: true
+  build-parameters:
+    build-result: resources
+    requires:
+    - artifacts:
+      - commedicareaudithome.zip
+      name: commedicareaudithome
+      target-path: resources/
+    - artifacts:
+      - commedicaretask1overview.zip
+      name: commedicaretask1overview
+      target-path: resources/
+    - artifacts:
+      - commedicaretask2overview.zip
+      name: commedicaretask2overview
+      target-path: resources/
+    - artifacts:
+      - commedicaretask3overview.zip
+      name: commedicaretask3overview
+      target-path: resources/
+    - artifacts:
+      - commedicare11costanalysis.zip
+      name: commedicare11costanalysis
+      target-path: resources/
+    - artifacts:
+      - commedicare12ruralanalysis.zip
+      name: commedicare12ruralanalysis
+      target-path: resources/
+    - artifacts:
+      - commedicare13behavioralhelathrisk.zip
+      name: commedicare13behavioralhelathrisk
+      target-path: resources/
+    - artifacts:
+      - commedicare21providerclassification.zip
+      name: commedicare21providerclassification
+      target-path: resources/
+    - artifacts:
+      - commedicare22aspecialtyprofiling.zip
+      name: commedicare22aspecialtyprofiling
+      target-path: resources/
+    - artifacts:
+      - commedicare22borganizationprofiling.zip
+      name: commedicare22borganizationprofiling
+      target-path: resources/
+    - artifacts:
+      - commedicare31riskdynamics.zip
+      name: commedicare31riskdynamics
+      target-path: resources/
+    - artifacts:
+      - commedicare32placeofservice.zip
+      name: commedicare32placeofservice
+      target-path: resources/
+    - artifacts:
+      - commedicare33credentialdiscrepancies.zip
+      name: commedicare33credentialdiscrepancies
+      target-path: resources/
+    - artifacts:
+      - commedicareriskanalysis.zip
+      name: commedicareriskanalysis
+      target-path: resources/
+- name: commedicareaudithome
+  type: html5
+  path: app/audit-home
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+- name: commedicaretask1overview
+  type: html5
+  path: app/task1-overview
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+- name: commedicaretask2overview
+  type: html5
+  path: app/task2-overview
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+- name: commedicaretask3overview
+  type: html5
+  path: app/task3-overview
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+- name: commedicare11costanalysis
+  type: html5
+  path: app/1.1cost-analysis
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+- name: commedicare12ruralanalysis
+  type: html5
+  path: app/1.2rural-analysis
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+- name: commedicare13behavioralhelathrisk
+  type: html5
+  path: app/1.3behavioral-helath-risk
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+- name: commedicare21providerclassification
+  type: html5
+  path: app/2.1provider-classification
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+- name: commedicare22aspecialtyprofiling
+  type: html5
+  path: app/2.2aspecialty-profiling
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+- name: commedicare22borganizationprofiling
+  type: html5
+  path: app/2.2borganization-profiling
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+- name: commedicare31riskdynamics
+  type: html5
+  path: app/3.1risk-dynamics
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+- name: commedicare32placeofservice
+  type: html5
+  path: app/3.2place-of-service
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+- name: commedicare33credentialdiscrepancies
+  type: html5
+  path: app/3.3credential-discrepancies
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+- name: commedicareriskanalysis
+  type: html5
+  path: app/risk-analysis
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+resources:
+- name: healthcare-audit-assistant-auth
+  type: org.cloudfoundry.managed-service
+  parameters:
+    config:
+      oauth2-configuration:
+        credential-types:
+        - binding-secret
+        - x509
+        redirect-uris:
+        - https://*~{app-api/app-uri}/**
+      role-collections:
+      - description: generated
+        name: admin (healthcare-audit-assistant ${org}-${space})
+        role-template-references:
+        - $XSAPPNAME.admin
+      - description: Medicare audit analyst for Joule and OData read access
+        name: audit_analyst (healthcare-audit-assistant ${org}-${space})
+        role-template-references:
+        - $XSAPPNAME.audit_analyst
+      tenant-mode: dedicated
+      xsappname: healthcare-audit-assistant-${org}-${space}
+    path: ./xs-security.json
+    service: xsuaa
+    service-plan: application
+  requires:
+  - name: app-api
+- name: healthcare-audit-assistant-db
+  type: com.sap.xs.hdi-container
+  parameters:
+    service: hana
+    service-plan: hdi-shared
+- name: healthcare-audit-assistant-html5-runtime
+  type: org.cloudfoundry.managed-service
+  parameters:
+    service: html5-apps-repo
+    service-plan: app-runtime
+- name: healthcare-audit-assistant-repo-host
+  type: org.cloudfoundry.managed-service
+  parameters:
+    service: html5-apps-repo
+    service-name: healthcare-audit-assistant-html5-service
+    service-plan: app-host
+- name: healthcare-audit-assistant-destination-service
+  type: org.cloudfoundry.managed-service
+  parameters:
+    config:
+      HTML5Runtime_enabled: true
+      init_data:
+        instance:
+          destinations:
+          - Authentication: NoAuthentication
+            Name: ui5
+            ProxyType: Internet
+            Type: HTTP
+            URL: https://ui5.sap.com
+          existing_destinations_policy: update
+      version: 1.0.0
+    service: destination
+    service-name: healthcare-audit-assistant-destination-service
+    service-plan: lite
+parameters:
+  deploy_mode: html5-repo
+  enable-parallel-deployments: true
+build-parameters:
+  before-all:
+  - builder: custom
+    commands:
+    - npm ci --include=dev
+    - node scripts/ensure-mbt.js
+    - node scripts/sanitize-csv-for-hana.js
+    - node scripts/fix-html5-bootstrap.js
+    - node scripts/ensure-html5-deploy.js
+    - npx cds build --production

@@ -1,0 +1,166 @@
+{
+  "_version": "1.85.0",
+  "sap.app": {
+    "id": "com.medicare.22borganizationprofiling",
+    "type": "application",
+    "i18n": "i18n/i18n.properties",
+    "applicationVersion": {
+      "version": "0.0.1"
+    },
+    "title": "{{appTitle}}",
+    "description": "{{appDescription}}",
+    "dataSources": {
+      "mainService": {
+        "uri": "/medicare/",
+        "type": "OData",
+        "settings": {
+          "annotations": [],
+          "odataVersion": "4.0"
+        }
+      }
+    }
+  },
+  "sap.ui": {
+    "technology": "UI5",
+    "deviceTypes": {
+      "desktop": true,
+      "tablet": true,
+      "phone": true
+    }
+  },
+  "sap.ui5": {
+    "flexEnabled": true,
+    "dependencies": {
+      "minUI5Version": "1.148.1",
+      "libs": {
+        "sap.m": {},
+        "sap.ui.core": {},
+        "sap.fe.templates": {},
+        "sap.ui.layout": {},
+        "sap.viz": {}
+      }
+    },
+    "contentDensities": {
+      "compact": true,
+      "cozy": true
+    },
+    "models": {
+      "i18n": {
+        "type": "sap.ui.model.resource.ResourceModel",
+        "settings": {
+          "bundleName": "com.medicare.22borganizationprofiling.i18n.i18n"
+        }
+      },
+      "": {
+        "dataSource": "mainService",
+        "preload": true,
+        "settings": {
+          "operationMode": "Server",
+          "autoExpandSelect": true,
+          "earlyRequests": true
+        }
+      },
+      "@i18n": {
+        "type": "sap.ui.model.resource.ResourceModel",
+        "uri": "i18n/i18n.properties"
+      }
+    },
+    "routing": {
+      "config": {},
+      "routes": [
+        {
+          "pattern": ":?query:",
+          "name": "EntityTypeComparisonsList",
+          "target": "EntityTypeComparisonsList"
+        }
+      ],
+      "targets": {
+        "EntityTypeComparisonsList": {
+          "type": "Component",
+          "id": "EntityTypeComparisonsList",
+          "name": "sap.fe.templates.ListReport",
+          "options": {
+            "settings": {
+              "contextPath": "/EntityTypeProviderProfiles",
+              "variantManagement": "Page",
+              "defaultTemplateAnnotationPath": "com.sap.vocabularies.UI.v1.SelectionPresentationVariant#ALPDashboard",
+              "keyPerformanceIndicators": {
+                "HigherChargingEntity": {
+                  "entitySet": "EntityTypeCostInsight",
+                  "qualifier": "HigherChargingEntity"
+                },
+                "EntityCostPremium": {
+                  "entitySet": "EntityTypeCostInsight",
+                  "qualifier": "EntityCostPremium"
+                }
+              },
+              "controlConfiguration": {
+                "@com.sap.vocabularies.UI.v1.LineItem": {
+                  "tableSettings": {
+                    "type": "AnalyticalTable",
+                    "selectionMode": "None",
+                    "enableExport": true
+                  },
+                  "actions": {
+                    "openDiagram": {
+                      "id": "openAiDiagram",
+                      "text": "{{Generate_Diagram}}",
+                      "press": ".extension.com.medicare.22borganizationprofiling.controller.ListReportExt.openDiagram",
+                      "requiresSelection": false
+                    }
+                  }
+                },
+                "@com.sap.vocabularies.UI.v1.Chart#MacroCostIntensity": {
+                  "chartSettings": {
+                    "defaultChartType": "column",
+                    "enableStableColors": true
+                  },
+                  "requestFilterFields": [
+                    "Year",
+                    "EntityType",
+                    "ProviderType"
+                  ]
+                }
+              },
+              "views": {
+                "paths": [
+                  {
+                    "primary": [
+                      {
+                        "annotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#EntityCostChart"
+                      }
+                    ],
+                    "secondary": [
+                      {
+                        "annotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#EntityComparisonTable"
+                      }
+                    ],
+                    "defaultPath": "both"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "extends": {
+      "extensions": {
+        "sap.ui.controllerExtensions": {
+          "sap.fe.templates.ListReport.ListReportController": {
+            "controllerName": "com.medicare.22borganizationprofiling.controller.ListReportExt"
+          }
+        }
+      }
+    }
+  },
+  "sap.fiori": {
+    "registrationIds": [],
+    "archeType": "analytical"
+  },
+  "sap.fe": {
+    "app": {
+      "enableLazyLoading": true
+    }
+  }
+}

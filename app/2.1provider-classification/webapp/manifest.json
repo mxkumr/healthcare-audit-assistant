@@ -1,0 +1,213 @@
+{
+  "_version": "1.85.0",
+  "sap.app": {
+    "id": "com.medicare.21providerclassification",
+    "type": "application",
+    "i18n": "i18n/i18n.properties",
+    "applicationVersion": {
+      "version": "0.0.1"
+    },
+    "title": "{{appTitle}}",
+    "description": "{{appDescription}}",
+    "resources": "resources.json",
+    "sourceTemplate": {
+      "id": "@sap/generator-fiori:alp",
+      "version": "1.25.0",
+      "toolsId": "95c9c60e-cc70-464e-a2d9-467fe7c528c7"
+    },
+    "dataSources": {
+      "mainService": {
+        "uri": "/medicare/",
+        "type": "OData",
+        "settings": {
+          "annotations": [],
+          "odataVersion": "4.0"
+        }
+      }
+    }
+  },
+  "sap.ui": {
+    "technology": "UI5",
+    "icons": {
+      "icon": "",
+      "favIcon": "",
+      "phone": "",
+      "phone@2": "",
+      "tablet": "",
+      "tablet@2": ""
+    },
+    "deviceTypes": {
+      "desktop": true,
+      "tablet": true,
+      "phone": true
+    }
+  },
+  "sap.ui5": {
+    "flexEnabled": true,
+    "dependencies": {
+      "minUI5Version": "1.148.1",
+      "libs": {
+        "sap.m": {},
+        "sap.ui.core": {},
+        "sap.fe.templates": {},
+        "sap.ui.layout": {},
+        "sap.viz": {}
+      }
+    },
+    "extends": {
+      "extensions": {
+        "sap.ui.controllerExtensions": {
+          "sap.fe.templates.ListReport.ListReportController": {
+            "controllerName": "com.medicare.21providerclassification.controller.ListReportExt"
+          }
+        }
+      }
+    },
+    "contentDensities": {
+      "compact": true,
+      "cozy": true
+    },
+    "models": {
+      "i18n": {
+        "type": "sap.ui.model.resource.ResourceModel",
+        "settings": {
+          "bundleName": "com.medicare.21providerclassification.i18n.i18n"
+        }
+      },
+      "": {
+        "dataSource": "mainService",
+        "preload": true,
+        "settings": {
+          "operationMode": "Server",
+          "autoExpandSelect": true,
+          "earlyRequests": true
+        }
+      },
+      "@i18n": {
+        "type": "sap.ui.model.resource.ResourceModel",
+        "uri": "i18n/i18n.properties"
+      }
+    },
+    "resources": {
+      "css": []
+    },
+    "routing": {
+      "config": {},
+      "routes": [
+        {
+          "pattern": ":?query:",
+          "name": "ProviderCostEfficiencyList",
+          "target": "ProviderCostEfficiencyList"
+        },
+        {
+          "pattern": "ProviderCostEfficiency({key}):?query:",
+          "name": "ProviderCostEfficiencyObjectPage",
+          "target": "ProviderCostEfficiencyObjectPage"
+        }
+      ],
+      "targets": {
+        "ProviderCostEfficiencyList": {
+          "type": "Component",
+          "id": "ProviderCostEfficiencyList",
+          "name": "sap.fe.templates.ListReport",
+          "options": {
+            "settings": {
+              "contextPath": "/ProviderCostEfficiency",
+              "variantManagement": "Page",
+              "defaultTemplateAnnotationPath": "com.sap.vocabularies.UI.v1.SelectionPresentationVariant#ALPDashboard",
+              "navigation": {
+                "ProviderCostEfficiency": {
+                  "detail": {
+                    "route": "ProviderCostEfficiencyObjectPage"
+                  }
+                }
+              },
+              "controlConfiguration": {
+                "@com.sap.vocabularies.UI.v1.LineItem": {
+                  "actions": {
+                    "openDiagram": {
+                      "id": "openAiDiagram",
+                      "text": "{{Generate_Diagram}}",
+                      "press": ".extension.com.medicare.21providerclassification.controller.ListReportExt.openDiagram",
+                      "requiresSelection": false
+                    }
+                  },
+                  "tableSettings": {
+                    "type": "AnalyticalTable",
+                    "selectionMode": "None",
+                    "enableExport": true
+                  }
+                },
+                "@com.sap.vocabularies.UI.v1.Chart#RiskMatrix": {
+                  "chartSettings": {
+                    "defaultChartType": "stacked_column",
+                    "enableStableColors": true,
+                    "vizProperties": {
+                      "plotArea": {
+                        "dataPointSize": {
+                          "min": 48,
+                          "max": 48
+                        },
+                        "dataShape": {
+                          "stacking": "normal"
+                        }
+                      },
+                      "interaction": {
+                        "zoom": {
+                          "enablement": "enabled"
+                        }
+                      }
+                    }
+                  },
+                  "requestFilterFields": [
+                    "EfficiencyCategory",
+                    "UtilizationCategory",
+                    "State",
+                    "ProviderType"
+                  ]
+                }
+              },
+              "views": {
+                "paths": [
+                  {
+                    "primary": [
+                      {
+                        "annotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#RiskMatrixChart"
+                      }
+                    ],
+                    "secondary": [
+                      {
+                        "annotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#AuditTable"
+                      }
+                    ],
+                    "defaultPath": "both"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "ProviderCostEfficiencyObjectPage": {
+          "type": "Component",
+          "id": "ProviderCostEfficiencyObjectPage",
+          "name": "sap.fe.templates.ObjectPage",
+          "options": {
+            "settings": {
+              "editableHeaderContent": false,
+              "contextPath": "/ProviderCostEfficiency"
+            }
+          }
+        }
+      }
+    }
+  },
+  "sap.fiori": {
+    "registrationIds": [],
+    "archeType": "analytical"
+  },
+  "sap.fe": {
+    "app": {
+      "enableLazyLoading": true
+    }
+  }
+}

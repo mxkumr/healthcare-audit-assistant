@@ -1,0 +1,41 @@
+{
+  "welcomeFile": "/commedicareaudithome/index.html",
+  "authenticationMethod": "route",
+  "sessionTimeout": 30,
+  "logout": {
+    "logoutEndpoint": "/do/logout",
+    "logoutPage": "/"
+  },
+  "routes": [
+    {
+      "source": "^/medicare/(.*)$",
+      "destination": "srv-api",
+      "target": "/medicare/$1",
+      "authenticationType": "xsuaa",
+      "csrfProtection": true
+    },
+    {
+      "source": "^/commedicare[a-z0-9]+/medicare/(.*)$",
+      "destination": "srv-api",
+      "target": "/medicare/$1",
+      "authenticationType": "xsuaa",
+      "csrfProtection": true
+    },
+    {
+      "source": "^/resources/(.*)$",
+      "destination": "ui5",
+      "authenticationType": "none"
+    },
+    {
+      "source": "^/test-resources/(.*)$",
+      "destination": "ui5",
+      "authenticationType": "none"
+    },
+    {
+      "source": "^(.*)$",
+      "target": "$1",
+      "service": "html5-apps-repo-rt",
+      "authenticationType": "xsuaa"
+    }
+  ]
+}

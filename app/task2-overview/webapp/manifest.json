@@ -1,0 +1,161 @@
+{
+  "_version": "1.85.0",
+  "sap.app": {
+    "id": "com.medicare.task2overview",
+    "type": "application",
+    "i18n": "i18n/i18n.properties",
+    "applicationVersion": {
+      "version": "0.0.1"
+    },
+    "title": "{{appTitle}}",
+    "description": "{{appDescription}}",
+    "resources": "resources.json",
+    "sourceTemplate": {
+      "id": "@sap/generator-fiori:ovp",
+      "version": "1.25.0"
+    },
+    "dataSources": {
+      "mainService": {
+        "uri": "/medicare/",
+        "type": "OData",
+        "settings": {
+          "annotations": [],
+          "odataVersion": "4.0"
+        }
+      }
+    }
+  },
+  "sap.ui": {
+    "technology": "UI5",
+    "icons": {
+      "icon": "",
+      "favIcon": "",
+      "phone": "",
+      "phone@2": "",
+      "tablet": "",
+      "tablet@2": ""
+    },
+    "deviceTypes": {
+      "desktop": true,
+      "tablet": true,
+      "phone": true
+    }
+  },
+  "sap.ui5": {
+    "flexEnabled": true,
+    "dependencies": {
+      "minUI5Version": "1.148.1",
+      "libs": {
+        "sap.m": {},
+        "sap.ui.core": {},
+        "sap.fe.templates": {},
+        "sap.ovp": {},
+        "sap.ui.rta": {},
+        "sap.ui.layout": {}
+      }
+    },
+    "contentDensities": {
+      "compact": true,
+      "cozy": true
+    },
+    "models": {
+      "i18n": {
+        "type": "sap.ui.model.resource.ResourceModel",
+        "settings": {
+          "bundleName": "com.medicare.task2overview.i18n.i18n"
+        }
+      },
+      "mainModel": {
+        "dataSource": "mainService",
+        "preload": true,
+        "settings": {
+          "operationMode": "Server",
+          "autoExpandSelect": true,
+          "earlyRequests": true
+        }
+      },
+      "@i18n": {
+        "type": "sap.ui.model.resource.ResourceModel",
+        "uri": "i18n/i18n.properties"
+      }
+    },
+    "resources": {
+      "css": []
+    },
+    "routing": {
+      "config": {},
+      "routes": [],
+      "targets": {}
+    }
+  },
+    "sap.ovp": {
+    "globalFilterModel": "mainModel",
+    "globalFilterEntitySet": "ProviderCostEfficiency",
+    "containerLayout": "resizable",
+    "enableLiveFilter": true,
+    "considerAnalyticalParameters": false,
+    "cards": {
+      "card00_efficiency": {
+        "model": "mainModel",
+        "template": "sap.ovp.cards.v4.charts.analytical",
+        "dashboardLayout": {
+          "rowSpan": 20,
+          "colSpan": 2
+        },
+        "settings": {
+          "title": "Providers per Efficiency Class",
+          "subTitle": "Distribution by cost-efficiency tier — open 2.1 for risk matrix",
+          "entitySet": "ProviderCostEfficiency",
+          "addODataSelect": true,
+          "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart#EfficiencyOVP",
+          "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#EfficiencyOVP",
+          "identificationAnnotationPath": "com.sap.vocabularies.UI.v1.Identification#OVPNavEfficiency"
+        }
+      },
+      "card01_specialty": {
+        "model": "mainModel",
+        "template": "sap.ovp.cards.v4.charts.analytical",
+        "dashboardLayout": {
+          "rowSpan": 20,
+          "colSpan": 2
+        },
+        "settings": {
+          "title": "Cost Peer Deviation by Specialty",
+          "subTitle": "Worst outlier vs national peer baseline — open 2.2a",
+          "entitySet": "SpecialtyPeerDeviations",
+          "addODataSelect": true,
+          "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart#MacroSpecialtyRisk",
+          "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#MacroSpecialtyChart",
+          "identificationAnnotationPath": "com.sap.vocabularies.UI.v1.Identification#OVPNavSpecialty"
+        }
+      },
+      "card02_organization": {
+        "model": "mainModel",
+        "template": "sap.ovp.cards.v4.charts.analytical",
+        "dashboardLayout": {
+          "rowSpan": 20,
+          "colSpan": 2
+        },
+        "settings": {
+          "title": "Macro Cost by Entity Class",
+          "subTitle": "Corporate networks vs individual clinicians — open 2.2b",
+          "entitySet": "EntityTypeComparisons",
+          "addODataSelect": true,
+          "chartAnnotationPath": "com.sap.vocabularies.UI.v1.Chart#MacroCostIntensity",
+          "presentationAnnotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#EntityCostChart",
+          "identificationAnnotationPath": "com.sap.vocabularies.UI.v1.Identification#OVPNavEntityType"
+        }
+      }
+    },
+    "globalFilterControlType": "MacroFilterBar"
+  },
+  "sap.fiori": {
+    "registrationIds": [],
+    "archeType": "analytical"
+  },
+  "sap.fe": {
+    "app": {
+      "enableLazyLoading": true
+    }
+  }
+}

@@ -1,0 +1,168 @@
+{
+  "_version": "1.85.0",
+  "sap.app": {
+    "id": "com.medicare.31riskdynamics",
+    "type": "application",
+    "i18n": "i18n/i18n.properties",
+    "applicationVersion": {
+      "version": "0.0.1"
+    },
+    "title": "{{appTitle}}",
+    "description": "{{appDescription}}",
+    "dataSources": {
+      "mainService": {
+        "uri": "/medicare/",
+        "type": "OData",
+        "settings": {
+          "annotations": [],
+          "odataVersion": "4.0"
+        }
+      }
+    }
+  },
+  "sap.ui": {
+    "technology": "UI5",
+    "deviceTypes": {
+      "desktop": true,
+      "tablet": true,
+      "phone": true
+    }
+  },
+  "sap.ui5": {
+    "flexEnabled": true,
+    "dependencies": {
+      "minUI5Version": "1.148.1",
+      "libs": {
+        "sap.m": {},
+        "sap.ui.core": {},
+        "sap.fe.templates": {},
+        "sap.ui.layout": {},
+        "sap.viz": {}
+      }
+    },
+    "contentDensities": {
+      "compact": true,
+      "cozy": true
+    },
+    "models": {
+      "i18n": {
+        "type": "sap.ui.model.resource.ResourceModel",
+        "settings": {
+          "bundleName": "com.medicare.31riskdynamics.i18n.i18n"
+        }
+      },
+      "": {
+        "dataSource": "mainService",
+        "preload": true,
+        "settings": {
+          "operationMode": "Server",
+          "autoExpandSelect": true,
+          "earlyRequests": true
+        }
+      },
+      "@i18n": {
+        "type": "sap.ui.model.resource.ResourceModel",
+        "uri": "i18n/i18n.properties"
+      }
+    },
+    "routing": {
+      "config": {},
+      "routes": [
+        {
+          "pattern": ":?query:",
+          "name": "RiskCostVolumeDynamicsList",
+          "target": "RiskCostVolumeDynamicsList"
+        }
+      ],
+      "targets": {
+        "RiskCostVolumeDynamicsList": {
+          "type": "Component",
+          "id": "RiskCostVolumeDynamicsList",
+          "name": "sap.fe.templates.ListReport",
+          "options": {
+            "settings": {
+              "contextPath": "/RiskCostVolumeDynamics",
+              "variantManagement": "Page",
+              "defaultTemplateAnnotationPath": "com.sap.vocabularies.UI.v1.SelectionPresentationVariant#ALPDashboard",
+              "controlConfiguration": {
+                "@com.sap.vocabularies.UI.v1.LineItem": {
+                  "tableSettings": {
+                    "type": "AnalyticalTable",
+                    "selectionMode": "None",
+                    "enableExport": true
+                  },
+                  "actions": {
+                    "openDiagram": {
+                      "id": "openAiDiagram",
+                      "text": "{{Generate_Diagram}}",
+                      "press": ".extension.com.medicare.31riskdynamics.controller.ListReportExt.openDiagram",
+                      "requiresSelection": false
+                    }
+                  }
+                },
+                "@com.sap.vocabularies.UI.v1.Chart#RiskCostDualAxis": {
+                  "chartSettings": {
+                    "defaultChartType": "dual_column",
+                    "enableStableColors": true,
+                    "vizProperties": {
+                      "plotArea": {
+                        "dataPointSize": {
+                          "min": 48,
+                          "max": 48
+                        }
+                      },
+                      "interaction": {
+                        "zoom": {
+                          "enablement": "enabled"
+                        }
+                      }
+                    }
+                  },
+                  "requestFilterFields": [
+                    "Year",
+                    "Specialty"
+                  ]
+                }
+              },
+              "views": {
+                "paths": [
+                  {
+                    "primary": [
+                      {
+                        "annotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#RiskCostChart"
+                      }
+                    ],
+                    "secondary": [
+                      {
+                        "annotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#RiskCostTable"
+                      }
+                    ],
+                    "defaultPath": "both"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "extends": {
+      "extensions": {
+        "sap.ui.controllerExtensions": {
+          "sap.fe.templates.ListReport.ListReportController": {
+            "controllerName": "com.medicare.31riskdynamics.controller.ListReportExt"
+          }
+        }
+      }
+    }
+  },
+  "sap.fiori": {
+    "registrationIds": [],
+    "archeType": "analytical"
+  },
+  "sap.fe": {
+    "app": {
+      "enableLazyLoading": true
+    }
+  }
+}

@@ -1,0 +1,210 @@
+{
+  "_version": "1.86.0",
+  "sap.app": {
+    "id": "com.medicare.13behavioralhelathrisk",
+    "type": "application",
+    "i18n": "i18n/i18n.properties",
+    "applicationVersion": {
+      "version": "0.0.1"
+    },
+    "title": "{{appTitle}}",
+    "description": "{{appDescription}}",
+    "resources": "resources.json",
+    "sourceTemplate": {
+      "id": "@sap/generator-fiori:alp",
+      "version": "1.28.0",
+      "toolsId": "8d8ed1f6-6c4d-40d0-a28c-0d938aae6811"
+    },
+    "dataSources": {
+      "mainService": {
+        "uri": "/medicare/",
+        "type": "OData",
+        "settings": {
+          "annotations": [],
+          "odataVersion": "4.0"
+        }
+      }
+    }
+  },
+  "sap.ui": {
+    "technology": "UI5",
+    "icons": {
+      "icon": "",
+      "favIcon": "",
+      "phone": "",
+      "phone@2": "",
+      "tablet": "",
+      "tablet@2": ""
+    },
+    "deviceTypes": {
+      "desktop": true,
+      "tablet": true,
+      "phone": true
+    }
+  },
+  "sap.ui5": {
+    "flexEnabled": true,
+    "dependencies": {
+      "minUI5Version": "1.150.0",
+      "libs": {
+        "sap.m": {},
+        "sap.ui.core": {},
+        "sap.fe.templates": {},
+        "sap.ui.layout": {},
+        "sap.viz": {}
+      }
+    },
+    "contentDensities": {
+      "compact": true,
+      "cozy": true
+    },
+    "models": {
+      "i18n": {
+        "type": "sap.ui.model.resource.ResourceModel",
+        "settings": {
+          "bundleName": "com.medicare.13behavioralhelathrisk.i18n.i18n"
+        }
+      },
+      "": {
+        "dataSource": "mainService",
+        "preload": true,
+        "settings": {
+          "operationMode": "Server",
+          "autoExpandSelect": true,
+          "earlyRequests": true
+        }
+      },
+      "@i18n": {
+        "type": "sap.ui.model.resource.ResourceModel",
+        "uri": "i18n/i18n.properties"
+      }
+    },
+    "resources": {
+      "css": []
+    },
+    "routing": {
+      "config": {},
+      "routes": [
+        {
+          "pattern": ":?query:",
+          "name": "BehavioralHealthRiskProfileList",
+          "target": "BehavioralHealthRiskProfileList"
+        },
+        {
+          "pattern": "BehavioralHealthRiskProfile({key}):?query:",
+          "name": "BehavioralHealthRiskProfileObjectPage",
+          "target": "BehavioralHealthRiskProfileObjectPage"
+        }
+      ],
+      "targets": {
+        "BehavioralHealthRiskProfileList": {
+          "type": "Component",
+          "id": "BehavioralHealthRiskProfileList",
+          "name": "sap.fe.templates.ListReport",
+          "options": {
+            "settings": {
+              "contextPath": "/BehavioralHealthRiskProfile",
+              "variantManagement": "Page",
+              "defaultTemplateAnnotationPath": "com.sap.vocabularies.UI.v1.SelectionPresentationVariant#ALPDashboard",
+              "navigation": {
+                "BehavioralHealthRiskProfile": {
+                  "detail": {
+                    "route": "BehavioralHealthRiskProfileObjectPage"
+                  }
+                }
+              },
+              "controlConfiguration": {
+                "@com.sap.vocabularies.UI.v1.LineItem": {
+                  "tableSettings": {
+                    "type": "AnalyticalTable",
+                    "selectionMode": "None",
+                    "enableExport": true
+                  },
+                  "actions": {
+                    "openDiagram": {
+                      "id": "openAiDiagram",
+                      "text": "{{Generate_Diagram}}",
+                      "press": ".extension.com.medicare.13behavioralhelathrisk.controller.ListReportExt.openDiagram",
+                      "requiresSelection": false
+                    }
+                  }
+                },
+                "@com.sap.vocabularies.UI.v1.Chart#CostComplexityFrontier": {
+                  "chartSettings": {
+                    "defaultChartType": "bubble",
+                    "enableStableColors": true,
+                    "vizProperties": {
+                      "plotArea": {
+                        "dataPointSize": {
+                          "min": 32,
+                          "max": 64
+                        }
+                      },
+                      "interaction": {
+                        "zoom": {
+                          "enablement": "enabled"
+                        }
+                      }
+                    }
+                  },
+                  "requestFilterFields": [
+                    "Year",
+                    "State",
+                    "ProviderType",
+                    "BHBurdenGroup"
+                  ]
+                }
+              },
+              "views": {
+                "paths": [
+                  {
+                    "primary": [
+                      {
+                        "annotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#FrontierChart"
+                      }
+                    ],
+                    "secondary": [
+                      {
+                        "annotationPath": "com.sap.vocabularies.UI.v1.PresentationVariant#FrontierTable"
+                      }
+                    ],
+                    "defaultPath": "both"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "BehavioralHealthRiskProfileObjectPage": {
+          "type": "Component",
+          "id": "BehavioralHealthRiskProfileObjectPage",
+          "name": "sap.fe.templates.ObjectPage",
+          "options": {
+            "settings": {
+              "editableHeaderContent": false,
+              "contextPath": "/BehavioralHealthRiskProfile"
+            }
+          }
+        }
+      }
+    },
+    "extends": {
+      "extensions": {
+        "sap.ui.controllerExtensions": {
+          "sap.fe.templates.ListReport.ListReportController": {
+            "controllerName": "com.medicare.13behavioralhelathrisk.controller.ListReportExt"
+          }
+        }
+      }
+    }
+  },
+  "sap.fiori": {
+    "registrationIds": [],
+    "archeType": "analytical"
+  },
+  "sap.fe": {
+    "app": {
+      "enableLazyLoading": true
+    }
+  }
+}
