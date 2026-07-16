@@ -106,6 +106,11 @@ annotate service.SpecialtyPeerDeviations with @(
   },
 
   UI.LineItem: [
+    {
+      $Type : 'UI.DataFieldForAction',
+      Action: 'MedicareService.EntityContainer/checkAI',
+      Label : '{i18n>Evaluate_AI}'
+    },
     { $Type: 'UI.DataField', Value: Specialty,            Label: 'Specialty' },
     { $Type: 'UI.DataField', Value: ProviderName,         Label: 'Provider Name' },
     { $Type: 'UI.DataField', Value: NPI,                  Label: 'NPI' },

@@ -49,7 +49,9 @@
       "libs": {
         "sap.m": {},
         "sap.ui.core": {},
-        "sap.fe.templates": {}
+        "sap.fe.templates": {},
+        "sap.ui.layout": {},
+        "sap.viz": {}
       }
     },
     "contentDensities": {
@@ -115,6 +117,14 @@
                   "tableSettings": {
                     "type": "AnalyticalTable",
                     "selectionMode": "None"
+                  },
+                  "actions": {
+                    "openDiagram": {
+                      "id": "openAiDiagram",
+                      "text": "{{Generate_Diagram}}",
+                      "press": ".extension.com.medicare.riskanalysis.controller.ListReportExt.openDiagram",
+                      "requiresSelection": false
+                    }
                   }
                 }
               },
@@ -147,6 +157,15 @@
               "editableHeaderContent": false,
               "contextPath": "/RiskScoreDistribution"
             }
+          }
+        }
+      }
+    },
+    "extends": {
+      "extensions": {
+        "sap.ui.controllerExtensions": {
+          "sap.fe.templates.ListReport.ListReportController": {
+            "controllerName": "com.medicare.riskanalysis.controller.ListReportExt"
           }
         }
       }

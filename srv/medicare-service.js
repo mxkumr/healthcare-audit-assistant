@@ -1,13 +1,23 @@
 const cds = require('@sap/cds');
 const { AuditAgentEngine } = require('./lib/audit-agent');
-const { runCheckAI, runDiagram } = require('./lib/check-ai');
+const { runCheckAI, runDiagram, resolveAiContext } = require('./lib/check-ai');
+
+function resolveAiEntity(req, entities) {
+  const context = resolveAiContext(req);
+  const entity = entities[context.entityName];
+  if (!entity) {
+    throw new Error(`AI entity not found: ${context.entityName}`);
+  }
+  return { entity, context };
+}
 
 module.exports = cds.service.impl(async function () {
   const agent = new AuditAgentEngine(this.entities);
 
   this.on('checkAI', async (req) => {
     try {
-      await runCheckAI(req, this.entities.ProviderCostEfficiency);
+      const { entity, context } = resolveAiEntity(req, this.entities);
+      await runCheckAI(req, entity, context);
     } catch (error) {
       return req.reject(500, `Evaluate AI failed: ${error.message}`);
     }
@@ -15,7 +25,8 @@ module.exports = cds.service.impl(async function () {
 
   this.on('diagram', async (req) => {
     try {
-      return await runDiagram(req, this.entities.ProviderCostEfficiency);
+      const { entity, context } = resolveAiEntity(req, this.entities);
+      return await runDiagram(req, entity, context);
     } catch (error) {
       return req.reject(500, `Generate diagram failed: ${error.message}`);
     }

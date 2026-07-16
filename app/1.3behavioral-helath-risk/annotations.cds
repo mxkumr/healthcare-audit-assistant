@@ -118,6 +118,11 @@ annotate service.BehavioralHealthRiskProfile with @(
   // Sort by PaidPerBeneficiary desc to surface Zone 2 audit candidates first
   // ═══════════════════════════════════════════════════════════════════════════
   UI.LineItem: [
+    {
+      $Type : 'UI.DataFieldForAction',
+      Action: 'MedicareService.EntityContainer/checkAI',
+      Label : '{i18n>Evaluate_AI}'
+    },
     { $Type: 'UI.DataField', Value: ProviderType,         Label: 'Specialty' },
     { $Type: 'UI.DataField', Value: State,                Label: 'State' },
     { $Type: 'UI.DataField', Value: BHBurdenGroup,        Label: 'BH Burden Group' },

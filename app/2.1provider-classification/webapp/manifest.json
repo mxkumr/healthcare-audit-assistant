@@ -126,7 +126,7 @@
                 "@com.sap.vocabularies.UI.v1.LineItem": {
                   "actions": {
                     "openDiagram": {
-                      "id": "openProviderDiagram",
+                      "id": "openAiDiagram",
                       "text": "{{Generate_Diagram}}",
                       "press": ".extension.com.medicare.21providerclassification.controller.ListReportExt.openDiagram",
                       "requiresSelection": false
@@ -144,17 +144,27 @@
                     "enableStableColors": true,
                     "vizProperties": {
                       "plotArea": {
-                        "dataPointSize": { "min": 48, "max": 48 },
+                        "dataPointSize": {
+                          "min": 48,
+                          "max": 48
+                        },
                         "dataShape": {
                           "stacking": "normal"
                         }
                       },
                       "interaction": {
-                        "zoom": { "enablement": "enabled" }
+                        "zoom": {
+                          "enablement": "enabled"
+                        }
                       }
                     }
                   },
-                  "requestFilterFields": ["EfficiencyCategory", "UtilizationCategory", "State", "ProviderType"]
+                  "requestFilterFields": [
+                    "EfficiencyCategory",
+                    "UtilizationCategory",
+                    "State",
+                    "ProviderType"
+                  ]
                 }
               },
               "views": {
