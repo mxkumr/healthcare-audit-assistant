@@ -241,6 +241,11 @@ annotate service.CostAnalysisV2 with @(
   // ═══════════════════════════════════════════════════════════════════════════
   // Column order: …60 Submitted → 70 Allowed → 75 Rejected → 80 Paid…
   UI.LineItem: [
+    {
+      $Type : 'UI.DataFieldForAction',
+      Action: 'MedicareService.EntityContainer/checkAI',
+      Label : '{i18n>Evaluate_AI}'
+    },
     { Value: Year,                 ![@UI.Importance]: #High },
     { Value: StateName,            ![@UI.Importance]: #High },
     { Value: ProviderType,         ![@UI.Importance]: #High },

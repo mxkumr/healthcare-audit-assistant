@@ -84,6 +84,11 @@ annotate service.EntityTypeProviderProfiles with @(
   // BOTTOM LAYER — specialty group rows; expand to see provider names
   // ═══════════════════════════════════════════════════════════════════════════
   UI.LineItem: [
+    {
+      $Type : 'UI.DataFieldForAction',
+      Action: 'MedicareService.EntityContainer/checkAI',
+      Label : '{i18n>Evaluate_AI}'
+    },
     { $Type: 'UI.DataField', Value: ProviderType,           Label: 'Specialty' },
     { $Type: 'UI.DataField', Value: ProviderName,           Label: 'Provider Name' },
     { $Type: 'UI.DataField', Value: EntityType,             Label: 'Entity Type' },

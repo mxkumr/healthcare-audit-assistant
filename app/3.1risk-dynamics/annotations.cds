@@ -96,6 +96,11 @@ annotate service.RiskCostVolumeDynamics with @(
   },
 
   UI.LineItem: [
+    {
+      $Type : 'UI.DataFieldForAction',
+      Action: 'MedicareService.EntityContainer/checkAI',
+      Label : '{i18n>Evaluate_AI}'
+    },
     { $Type: 'UI.DataField', Value: Specialty,              Label: 'Specialty' },
     { $Type: 'UI.DataField', Value: TotalUniqueProviders,   Label: 'Total Unique Providers' },
     {

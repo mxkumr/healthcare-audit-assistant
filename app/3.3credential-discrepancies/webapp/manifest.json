@@ -35,7 +35,9 @@
       "libs": {
         "sap.m": {},
         "sap.ui.core": {},
-        "sap.fe.templates": {}
+        "sap.fe.templates": {},
+        "sap.ui.layout": {},
+        "sap.viz": {}
       }
     },
     "contentDensities": {
@@ -88,6 +90,14 @@
                     "type": "AnalyticalTable",
                     "selectionMode": "None",
                     "enableExport": true
+                  },
+                  "actions": {
+                    "openDiagram": {
+                      "id": "openAiDiagram",
+                      "text": "{{Generate_Diagram}}",
+                      "press": ".extension.com.medicare.33credentialdiscrepancies.controller.ListReportExt.openDiagram",
+                      "requiresSelection": false
+                    }
                   }
                 },
                 "@com.sap.vocabularies.UI.v1.Chart#CredentialDiscrepancyChart": {
@@ -96,10 +106,15 @@
                     "enableStableColors": true,
                     "vizProperties": {
                       "plotArea": {
-                        "dataPointSize": { "min": 48, "max": 48 }
+                        "dataPointSize": {
+                          "min": 48,
+                          "max": 48
+                        }
                       },
                       "interaction": {
-                        "zoom": { "enablement": "enabled" }
+                        "zoom": {
+                          "enablement": "enabled"
+                        }
                       }
                     }
                   },
@@ -127,6 +142,15 @@
                 ]
               }
             }
+          }
+        }
+      }
+    },
+    "extends": {
+      "extensions": {
+        "sap.ui.controllerExtensions": {
+          "sap.fe.templates.ListReport.ListReportController": {
+            "controllerName": "com.medicare.33credentialdiscrepancies.controller.ListReportExt"
           }
         }
       }

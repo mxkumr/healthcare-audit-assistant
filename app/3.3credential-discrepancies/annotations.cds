@@ -120,6 +120,11 @@ annotate service.CredentialDiscrepancies with @(
 
   // BOTTOM LAYER - audit story table (fraud vs policy vs statutory rate)
   UI.LineItem: [
+    {
+      $Type : 'UI.DataFieldForAction',
+      Action: 'MedicareService.EntityContainer/checkAI',
+      Label : '{i18n>Evaluate_AI}'
+    },
     { $Type: 'UI.DataField', Value: StandardizedCredential, Label: 'Standardized Credential' },
     { $Type: 'UI.DataField', Value: TotalUniqueProviders,   Label: 'Total Unique Providers' },
     {
