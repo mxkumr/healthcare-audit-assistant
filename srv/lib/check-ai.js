@@ -81,7 +81,6 @@ async function callAiCore(token, body) {
 
 async function doQuery(token, query, inputCsv) {
   return callAiCore(token, {
-    model: 'gpt-3.5-turbo-1106',
     messages: [
       {
         role: 'user',
@@ -92,18 +91,14 @@ async function doQuery(token, query, inputCsv) {
           query,
       },
     ],
-    max_tokens: 1000,
     temperature: 0,
     frequency_penalty: 0,
     presence_penalty: 0,
-    stop: null,
   });
 }
 
 async function doDiagramQuery(token, query, inputJson, diagramHint) {
   return callAiCore(token, {
-    model: 'gpt-3.5-turbo-1106',
-    response_format: { type: 'json_object' },
     messages: [
       {
         role: 'system',
@@ -123,11 +118,9 @@ async function doDiagramQuery(token, query, inputJson, diagramHint) {
           diagramHint,
       },
     ],
-    max_tokens: 1000,
     temperature: 0,
     frequency_penalty: 0,
     presence_penalty: 0,
-    stop: null,
   });
 }
 
