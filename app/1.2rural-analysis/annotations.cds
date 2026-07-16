@@ -104,6 +104,11 @@ annotate service.RuralAnalysisChart with @(
   },
 
   UI.LineItem: [
+    {
+      $Type : 'UI.DataFieldForAction',
+      Action: 'MedicareService.EntityContainer/checkAI',
+      Label : '{i18n>Evaluate_AI}'
+    },
     { $Type: 'UI.DataField', Value: HCPCS_Code,     Label: 'Procedure Code',          ![@UI.Importance]: #High },
     { $Type: 'UI.DataField', Value: HCPCS_Desc,     Label: 'Procedure Description',   ![@UI.Importance]: #High },
     { $Type: 'UI.DataField', Value: StructuralTier, Label: 'Structural Tier',         ![@UI.Importance]: #High },

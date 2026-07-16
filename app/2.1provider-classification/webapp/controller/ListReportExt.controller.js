@@ -14,8 +14,7 @@ sap.ui.define([
     override: {
       onBeforeRendering() {
         const dataModel = new JSONModel({
-          Query:
-            'Show the top high-cost outlier providers by cost per beneficiary for a bar chart.'
+          Query: 'Show the top high-cost outlier providers by cost per beneficiary for a bar chart.'
         });
         this.getView().setModel(dataModel, 'data');
       }

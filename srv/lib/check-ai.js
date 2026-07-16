@@ -2,6 +2,7 @@
 
 const cds = require('@sap/cds');
 const { SELECT } = cds.ql;
+const { resolveAiContext } = require('./ai-context');
 
 try {
   require('dotenv').config();
@@ -12,30 +13,6 @@ try {
 const MAX_CSV_ROWS = 200;
 const MAX_DIAGRAM_ROWS = 150;
 
-const CSV_COLUMNS = [
-  'Year',
-  'NPI',
-  'ProviderName',
-  'ProviderType',
-  'State',
-  'CostPerBeneficiary',
-  'ServicesPerBeneficiary',
-  'EfficiencyCategory',
-  'UtilizationCategory',
-  'TotalBeneficiaries',
-];
-
-const DIAGRAM_JSON_COLUMNS = [
-  'ProviderName',
-  'State',
-  'Year',
-  'NPI',
-  'CostPerBeneficiary',
-  'ServicesPerBeneficiary',
-  'EfficiencyCategory',
-  'UtilizationCategory',
-];
-
 function escapeCsv(value) {
   if (value === null || value === undefined) return '';
   const text = String(value);
@@ -43,11 +20,9 @@ function escapeCsv(value) {
   return text;
 }
 
-function rowsToCsv(rows) {
-  const header = CSV_COLUMNS.join(',');
-  const lines = rows.map((row) =>
-    CSV_COLUMNS.map((col) => escapeCsv(row[col])).join(',')
-  );
+function rowsToCsv(rows, columns) {
+  const header = columns.join(',');
+  const lines = rows.map((row) => columns.map((col) => escapeCsv(row[col])).join(','));
   return [header, ...lines].join('\n');
 }
 
@@ -106,6 +81,7 @@ async function callAiCore(token, body) {
 
 async function doQuery(token, query, inputCsv) {
   return callAiCore(token, {
+    model: 'gpt-3.5-turbo-1106',
     messages: [
       {
         role: 'user',
@@ -124,7 +100,7 @@ async function doQuery(token, query, inputCsv) {
   });
 }
 
-async function doDiagramQuery(token, query, inputJson) {
+async function doDiagramQuery(token, query, inputJson, diagramHint) {
   return callAiCore(token, {
     model: 'gpt-3.5-turbo-1106',
     response_format: { type: 'json_object' },
@@ -136,16 +112,15 @@ async function doDiagramQuery(token, query, inputJson) {
       {
         role: 'user',
         content:
-          'Given the following provider risk data in JSON format:\n\n' +
+          'Given the following Medicare audit data in JSON format:\n\n' +
           inputJson +
           '\n\n' +
           query +
           '\n\n' +
           'Return a JSON object whose first key is "response". ' +
           '"response" must be an array of at most 10 objects. ' +
-          'Each object must have "provider" (string, provider name) and ' +
-          '"cost_per_beneficiary" (number, not string). ' +
-          'Prefer High-Cost Outlier providers with the highest cost_per_beneficiary.',
+          'Each object must have "label" (string, category name) and "value" (number, not string). ' +
+          diagramHint,
       },
     ],
     max_tokens: 1000,
@@ -156,21 +131,20 @@ async function doDiagramQuery(token, query, inputJson) {
   });
 }
 
-async function runCheckAI(req, entity) {
+async function runCheckAI(req, entity, context) {
   const userInput = req.data.Query;
   if (!userInput?.trim()) {
     return req.reject(400, 'Please enter a question for the AI analysis.');
   }
 
-  const rows = await SELECT.from(entity)
-    .columns(CSV_COLUMNS)
-    .limit(MAX_CSV_ROWS);
+  const columns = context.csvColumns;
+  const rows = await SELECT.from(entity).columns(columns).limit(MAX_CSV_ROWS);
 
   if (!rows.length) {
-    return req.reject(400, 'No provider risk data available to analyze.');
+    return req.reject(400, context.emptyMessage);
   }
 
-  const csv = rowsToCsv(rows);
+  const csv = rowsToCsv(rows, columns);
   const bearerToken = await getToken();
   const response = await doQuery(bearerToken, userInput.trim(), csv);
 
@@ -180,27 +154,31 @@ async function runCheckAI(req, entity) {
   }
 
   req.info(answer);
-  console.log('Evaluate AI question:\n', userInput);
-  console.log('Evaluate AI answer:\n', answer);
+  console.log(`Evaluate AI (${context.entityName}) question:\n`, userInput);
+  console.log(`Evaluate AI (${context.entityName}) answer:\n`, answer);
 }
 
-async function runDiagram(req, entity) {
+async function runDiagram(req, entity, context) {
   const userInput = req.data.Query;
   if (!userInput?.trim()) {
     return req.reject(400, 'Please enter a chart question.');
   }
 
-  const rows = await SELECT.from(entity)
-    .columns(DIAGRAM_JSON_COLUMNS)
-    .limit(MAX_DIAGRAM_ROWS);
+  const columns = context.diagramColumns;
+  const rows = await SELECT.from(entity).columns(columns).limit(MAX_DIAGRAM_ROWS);
 
   if (!rows.length) {
-    return req.reject(400, 'No provider risk data available for charting.');
+    return req.reject(400, context.emptyMessage);
   }
 
-  const formattedProviders = JSON.stringify(rows);
+  const formattedRows = JSON.stringify(rows);
   const bearerToken = await getToken();
-  const response = await doDiagramQuery(bearerToken, userInput.trim(), formattedProviders);
+  const response = await doDiagramQuery(
+    bearerToken,
+    userInput.trim(),
+    formattedRows,
+    context.diagramHint
+  );
 
   const content = response?.choices?.[0]?.message?.content;
   if (!content) {
@@ -210,4 +188,4 @@ async function runDiagram(req, entity) {
   return content;
 }
 
-module.exports = { runCheckAI, runDiagram, rowsToCsv, CSV_COLUMNS };
+module.exports = { runCheckAI, runDiagram, rowsToCsv, resolveAiContext };
