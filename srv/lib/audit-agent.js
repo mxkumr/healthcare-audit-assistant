@@ -150,6 +150,7 @@ class AuditAgentEngine {
     flaggedProviders,
   }) {
     let narrative = `## EXECUTIVE PROVIDER AUDIT REPORT\n\n`;
+    narrative += `**Agency Persona:** Lead Medicare Auditor (autonomous CAP agent)\n`;
     narrative += `**Investigation Objective:** ${prompt || 'Autonomous anomaly screening'}\n`;
     narrative += `**Performance Year:** ${year}\n`;
     const filters = [
@@ -159,6 +160,8 @@ class AuditAgentEngine {
     ].filter(Boolean);
     if (filters.length) narrative += `**Scope Filters:** ${filters.join(' · ')}\n`;
     narrative += `\n`;
+    narrative += `**Reasoning protocol:** Task 1 regional context → Task 2 classification tiers `;
+    narrative += `(EfficiencyCategory / UtilizationCategory) → Task 3 associations → actionable flags.\n\n`;
 
     if (regionalOutliers?.length) {
       narrative += `### 🗺️ 0. Regional Context (Task 1.1 · ${state?.toUpperCase()})\n`;
@@ -173,10 +176,11 @@ class AuditAgentEngine {
     }
 
     if (providerProfile) {
-      narrative += `### 👤 Provider Focus (Task 2.1)\n`;
+      narrative += `### 👤 Provider Focus (Task 2.1 Classification Tiers)\n`;
       narrative += `* **${providerProfile.ProviderName}** (NPI \`${providerProfile.NPI}\`) · ${providerProfile.ProviderType} · ${providerProfile.State}\n`;
       narrative += `* Cost/patient **${fmtCurrency(providerProfile.CostPerBeneficiary)}** · ${providerProfile.ServicesPerBeneficiary} services/patient · risk **${providerProfile.AvgRiskScore}**\n`;
-      narrative += `* Classification: **${providerProfile.EfficiencyCategory}** / **${providerProfile.UtilizationCategory}**\n\n`;
+      narrative += `* **Task 2 tiers:** EfficiencyCategory = **${providerProfile.EfficiencyCategory}** · UtilizationCategory = **${providerProfile.UtilizationCategory}**\n`;
+      narrative += `* Agency interpretation: treat these CAP-stamped bands as authoritative before attributing cost to complexity vs inefficiency.\n\n`;
     }
 
     narrative += `### 🔍 1. Specialty Outlier Frontier (Task 3.1)\n`;

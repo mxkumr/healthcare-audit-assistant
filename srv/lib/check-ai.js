@@ -2,7 +2,11 @@
 
 const cds = require('@sap/cds');
 const { SELECT } = cds.ql;
-const { resolveAiContext } = require('./ai-context');
+const {
+  resolveAiContext,
+  buildSchemaSnapshot,
+  buildDataSnapshot,
+} = require('./ai-context');
 
 try {
   require('dotenv').config();
@@ -10,8 +14,42 @@ try {
   /* dotenv optional at runtime */
 }
 
-const MAX_CSV_ROWS = 200;
+const MAX_CSV_ROWS = 400;
 const MAX_DIAGRAM_ROWS = 150;
+
+/**
+ * Prompt topology (Task 4 — hallucination control):
+ *  1) system  → persona + agency reasoning protocol (no raw data)
+ *  2) user    → compressed JSON { schemaSnapshot, dataSnapshot, question }
+ *
+ * Schema snapshot = ALP/Task metadata + Task 2 tiers (when present).
+ * Data snapshot   = CAP JSON rows (not free-form prose).
+ */
+
+const LEAD_AUDITOR_SYSTEM_PROMPT = [
+  'PERSONA: You are the Lead Medicare Auditor for a CAP/Fiori Healthcare Audit Assistant on SAP BTP.',
+  'You operate as an explanation agent grounded in Analytical List Pages (ALPs) backed by CDS views.',
+  '',
+  'AGENCY FRAMEWORK (always follow in order):',
+  '1) ALP frame — Read schemaSnapshot.alp and alpGuidance. Identify which CAP columns answer the question.',
+  '2) Task 2 classification reasoning — If schemaSnapshot.task2ClassificationTiers is present, first reason with',
+  '   EfficiencyCategory and/or UtilizationCategory values already stamped on each CAP row (Task 2 bands).',
+  '   Only then rank numeric measures (CostPerBeneficiary, ServicesPerBeneficiary, etc.).',
+  '3) CSV/JSON evidence — Scan ALL rows in dataSnapshot.rows. Filter/sort using rankingHints / primaryMetrics.',
+  '   Build a complete picture (aggregates, top/bottom rows, counter-examples). Quote identifiers and numbers exactly.',
+  '4) Actionability — Propose one concrete follow-up on this ALP (filter, sort, flag NPI/specialty/state).',
+  '',
+  'ANTI-HALLUCINATION:',
+  '- Use ONLY dataSnapshot.rows. Never invent NPIs, providers, states, codes, categories, or amounts.',
+  '- Trust precomputed CAP column values. Do not invent alternate formulas or classification cutoffs.',
+  '- Stay on this ALP entity only. If the snapshot is truncated, say so under Confidence.',
+  '',
+  'OUTPUT (exact Markdown):',
+  '## Finding',
+  '## Evidence',
+  '## Confidence',
+  '## Follow-up',
+].join('\n');
 
 function escapeCsv(value) {
   if (value === null || value === undefined) return '';
@@ -79,16 +117,25 @@ async function callAiCore(token, body) {
   return response.json();
 }
 
-async function doQuery(token, query, inputCsv) {
+function buildContextWindowPayload(context, rows, question) {
+  return {
+    schemaSnapshot: buildSchemaSnapshot(context),
+    dataSnapshot: buildDataSnapshot(rows, context, { maxRows: MAX_CSV_ROWS }),
+    question,
+  };
+}
+
+async function doQuery(token, question, rows, context) {
+  const payload = buildContextWindowPayload(context, rows, question);
   return callAiCore(token, {
     messages: [
+      { role: 'system', content: LEAD_AUDITOR_SYSTEM_PROMPT },
       {
         role: 'user',
         content:
-          'You are a Medicare audit analyst. Answer using only the CSV data below.\n\n' +
-          inputCsv +
-          '\n\nQuestion:\n' +
-          query,
+          'CONTEXT WINDOW (compressed CAP JSON snapshots). ' +
+          'Execute Agency steps 1→4 using schemaSnapshot then dataSnapshot.\n\n' +
+          JSON.stringify(payload),
       },
     ],
     temperature: 0,
@@ -102,20 +149,22 @@ async function doDiagramQuery(token, query, inputJson, diagramHint) {
     messages: [
       {
         role: 'system',
-        content: 'You are a helpful assistant designed to output JSON for Medicare audit charts.',
+        content:
+          'PERSONA: Lead Medicare Auditor charting assistant. ' +
+          'Use only the provided CAP JSON rows. Output chart JSON only.',
       },
       {
         role: 'user',
         content:
-          'Given the following Medicare audit data in JSON format:\n\n' +
+          'schemaHint: ' +
+          diagramHint +
+          '\n\ndataSnapshot:\n' +
           inputJson +
-          '\n\n' +
+          '\n\nquestion:\n' +
           query +
-          '\n\n' +
-          'Return a JSON object whose first key is "response". ' +
+          '\n\nReturn a JSON object whose first key is "response". ' +
           '"response" must be an array of at most 10 objects. ' +
-          'Each object must have "label" (string, category name) and "value" (number, not string). ' +
-          diagramHint,
+          'Each object must have "label" (string) and "value" (number, not string).',
       },
     ],
     temperature: 0,
@@ -137,9 +186,8 @@ async function runCheckAI(req, entity, context) {
     return req.reject(400, context.emptyMessage);
   }
 
-  const csv = rowsToCsv(rows, columns);
   const bearerToken = await getToken();
-  const response = await doQuery(bearerToken, userInput.trim(), csv);
+  const response = await doQuery(bearerToken, userInput.trim(), rows, context);
 
   const answer = response?.choices?.[0]?.message?.content;
   if (!answer) {
@@ -164,7 +212,15 @@ async function runDiagram(req, entity, context) {
     return req.reject(400, context.emptyMessage);
   }
 
-  const formattedRows = JSON.stringify(rows);
+  const formattedRows = JSON.stringify({
+    schemaSnapshot: {
+      alp: context.alpName,
+      entity: context.entityName,
+      columns,
+      diagramHint: context.diagramHint,
+    },
+    dataSnapshot: { rows },
+  });
   const bearerToken = await getToken();
   const response = await doDiagramQuery(
     bearerToken,
@@ -181,4 +237,11 @@ async function runDiagram(req, entity, context) {
   return content;
 }
 
-module.exports = { runCheckAI, runDiagram, rowsToCsv, resolveAiContext };
+module.exports = {
+  runCheckAI,
+  runDiagram,
+  rowsToCsv,
+  resolveAiContext,
+  buildContextWindowPayload,
+  LEAD_AUDITOR_SYSTEM_PROMPT,
+};
