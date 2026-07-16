@@ -2,7 +2,12 @@
 
 const cds = require('@sap/cds');
 const { SELECT } = cds.ql;
-const { resolveAiContext } = require('./ai-context');
+const {
+  resolveAiContext,
+  buildSchemaSnapshot,
+  buildDataSnapshot,
+  sanitizeRow,
+} = require('./ai-context');
 
 try {
   require('dotenv').config();
@@ -10,8 +15,51 @@ try {
   /* dotenv optional at runtime */
 }
 
-const MAX_CSV_ROWS = 200;
+const MAX_CSV_ROWS = 400;
 const MAX_DIAGRAM_ROWS = 150;
+
+/**
+ * Prompt topology (Task 4 — hallucination control):
+ *  1) system  → persona + agency reasoning protocol (no raw data)
+ *  2) user    → compressed JSON { schemaSnapshot, dataSnapshot, question }
+ *
+ * Schema snapshot = ALP/Task metadata + Task 2 tiers (when present).
+ * Data snapshot   = CAP JSON rows (not free-form prose).
+ */
+
+const LEAD_AUDITOR_SYSTEM_PROMPT = [
+  'PERSONA: You are the Lead Medicare Auditor briefing a colleague.',
+  'Write in clear, natural professional English — like an audit memo, not a system log.',
+  '',
+  'INTERNAL REASONING (do this silently; do NOT narrate these steps or JSON field names):',
+  '1) Read the ALP metadata in the context JSON to know which columns answer the question.',
+  '2) If Task 2 classification tiers are present, use EfficiencyCategory / UtilizationCategory on each row first.',
+  '3) Scan every data row; filter/sort; compare; quote only values that appear in those rows.',
+  '4) End with one practical next step an auditor can take in the Fiori table.',
+  '',
+  'ANTI-HALLUCINATION:',
+  '- Use only the provided data rows. Never invent NPIs, providers, codes, or amounts.',
+  '- Prefer a smaller set of correctly copied figures over a long list of guessed ones.',
+  '- Money and rates are already rounded to 2 decimals in the briefing pack — quote them as-is (e.g. 7314.08, not long fractions).',
+  '- If EntityType is present, use the full labels on each row ("Individual Clinician" / "Organization / Corporate Network"); do not invent alternate entity names.',
+  '- For organization vs individual questions, filter by EntityType before picking a winner — do not treat a random Individual as proof Organizations are cheap.',
+  '- EfficiencyCategory uses "High-Cost Outlier" (not bare "Outlier").',
+  '- If you cannot compute a clean aggregate from the rows, say so briefly in Confidence.',
+  '',
+  'STYLE:',
+  '- Do NOT mention schemaSnapshot, dataSnapshot, truncated, CAP JSON, agency framework, or "ALP frame".',
+  '- Do NOT dump raw JSON keys. Use normal labels (e.g. Urban / Metro, rejected charges, procedure 99214).',
+  '- Finding: 2–4 plain sentences.',
+  '- Evidence: short bullets with real figures; group by tier/specialty when helpful.',
+  '- Confidence: one short human sentence (High/Medium/Low + why), no machine metadata.',
+  '- Follow-up: one concrete UI action in everyday words (filter, sort, open a provider).',
+  '',
+  'OUTPUT — use exactly these Markdown headings, then natural prose underneath:',
+  '## Finding',
+  '## Evidence',
+  '## Confidence',
+  '## Follow-up',
+].join('\n');
 
 function escapeCsv(value) {
   if (value === null || value === undefined) return '';
@@ -79,55 +127,60 @@ async function callAiCore(token, body) {
   return response.json();
 }
 
-async function doQuery(token, query, inputCsv) {
+function buildContextWindowPayload(context, rows, question) {
+  return {
+    schemaSnapshot: buildSchemaSnapshot(context),
+    dataSnapshot: buildDataSnapshot(rows, context, { maxRows: MAX_CSV_ROWS }),
+    question,
+  };
+}
+
+async function doQuery(token, question, rows, context) {
+  const payload = buildContextWindowPayload(context, rows, question);
   return callAiCore(token, {
-    model: 'gpt-3.5-turbo-1106',
     messages: [
+      { role: 'system', content: LEAD_AUDITOR_SYSTEM_PROMPT },
       {
         role: 'user',
         content:
-          'You are a Medicare audit analyst. Answer using only the CSV data below.\n\n' +
-          inputCsv +
-          '\n\nQuestion:\n' +
-          query,
+          'Answer the question as a Lead Medicare Auditor memo. ' +
+          'Use the JSON below only as your private briefing pack (ALP metadata + data rows). ' +
+          'Do not echo JSON field names in your answer.\n\n' +
+          JSON.stringify(payload),
       },
     ],
-    max_tokens: 1000,
     temperature: 0,
     frequency_penalty: 0,
     presence_penalty: 0,
-    stop: null,
   });
 }
 
 async function doDiagramQuery(token, query, inputJson, diagramHint) {
   return callAiCore(token, {
-    model: 'gpt-3.5-turbo-1106',
-    response_format: { type: 'json_object' },
     messages: [
       {
         role: 'system',
-        content: 'You are a helpful assistant designed to output JSON for Medicare audit charts.',
+        content:
+          'PERSONA: Lead Medicare Auditor charting assistant. ' +
+          'Use only the provided CAP JSON rows. Output chart JSON only.',
       },
       {
         role: 'user',
         content:
-          'Given the following Medicare audit data in JSON format:\n\n' +
+          'schemaHint: ' +
+          diagramHint +
+          '\n\ndataSnapshot:\n' +
           inputJson +
-          '\n\n' +
+          '\n\nquestion:\n' +
           query +
-          '\n\n' +
-          'Return a JSON object whose first key is "response". ' +
+          '\n\nReturn a JSON object whose first key is "response". ' +
           '"response" must be an array of at most 10 objects. ' +
-          'Each object must have "label" (string, category name) and "value" (number, not string). ' +
-          diagramHint,
+          'Each object must have "label" (string) and "value" (number, not string).',
       },
     ],
-    max_tokens: 1000,
     temperature: 0,
     frequency_penalty: 0,
     presence_penalty: 0,
-    stop: null,
   });
 }
 
@@ -138,15 +191,18 @@ async function runCheckAI(req, entity, context) {
   }
 
   const columns = context.csvColumns;
-  const rows = await SELECT.from(entity).columns(columns).limit(MAX_CSV_ROWS);
+  let query = SELECT.from(entity).columns(columns);
+  if (context.sortBy) {
+    query = query.orderBy(`${context.sortBy} desc`);
+  }
+  const rows = await query.limit(MAX_CSV_ROWS);
 
   if (!rows.length) {
     return req.reject(400, context.emptyMessage);
   }
 
-  const csv = rowsToCsv(rows, columns);
   const bearerToken = await getToken();
-  const response = await doQuery(bearerToken, userInput.trim(), csv);
+  const response = await doQuery(bearerToken, userInput.trim(), rows, context);
 
   const answer = response?.choices?.[0]?.message?.content;
   if (!answer) {
@@ -165,13 +221,27 @@ async function runDiagram(req, entity, context) {
   }
 
   const columns = context.diagramColumns;
-  const rows = await SELECT.from(entity).columns(columns).limit(MAX_DIAGRAM_ROWS);
+  let query = SELECT.from(entity).columns(columns);
+  if (context.sortBy) {
+    query = query.orderBy(`${context.sortBy} desc`);
+  }
+  const rows = await query.limit(MAX_DIAGRAM_ROWS);
 
   if (!rows.length) {
     return req.reject(400, context.emptyMessage);
   }
 
-  const formattedRows = JSON.stringify(rows);
+  const sanitized = rows.map((row) => sanitizeRow(row, columns));
+  const formattedRows = JSON.stringify({
+    schemaSnapshot: {
+      alp: context.alpName,
+      entity: context.entityName,
+      columns,
+      sortedBy: context.sortBy || null,
+      diagramHint: context.diagramHint,
+    },
+    dataSnapshot: { rows: sanitized, sortedBy: context.sortBy || null },
+  });
   const bearerToken = await getToken();
   const response = await doDiagramQuery(
     bearerToken,
@@ -188,4 +258,11 @@ async function runDiagram(req, entity, context) {
   return content;
 }
 
-module.exports = { runCheckAI, runDiagram, rowsToCsv, resolveAiContext };
+module.exports = {
+  runCheckAI,
+  runDiagram,
+  rowsToCsv,
+  resolveAiContext,
+  buildContextWindowPayload,
+  LEAD_AUDITOR_SYSTEM_PROMPT,
+};
