@@ -154,7 +154,7 @@ function controllerSource(componentId, diagramQuery) {
 `;
 }
 
-const FRAGMENT_XML = `core:FragmentDefinition
+const FRAGMENT_XML = `<core:FragmentDefinition
     xmlns="sap.m"
     xmlns:core="sap.ui.core"
     xmlns:viz="sap.viz.ui5.controls"
