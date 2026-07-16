@@ -246,7 +246,7 @@ function patchAnnotations(appPath) {
   if (appPath === 'app/risk-analysis') {
     content += `
 
-annotate service.RiskScoreDistribution with @{
+annotate service.RiskScoreDistribution with @(
   UI.LineItem: [
 ${CHECK_AI_BLOCK}
     { $Type: 'UI.DataField', Value: Year,           Label: 'Year' },
@@ -257,7 +257,7 @@ ${CHECK_AI_BLOCK}
     { $Type: 'UI.DataField', Value: TotalPaid,      Label: 'Total Medicare Paid' },
     { $Type: 'UI.DataField', Value: AvgRiskScore,   Label: 'Avg Risk Score' }
   ]
-};
+);
 `;
     fs.writeFileSync(annotationsPath, content);
     return true;
