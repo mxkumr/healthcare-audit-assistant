@@ -6,6 +6,7 @@ const {
   resolveAiContext,
   buildSchemaSnapshot,
   buildDataSnapshot,
+  sanitizeRow,
 } = require('./ai-context');
 
 try {
@@ -27,24 +28,33 @@ const MAX_DIAGRAM_ROWS = 150;
  */
 
 const LEAD_AUDITOR_SYSTEM_PROMPT = [
-  'PERSONA: You are the Lead Medicare Auditor for a CAP/Fiori Healthcare Audit Assistant on SAP BTP.',
-  'You operate as an explanation agent grounded in Analytical List Pages (ALPs) backed by CDS views.',
+  'PERSONA: You are the Lead Medicare Auditor briefing a colleague.',
+  'Write in clear, natural professional English — like an audit memo, not a system log.',
   '',
-  'AGENCY FRAMEWORK (always follow in order):',
-  '1) ALP frame — Read schemaSnapshot.alp and alpGuidance. Identify which CAP columns answer the question.',
-  '2) Task 2 classification reasoning — If schemaSnapshot.task2ClassificationTiers is present, first reason with',
-  '   EfficiencyCategory and/or UtilizationCategory values already stamped on each CAP row (Task 2 bands).',
-  '   Only then rank numeric measures (CostPerBeneficiary, ServicesPerBeneficiary, etc.).',
-  '3) CSV/JSON evidence — Scan ALL rows in dataSnapshot.rows. Filter/sort using rankingHints / primaryMetrics.',
-  '   Build a complete picture (aggregates, top/bottom rows, counter-examples). Quote identifiers and numbers exactly.',
-  '4) Actionability — Propose one concrete follow-up on this ALP (filter, sort, flag NPI/specialty/state).',
+  'INTERNAL REASONING (do this silently; do NOT narrate these steps or JSON field names):',
+  '1) Read the ALP metadata in the context JSON to know which columns answer the question.',
+  '2) If Task 2 classification tiers are present, use EfficiencyCategory / UtilizationCategory on each row first.',
+  '3) Scan every data row; filter/sort; compare; quote only values that appear in those rows.',
+  '4) End with one practical next step an auditor can take in the Fiori table.',
   '',
   'ANTI-HALLUCINATION:',
-  '- Use ONLY dataSnapshot.rows. Never invent NPIs, providers, states, codes, categories, or amounts.',
-  '- Trust precomputed CAP column values. Do not invent alternate formulas or classification cutoffs.',
-  '- Stay on this ALP entity only. If the snapshot is truncated, say so under Confidence.',
+  '- Use only the provided data rows. Never invent NPIs, providers, codes, or amounts.',
+  '- Prefer a smaller set of correctly copied figures over a long list of guessed ones.',
+  '- Money and rates are already rounded to 2 decimals in the briefing pack — quote them as-is (e.g. 7314.08, not long fractions).',
+  '- If EntityType is present, use the full labels on each row ("Individual Clinician" / "Organization / Corporate Network"); do not invent alternate entity names.',
+  '- For organization vs individual questions, filter by EntityType before picking a winner — do not treat a random Individual as proof Organizations are cheap.',
+  '- EfficiencyCategory uses "High-Cost Outlier" (not bare "Outlier").',
+  '- If you cannot compute a clean aggregate from the rows, say so briefly in Confidence.',
   '',
-  'OUTPUT (exact Markdown):',
+  'STYLE:',
+  '- Do NOT mention schemaSnapshot, dataSnapshot, truncated, CAP JSON, agency framework, or "ALP frame".',
+  '- Do NOT dump raw JSON keys. Use normal labels (e.g. Urban / Metro, rejected charges, procedure 99214).',
+  '- Finding: 2–4 plain sentences.',
+  '- Evidence: short bullets with real figures; group by tier/specialty when helpful.',
+  '- Confidence: one short human sentence (High/Medium/Low + why), no machine metadata.',
+  '- Follow-up: one concrete UI action in everyday words (filter, sort, open a provider).',
+  '',
+  'OUTPUT — use exactly these Markdown headings, then natural prose underneath:',
   '## Finding',
   '## Evidence',
   '## Confidence',
@@ -133,8 +143,9 @@ async function doQuery(token, question, rows, context) {
       {
         role: 'user',
         content:
-          'CONTEXT WINDOW (compressed CAP JSON snapshots). ' +
-          'Execute Agency steps 1→4 using schemaSnapshot then dataSnapshot.\n\n' +
+          'Answer the question as a Lead Medicare Auditor memo. ' +
+          'Use the JSON below only as your private briefing pack (ALP metadata + data rows). ' +
+          'Do not echo JSON field names in your answer.\n\n' +
           JSON.stringify(payload),
       },
     ],
@@ -180,7 +191,11 @@ async function runCheckAI(req, entity, context) {
   }
 
   const columns = context.csvColumns;
-  const rows = await SELECT.from(entity).columns(columns).limit(MAX_CSV_ROWS);
+  let query = SELECT.from(entity).columns(columns);
+  if (context.sortBy) {
+    query = query.orderBy(`${context.sortBy} desc`);
+  }
+  const rows = await query.limit(MAX_CSV_ROWS);
 
   if (!rows.length) {
     return req.reject(400, context.emptyMessage);
@@ -206,20 +221,26 @@ async function runDiagram(req, entity, context) {
   }
 
   const columns = context.diagramColumns;
-  const rows = await SELECT.from(entity).columns(columns).limit(MAX_DIAGRAM_ROWS);
+  let query = SELECT.from(entity).columns(columns);
+  if (context.sortBy) {
+    query = query.orderBy(`${context.sortBy} desc`);
+  }
+  const rows = await query.limit(MAX_DIAGRAM_ROWS);
 
   if (!rows.length) {
     return req.reject(400, context.emptyMessage);
   }
 
+  const sanitized = rows.map((row) => sanitizeRow(row, columns));
   const formattedRows = JSON.stringify({
     schemaSnapshot: {
       alp: context.alpName,
       entity: context.entityName,
       columns,
+      sortedBy: context.sortBy || null,
       diagramHint: context.diagramHint,
     },
-    dataSnapshot: { rows },
+    dataSnapshot: { rows: sanitized, sortedBy: context.sortBy || null },
   });
   const bearerToken = await getToken();
   const response = await doDiagramQuery(

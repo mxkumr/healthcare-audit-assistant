@@ -33,12 +33,14 @@ const ENTITY_CONTEXTS = {
     task: '1.1',
     grain: 'Year × State × ProviderType',
     primaryMetrics: ['TotalPaid', 'RejectedCharges'],
+    sortBy: 'RejectedCharges',
     rankingHints: {
       highestSpend: 'TotalPaid',
       mostOverBilling: 'RejectedCharges',
     },
     schemaRules: [
       'ALP purpose: state × specialty Medicare spend and rejected over-charges.',
+      'Rows are pre-sorted by RejectedCharges descending — for highest spend, re-rank the pack by TotalPaid.',
       'For highest spend: rank by TotalPaid. For most over-billing: rank by RejectedCharges.',
       'Use only rows on this ALP; trust precomputed CAP column values.',
     ],
@@ -51,6 +53,7 @@ const ENTITY_CONTEXTS = {
       'StructuralTier',
       'TotalServices',
       'TotalSubmitted',
+      'TotalPaid',
       'RejectedCharges',
       'OverclaimRate',
       'TierDeviation',
@@ -64,6 +67,7 @@ const ENTITY_CONTEXTS = {
       'TierDeviation',
       'RejectedCharges',
       'TotalSubmitted',
+      'TotalPaid',
     ],
     diagramHint:
       'Prefer HCPCS_Code or StructuralTier as label and OverclaimRate, TierDeviation, or RejectedCharges as value.',
@@ -71,14 +75,16 @@ const ENTITY_CONTEXTS = {
     task: '1.2',
     grain: 'HCPCS_Code × StructuralTier',
     primaryMetrics: ['OverclaimRate', 'TierDeviation', 'TotalServices'],
+    sortBy: 'OverclaimRate',
     rankingHints: {
       mostOverclaim: 'OverclaimRate',
       worstVsBaseline: 'TierDeviation',
     },
     schemaRules: [
       'ALP purpose: same HCPCS across Urban / Suburban / Rural tiers.',
-      'Most overclaim → rank StructuralTier by OverclaimRate (use TotalSubmitted/TotalServices for volume context).',
-      'Worse than baseline → rank by TierDeviation. Trust CAP columns; do not invent rates.',
+      'StructuralTier values are exactly: "Urban / Metro", "Suburban / Micro", "Rural / Isolated".',
+      'Most overclaim → rank StructuralTier by OverclaimRate (use TotalSubmitted/TotalServices/TotalPaid for volume context).',
+      'Worse than baseline → rank by TierDeviation. Trust CAP columns; do not invent rates or UrbanBaselineRate.',
     ],
     emptyMessage: 'No rural vs urban procedure data available.',
   },
@@ -109,12 +115,14 @@ const ENTITY_CONTEXTS = {
     task: '1.3',
     grain: 'Year × State × ProviderType × BHBurdenGroup',
     primaryMetrics: ['PaidPerBeneficiary', 'AvgRiskScore'],
+    sortBy: 'PaidPerBeneficiary',
     rankingHints: {
       highestCostIntensity: 'PaidPerBeneficiary',
       highestComplexity: 'AvgRiskScore',
     },
     schemaRules: [
       'ALP purpose: BH burden peer groups vs cost and risk.',
+      'BHBurdenGroup values are exactly: "A - Low BH Burden" or "B - High BH Burden".',
       'Highest cost intensity → PaidPerBeneficiary. Audit focus: high PaidPerBeneficiary with relatively low AvgRiskScore.',
       'Trust BHBurdenGroup labels on each CAP row.',
     ],
@@ -126,15 +134,18 @@ const ENTITY_CONTEXTS = {
       'NPI',
       'ProviderName',
       'ProviderType',
+      'EntityType',
       'State',
       'CostPerBeneficiary',
       'ServicesPerBeneficiary',
       'EfficiencyCategory',
       'UtilizationCategory',
       'TotalBeneficiaries',
+      'AvgRiskScore',
     ],
     diagramColumns: [
       'ProviderName',
+      'EntityType',
       'State',
       'Year',
       'NPI',
@@ -149,6 +160,11 @@ const ENTITY_CONTEXTS = {
     task: '2.1',
     grain: 'Year × NPI',
     primaryMetrics: ['CostPerBeneficiary', 'ServicesPerBeneficiary', 'EfficiencyCategory', 'UtilizationCategory'],
+    sortBy: 'CostPerBeneficiary',
+    entityTypeMap: {
+      I: 'Individual Clinician',
+      O: 'Organization / Corporate Network',
+    },
     task2ClassificationTiers: {
       EfficiencyCategory: ['Highly Efficient', 'Average Spend', 'High-Cost Outlier'],
       UtilizationCategory: ['Low Utilization', 'Moderate Utilization', 'High Utilization'],
@@ -161,8 +177,10 @@ const ENTITY_CONTEXTS = {
     },
     schemaRules: [
       'ALP purpose: Task 2.1 two-axis provider classification matrix.',
-      'Reason through EfficiencyCategory × UtilizationCategory tiers from CAP before ranking numeric measures.',
-      'High-cost outliers → EfficiencyCategory High-Cost Outlier, then CostPerBeneficiary.',
+      'EntityType on each row is exactly "Individual Clinician" or "Organization / Corporate Network" (never invent alternate labels).',
+      'EfficiencyCategory uses "High-Cost Outlier" (not bare "Outlier").',
+      'Rows are pre-sorted by CostPerBeneficiary descending — the first High-Cost Outlier is the top cost/patient provider in this extract.',
+      'Reason through EfficiencyCategory × UtilizationCategory before ranking dollars.',
     ],
     emptyMessage: 'No provider classification data available.',
   },
@@ -177,6 +195,7 @@ const ENTITY_CONTEXTS = {
       'NationalAvgCost',
       'CostTierDeviation',
       'ServicesPerPatient',
+      'NationalAvgServices',
       'ServiceTierDeviation',
     ],
     diagramColumns: [
@@ -193,6 +212,7 @@ const ENTITY_CONTEXTS = {
     task: '2.2a',
     grain: 'Year × NPI (specialty peer baselines)',
     primaryMetrics: ['CostTierDeviation', 'ServiceTierDeviation', 'CostPerPatient'],
+    sortBy: 'CostTierDeviation',
     rankingHints: {
       costPeerOutlier: 'CostTierDeviation',
       servicePeerOutlier: 'ServiceTierDeviation',
@@ -200,6 +220,7 @@ const ENTITY_CONTEXTS = {
     schemaRules: [
       'ALP purpose: Task 2.2a peer deviation vs specialty national averages already on each row.',
       'Biggest cost peer outlier → CostTierDeviation. Biggest utilization peer outlier → ServiceTierDeviation.',
+      'NationalAvgCost / NationalAvgServices are the specialty baselines already stamped on each row.',
     ],
     emptyMessage: 'No specialty peer deviation data available.',
   },
@@ -215,6 +236,7 @@ const ENTITY_CONTEXTS = {
       'ServicesPerBeneficiary',
       'EfficiencyCategory',
       'UtilizationCategory',
+      'TotalBeneficiaries',
     ],
     diagramColumns: [
       'ProviderName',
@@ -230,18 +252,29 @@ const ENTITY_CONTEXTS = {
     task: '2.2b',
     grain: 'Year × NPI × EntityType',
     primaryMetrics: ['CostPerBeneficiary', 'EntityType', 'EfficiencyCategory'],
+    sortBy: 'CostPerBeneficiary',
+    entityTypeMap: {
+      I: 'Individual Clinician',
+      O: 'Organization / Corporate Network',
+    },
     task2ClassificationTiers: {
       EfficiencyCategory: ['Highly Efficient', 'Average Spend', 'High-Cost Outlier'],
       UtilizationCategory: ['Low Utilization', 'Moderate Utilization', 'High Utilization'],
       authority: 'Reuse Task 2.1 classification columns stamped by CAP on each row.',
     },
     rankingHints: {
-      entityCostCompare: 'CostPerBeneficiary by EntityType',
-      outliers: 'EfficiencyCategory then CostPerBeneficiary',
+      overallHighestCostPerPatient: 'CostPerBeneficiary (rows pre-sorted desc)',
+      highestOrganization: 'filter EntityType=Organization / Corporate Network then take top CostPerBeneficiary',
+      highestIndividual: 'filter EntityType=Individual Clinician then take top CostPerBeneficiary',
+      entityCostCompare: 'compare top Organization vs top Individual by CostPerBeneficiary',
     },
     schemaRules: [
-      'ALP purpose: Task 2.2b Individual vs Organization using Task 2 classification tiers.',
-      'Compare EntityType using CostPerBeneficiary; reason with EfficiencyCategory / UtilizationCategory on the row.',
+      'ALP purpose: Task 2.2b Individual vs Organization / Corporate Network profiling.',
+      'EntityType values are exactly: "Individual Clinician" or "Organization / Corporate Network" (from CMS entity code I/O).',
+      'Many Opioid Treatment Program and ambulance providers are Organizations — do not assume the global max CostPerBeneficiary is always an Individual.',
+      'For “highest cost per patient overall”: use the first row (pre-sorted by CostPerBeneficiary desc).',
+      'For “highest corporate/organization”: filter EntityType = Organization / Corporate Network, then take the top CostPerBeneficiary.',
+      'Use EfficiencyCategory / UtilizationCategory as stamped; round money to 2 decimals when speaking.',
     ],
     emptyMessage: 'No organization profiling data available.',
   },
@@ -268,6 +301,7 @@ const ENTITY_CONTEXTS = {
     task: '3.1',
     grain: 'Year × Specialty',
     primaryMetrics: ['CostPerPatient', 'PatientRiskScore', 'TotalActualPayments'],
+    sortBy: 'CostPerPatient',
     rankingHints: {
       mostExpensiveSpecialty: 'CostPerPatient',
       highestComplexity: 'PatientRiskScore',
@@ -288,6 +322,7 @@ const ENTITY_CONTEXTS = {
       'NPI',
       'State',
       'TotalPatientsServed',
+      'TotalServicesRendered',
       'AvgSubmittedPerService',
       'AvgPaymentPerService',
       'TotalActualPayments',
@@ -299,6 +334,7 @@ const ENTITY_CONTEXTS = {
       'AvgPaymentPerService',
       'AvgSubmittedPerService',
       'TotalActualPayments',
+      'TotalServicesRendered',
     ],
     diagramHint:
       'Prefer ProviderName, Specialty, or PlaceOfService as label and AvgPaymentPerService or TotalActualPayments as value.',
@@ -306,12 +342,15 @@ const ENTITY_CONTEXTS = {
     task: '3.2',
     grain: 'Year × NPI × Specialty × PlaceOfService',
     primaryMetrics: ['AvgPaymentPerService', 'AvgSubmittedPerService', 'TotalActualPayments'],
+    sortBy: 'AvgPaymentPerService',
     rankingHints: {
       paymentIntensity: 'AvgPaymentPerService',
     },
     schemaRules: [
       'ALP purpose: Task 3.2 Facility vs Office payment intensity.',
+      'PlaceOfService values are exactly: "Facility (Hospital/ASC)" or "Office (Non-Facility)".',
       'Higher payment intensity → AvgPaymentPerService; compare POS within the same specialty when both exist.',
+      'Use TotalServicesRendered / TotalPatientsServed for volume context.',
     ],
     emptyMessage: 'No place-of-service data available.',
   },
@@ -320,6 +359,7 @@ const ENTITY_CONTEXTS = {
       'Year',
       'StandardizedCredential',
       'TotalUniqueProviders',
+      'TotalPatientsServed',
       'ChargePaddingAmt',
       'ChargePaddingRatePct',
       'PolicyShortfallAmt',
@@ -339,6 +379,7 @@ const ENTITY_CONTEXTS = {
     task: '3.3',
     grain: 'Year × StandardizedCredential',
     primaryMetrics: ['ChargePaddingAmt', 'ChargePaddingRatePct', 'PaidToAllowedRatePct'],
+    sortBy: 'ChargePaddingAmt',
     rankingHints: {
       mostPaddingDollars: 'ChargePaddingAmt',
       mostPaddingRate: 'ChargePaddingRatePct',
@@ -346,7 +387,8 @@ const ENTITY_CONTEXTS = {
     schemaRules: [
       'ALP purpose: Task 3.3 credential-level padding vs policy shortfall.',
       'Most charge padding → ChargePaddingAmt or ChargePaddingRatePct as asked.',
-      'PaidToAllowedRatePct near mid-level norms is often policy, not fraud by itself.',
+      'PaidToAllowedRatePct near mid-level norms (NP/PA) is often policy, not fraud by itself.',
+      'Use TotalPatientsServed / TotalUniqueProviders for volume context.',
     ],
     emptyMessage: 'No credential discrepancy data available.',
   },
@@ -377,13 +419,15 @@ const ENTITY_CONTEXTS = {
     task: '1.x',
     grain: 'Year × State × ProviderType × RiskBand',
     primaryMetrics: ['TotalPaid', 'AvgRiskScore', 'RiskBand'],
+    sortBy: 'TotalPaid',
     rankingHints: {
       highestSpendBand: 'TotalPaid',
       highestAvgRisk: 'AvgRiskScore',
     },
     schemaRules: [
       'ALP purpose: patient complexity RiskBand distribution.',
-      'Trust RiskBand labels on CAP rows. Highest spend → TotalPaid; highest risk → AvgRiskScore.',
+      'RiskBand values are CAP-stamped bands like "1 - Very Low (<0.5)" through "5 - Very High (>=2.0)" — quote them exactly.',
+      'Highest spend → TotalPaid; highest risk → AvgRiskScore.',
     ],
     emptyMessage: 'No risk score distribution data available.',
   },
@@ -442,7 +486,9 @@ function buildSchemaSnapshot(context) {
     columns: context.csvColumns || [],
     primaryMetrics: context.primaryMetrics || [],
     rankingHints: context.rankingHints || {},
+    entityTypeMap: context.entityTypeMap || null,
     task2ClassificationTiers: context.task2ClassificationTiers || null,
+    sortedBy: context.sortBy || null,
     alpGuidance: context.schemaRules || [],
     antiHallucination: [
       'Use ONLY rows in dataSnapshot.rows',
@@ -456,16 +502,40 @@ function buildSchemaSnapshot(context) {
 /** Compressed data snapshot from CAP query results. */
 function buildDataSnapshot(rows, context, { maxRows } = {}) {
   const limit = maxRows || rows.length;
-  const sliced = rows.slice(0, limit);
+  const columns = context.csvColumns || [];
+  const sliced = rows.slice(0, limit).map((row) => sanitizeRow(row, columns));
   return {
     source: 'CAP MedicareService',
     entity: context.entityName,
     format: 'json-rows',
     rowCount: sliced.length,
     truncated: rows.length > sliced.length,
-    columns: context.csvColumns || [],
+    sortedBy: context.sortBy || null,
+    columns,
     rows: sliced,
   };
+}
+
+/** Round noisy decimals so the model does not echo 20+ fractional digits. */
+function sanitizeRow(row, columns) {
+  const out = {};
+  for (const col of columns) {
+    let value = row[col];
+    if (value == null) {
+      out[col] = value;
+      continue;
+    }
+    if (typeof value === 'number' && !Number.isInteger(value)) {
+      out[col] = Math.round(value * 100) / 100;
+      continue;
+    }
+    if (typeof value === 'string' && /^-?\d+\.\d{3,}$/.test(value.trim())) {
+      out[col] = Math.round(parseFloat(value) * 100) / 100;
+      continue;
+    }
+    out[col] = value;
+  }
+  return out;
 }
 
 module.exports = {
@@ -474,4 +544,5 @@ module.exports = {
   APP_PATTERNS,
   buildSchemaSnapshot,
   buildDataSnapshot,
+  sanitizeRow,
 };
