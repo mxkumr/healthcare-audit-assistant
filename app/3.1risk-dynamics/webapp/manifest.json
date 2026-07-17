@@ -72,6 +72,11 @@
           "pattern": ":?query:",
           "name": "RiskCostVolumeDynamicsList",
           "target": "RiskCostVolumeDynamicsList"
+        },
+        {
+          "pattern": "RiskCostVolumeDynamics({key}):?query:",
+          "name": "RiskCostVolumeDynamicsObjectPage",
+          "target": "RiskCostVolumeDynamicsObjectPage"
         }
       ],
       "targets": {
@@ -84,6 +89,13 @@
               "contextPath": "/RiskCostVolumeDynamics",
               "variantManagement": "Page",
               "defaultTemplateAnnotationPath": "com.sap.vocabularies.UI.v1.SelectionPresentationVariant#ALPDashboard",
+              "navigation": {
+                "RiskCostVolumeDynamics": {
+                  "detail": {
+                    "route": "RiskCostVolumeDynamicsObjectPage"
+                  }
+                }
+              },
               "controlConfiguration": {
                 "@com.sap.vocabularies.UI.v1.LineItem": {
                   "tableSettings": {
@@ -141,6 +153,17 @@
                   }
                 ]
               }
+            }
+          }
+        },
+        "RiskCostVolumeDynamicsObjectPage": {
+          "type": "Component",
+          "id": "RiskCostVolumeDynamicsObjectPage",
+          "name": "sap.fe.templates.ObjectPage",
+          "options": {
+            "settings": {
+              "editableHeaderContent": false,
+              "contextPath": "/RiskCostVolumeDynamics"
             }
           }
         }

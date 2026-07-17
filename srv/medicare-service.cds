@@ -150,6 +150,13 @@ extend MedicareService.ProviderCostEfficiency with columns {
   yearHistory : Association to many MedicareService.ProviderCostEfficiency on yearHistory.ProviderName = $self.ProviderName
 }
 
+// Task 3.1: specialty row → providers in that Year × Specialty (object page)
+extend MedicareService.RiskCostVolumeDynamics with columns {
+  providers : Association to many MedicareService.ProviderCostEfficiency
+    on  providers.ProviderType = $self.Specialty
+    and providers.Year         = $self.Year
+}
+
 // ── Aggregation (data-shaping) annotations for the analytical query ────────────
 // NOTE: UI annotations (LineItem, Chart, PresentationVariant, KPIs, visual
 // filters, facets) live in the app layer at app/1.1cost-analysis/annotations.cds.
@@ -458,6 +465,7 @@ annotate MedicareService.ProviderCostEfficiency with @(
         SupportedAggregationMethods: ['max']
       },
       {Property: TotalBeneficiaries, SupportedAggregationMethods: ['max']},
+      {Property: TotalActualPayments},
       {Property: AvgPatientAge},
       {Property: AvgRiskScore},
       {Property: DiabetesPct},
@@ -471,6 +479,7 @@ annotate MedicareService.ProviderCostEfficiency with @(
   Aggregation.CustomAggregate #CostPerBeneficiary      : 'Edm.Decimal',
   Aggregation.CustomAggregate #ServicesPerBeneficiary  : 'Edm.Int32',
   Aggregation.CustomAggregate #TotalBeneficiaries      : 'Edm.Int32',
+  Aggregation.CustomAggregate #TotalActualPayments     : 'Edm.Decimal',
   Aggregation.CustomAggregate #AvgPatientAge           : 'Edm.Decimal',
   Aggregation.CustomAggregate #AvgRiskScore            : 'Edm.Decimal',
   Aggregation.CustomAggregate #DiabetesPct             : 'Edm.Decimal',
@@ -489,6 +498,7 @@ annotate MedicareService.ProviderCostEfficiency with @(
   CostPerBeneficiary    @Analytics.Measure: true  @Aggregation.default: #AVG;
   ServicesPerBeneficiary @Analytics.Measure: true @Aggregation.default: #MAX;
   TotalBeneficiaries    @Analytics.Measure: true  @Aggregation.default: #MAX;
+  TotalActualPayments   @Analytics.Measure: true  @Aggregation.default: #SUM  @Measures.ISOCurrency: 'USD';
   AvgPatientAge         @Analytics.Measure: true  @Aggregation.default: #AVG;
   AvgRiskScore          @Analytics.Measure: true  @Aggregation.default: #AVG;
   DiabetesPct           @Analytics.Measure: true  @Aggregation.default: #AVG  @Measures.Unit: '%';
