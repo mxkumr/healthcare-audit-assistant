@@ -25,9 +25,7 @@ Related: [4.2 Evaluate AI](./4.2-evaluate-ai-prompt-strategy.md) · [4.1 CAP age
    Small variations in `package-lock.json` (npm version differences, incomplete installs, or lockfile out of sync with `package.json`) caused **MTA / `cds build --production` packaging to fail** during BTP deploy. The failure mode was easy to misread as an `mta.yaml` or module path problem until we regenerated a consistent lockfile and rebuilt.
 
 4. **Context-size / sampling bias (the harder product bug)**  
-   Each ALP can expose far more rows than an LLM can safely consume. An unsorted or NPI-biased extract made the model “confidently wrong” — e.g. naming a mid-pack Individual as the top cost-per-patient Organization on Task 2.2b, or quoting wrong rural overclaim figures while the directional Finding looked plausible.
-
-   **Anti-hallucination control we shipped:** restrict each Evaluate AI call to the **top 400 rows** after `ORDER BY sortBy DESC` (per ALP metric in `ai-context.js`; diagrams use **150**). That bounds context size *and* keeps the briefing pack metric-ranked so the model cannot invent winners that never appear in the extract.
+   Each ALP can expose far more rows than an LLM can safely consume. We cap Evaluate AI at **400 rows** (diagrams at **150**). An unsorted or NPI-biased extract made the model “confidently wrong” — e.g. naming a mid-pack Individual as the top cost-per-patient Organization on Task 2.2b, or quoting wrong rural overclaim figures while the directional Finding looked plausible.
 
 5. **Secondary BTP / FE friction (solved earlier, still material)**  
    Blank Fiori screens from annotation ↔ OData V4 mismatches, relative vs absolute UI5 resource paths under `cds watch`, and CF env / restage order for AI credentials. These were painful but eventually mechanical; the AI context bug was the one that survived “it deploys and returns 200.”
@@ -39,13 +37,12 @@ Related: [4.2 Evaluate AI](./4.2-evaluate-ai-prompt-strategy.md) · [4.1 CAP age
 | **AI Core client** | `srv/lib/check-ai.js` — GPT-5-safe request body only; clear env errors for missing `AI_DEPLOYMENT_URL` / token credentials |
 | **Deployment ID** | Ignore hardcoded onboarding IDs; copy the live deployment URL/ID from our AI Core resource group into CF env (`AI_DEPLOYMENT_URL`), then restage |
 | **MTA / lockfile** | Keep `package-lock.json` committed and in sync; reinstall (`npm ci` / clean install) before `mbt build` so MTA generation sees a deterministic dependency tree |
-| **Ranked row cap** | `srv/lib/check-ai.js` — `SELECT … ORDER BY sortBy DESC LIMIT 400` so Evaluate AI only sees the top metric-ranked rows (not the full CMS extract), which materially reduces hallucination |
-| **Per-ALP context** | `srv/lib/ai-context.js` — entity-aware schema snapshot, ranking hints, Task 2 tier labels, and the `sortBy` column used for that ranked cap |
+| **Per-ALP context** | `srv/lib/ai-context.js` — entity-aware schema snapshot, ranking hints, Task 2 tier labels, `sortBy` so the extract is metric-ranked (not random) |
 | **Anti-hallucination topology** | System = Lead Auditor persona + silent agency rules; user = compressed JSON `{ schemaSnapshot, dataSnapshot, question }` — no formulas reinvented in the prompt |
 | **Sanitization** | Money/rates rounded to 2 decimals before the model sees them; diagram path uses the same sort + sanitize |
 | **Entity coverage** | Referer → ALP mapping for all ten analytical apps so Evaluate AI never silently analyzes the wrong cube |
 
-Outcome: Evaluate AI became a **briefing pack from CAP** — at most **400 `sortBy`-ranked rows** per question — not a free-form chat over the whole CMS extract.
+Outcome: Evaluate AI became a **briefing pack from CAP**, not a free-form chat over the whole CMS extract.
 
 ---
 

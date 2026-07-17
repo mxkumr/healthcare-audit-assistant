@@ -616,7 +616,6 @@ view ProviderCostEfficiency as
     end                                              as UtilizationCategory    : String,
 
     p.Tot_Benes                                      as TotalBeneficiaries     : Integer,
-    p.Tot_Mdcr_Pymt_Amt                              as TotalActualPayments    : Decimal,
     p.Bene_Avg_Age                                   as AvgPatientAge          : Decimal,
     p.Bene_Avg_Risk_Scre                             as AvgRiskScore           : Decimal,
     p.Bene_CC_PH_Diabetes_V2_Pct                     as DiabetesPct            : Decimal,
@@ -631,8 +630,7 @@ annotate medicare.ProviderCostEfficiency with @(
 );
 
 annotate medicare.ProviderCostEfficiency with {
-  ProviderCount       @Aggregation.default: #SUM;
-  TotalActualPayments @Measures.ISOCurrency: 'USD';
+  ProviderCount @Aggregation.default: #SUM;
 };
 
 // Specialty-level classification (Task 2): collapses ~50k individual providers

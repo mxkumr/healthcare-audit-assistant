@@ -4,12 +4,11 @@ using MedicareService as service from '../../srv/medicare-service';
 // RiskCostVolumeDynamics — Task 3.1 Risk-Cost-Volume Dynamics ALP
 // Chart (top): dual-axis column — avg patient risk (left) vs avg cost/patient (right)
 // Table (bottom): specialty-level audit log sorted by cost intensity
-// Object page: specialty KPIs + providers association (Year × Specialty)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 annotate service.RiskCostVolumeDynamics with @(
 
-  UI.SelectionFields: [Year, Specialty, providers.ProviderName],
+  UI.SelectionFields: [Year, Specialty],
 
   UI.HeaderInfo: {
     $Type         : 'UI.HeaderInfoType',
@@ -124,46 +123,7 @@ annotate service.RiskCostVolumeDynamics with @(
     $Type         : 'UI.PresentationVariantType',
     SortOrder     : [{ Property: CostPerPatient, Descending: true }],
     Visualizations: ['@UI.LineItem']
-  },
-
-  // ── Object page: specialty KPIs + provider drill-down ───────────────────────
-  UI.FieldGroup #SpecialtyProfile: {
-    $Type: 'UI.FieldGroupType',
-    Data : [
-      { $Type: 'UI.DataField', Value: Year,                 Label: 'Year' },
-      { $Type: 'UI.DataField', Value: Specialty,            Label: 'Specialty' },
-      { $Type: 'UI.DataField', Value: TotalUniqueProviders, Label: 'Total Unique Providers' },
-      {
-        $Type : 'UI.DataField',
-        Value : PatientRiskScore,
-        Label : 'Avg Patient Risk Score (Complexity)',
-        ![@UI.DataPoint]: ![@UI.DataPoint#PatientRiskScoreFmt]
-      },
-      {
-        $Type : 'UI.DataField',
-        Value : CostPerPatient,
-        Label : 'Avg Cost per Patient ($)',
-        ![@UI.DataPoint]: ![@UI.DataPoint#CostPerPatientFmt]
-      },
-      { $Type: 'UI.DataField', Value: TotalPatientsServed, Label: 'Total Patients Served' },
-      { $Type: 'UI.DataField', Value: TotalActualPayments, Label: 'Total Actual Payments' }
-    ]
-  },
-
-  UI.Facets: [
-    {
-      $Type : 'UI.ReferenceFacet',
-      ID    : 'SpecialtyProfileFacet',
-      Label : 'Specialty Risk-Cost Profile',
-      Target: '@UI.FieldGroup#SpecialtyProfile'
-    },
-    {
-      $Type : 'UI.ReferenceFacet',
-      ID    : 'ProvidersFacet',
-      Label : 'Providers in Specialty',
-      Target: 'providers/@UI.PresentationVariant#Providers'
-    }
-  ]
+  }
 );
 
 annotate service.RiskCostVolumeDynamics with {
@@ -177,25 +137,7 @@ annotate service.RiskCostVolumeDynamics with {
     Common.Label     : 'Specialty',
     Common.QuickInfo : 'CMS provider type / specialty classification.',
     Core.Description : 'Chart category — one dual-axis column pair per specialty at Year grain.',
-    UI.LineItem      : [{ position: 10 }],
-    Common.ValueList #SpecialtyVH: {
-      $Type                      : 'Common.ValueListType',
-      CollectionPath             : 'RiskCostVolumeDynamics',
-      DistinctValuesSupported    : true,
-      SearchSupported            : true,
-      Parameters                 : [
-        {
-          $Type            : 'Common.ValueListParameterInOut',
-          LocalDataProperty: Specialty,
-          ValueListProperty: 'Specialty'
-        },
-        {
-          $Type            : 'Common.ValueListParameterIn',
-          LocalDataProperty: Year,
-          ValueListProperty: 'Year'
-        }
-      ]
-    }
+    UI.LineItem      : [{ position: 10 }]
   );
 
   TotalUniqueProviders @(
@@ -234,69 +176,4 @@ annotate service.RiskCostVolumeDynamics with {
     Measures.ISOCurrency: 'USD',
     UI.LineItem         : [{ position: 60 }]
   );
-
-  providers @(
-    Common.Label     : 'Providers',
-    Common.QuickInfo : 'Individual providers (NPI) in this Year × Specialty from ProviderCostEfficiency.'
-  );
 };
-
-// Cascade value help: ProviderName filtered by selected Specialty (+ Year).
-// LocalDataProperty paths are relative to RiskCostVolumeDynamics (selection-field context).
-annotate service.RiskCostVolumeDynamics:providers with {
-  ProviderName @(
-    Common.Label     : 'Provider',
-    Common.QuickInfo : 'Provider name within the selected specialty (cascades from Specialty / Year filters).',
-    Common.ValueList #ProviderVH: {
-      $Type                   : 'Common.ValueListType',
-      CollectionPath          : 'ProviderCostEfficiency',
-      DistinctValuesSupported : true,
-      SearchSupported         : true,
-      Parameters              : [
-        {
-          $Type            : 'Common.ValueListParameterInOut',
-          LocalDataProperty: providers.ProviderName,
-          ValueListProperty: 'ProviderName'
-        },
-        {
-          $Type            : 'Common.ValueListParameterDisplayOnly',
-          ValueListProperty: 'NPI'
-        },
-        {
-          $Type            : 'Common.ValueListParameterDisplayOnly',
-          ValueListProperty: 'State'
-        },
-        {
-          $Type            : 'Common.ValueListParameterIn',
-          LocalDataProperty: Specialty,
-          ValueListProperty: 'ProviderType'
-        },
-        {
-          $Type            : 'Common.ValueListParameterIn',
-          LocalDataProperty: Year,
-          ValueListProperty: 'Year'
-        }
-      ]
-    }
-  );
-};
-
-// Qualified LineItem for the specialty object-page providers facet (does not override 2.1)
-annotate service.ProviderCostEfficiency with @(
-  UI.LineItem #Providers: [
-    { $Type: 'UI.DataField', Value: ProviderName,        Label: 'Provider Name' },
-    { $Type: 'UI.DataField', Value: NPI,                 Label: 'NPI' },
-    { $Type: 'UI.DataField', Value: State,               Label: 'State' },
-    { $Type: 'UI.DataField', Value: CostPerBeneficiary,  Label: 'Cost per Patient' },
-    { $Type: 'UI.DataField', Value: TotalActualPayments, Label: 'Total Amount Paid' },
-    { $Type: 'UI.DataField', Value: EfficiencyCategory,  Label: 'Cost Classification' },
-    { $Type: 'UI.DataField', Value: UtilizationCategory, Label: 'Utilization Profile' },
-    { $Type: 'UI.DataField', Value: TotalBeneficiaries,  Label: 'Patients Served' }
-  ],
-
-  UI.PresentationVariant #Providers: {
-    $Type         : 'UI.PresentationVariantType',
-    SortOrder     : [{ Property: TotalActualPayments, Descending: true }],
-    Visualizations: ['@UI.LineItem#Providers']
-  }
-);
